@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import NavSection from '@/components/NavSection.vue';
 import NavUser from '@/components/NavUser.vue';
 import SidebarBrand from '@/components/SidebarBrand.vue';
@@ -33,9 +32,6 @@ const { groups, active, badge } = useNavigation();
             />
         </SidebarContent>
         <SidebarFooter>
-            <div class="group-data-[collapsible=icon]:hidden">
-                <LanguageSwitcher />
-            </div>
             <NavUser />
         </SidebarFooter>
     </Sidebar>

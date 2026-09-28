@@ -656,5 +656,13 @@
     "CRM Pipelines": "مسارات المبيعات",
     "Departments & Teams": "الأقسام والفرق",
     "Organization & Access": "المؤسسة والصلاحيات",
-    "Soon": "قريبًا"
+    "Soon": "قريبًا",
+    "Search or jump to…": "ابحث أو انتقل إلى…",
+    "Pages and records": "الصفحات والسجلات",
+    "No pages match.": "لا توجد صفحات مطابقة.",
+    "Records": "السجلات",
+    "Search all records for “:q”": "البحث في كل السجلات عن «:q»",
+    "Appearance": "المظهر",
+    "Light": "فاتح",
+    "Dark": "داكن"
 }
