@@ -795,5 +795,17 @@
     "Requested by": "طلبها",
     "Reject this item": "رفض هذا العنصر",
     "This reason is recorded and, where the workflow supports it, shown to the person who submitted it.": "يُسجَّل هذا السبب، وقد يظهر لمن قدّم الطلب حيثما يسمح سير العمل بذلك.",
-    "Leasing": "التأجير"
+    "Leasing": "التأجير",
+    "Assigned work with a due date.": "مهام موكّلة بموعد استحقاق.",
+    "Your assigned tasks.": "مهامك الموكّلة إليك.",
+    "New task": "مهمة جديدة",
+    "No open tasks.": "لا توجد مهام مفتوحة.",
+    "No tasks yet.": "لا توجد مهام بعد.",
+    "Related": "مرتبط بـ",
+    "normal": "عادية",
+    "Lead": "عميل محتمل",
+    "Reservation": "حجز",
+    "Edit task": "تعديل المهمة",
+    "Related record": "سجل مرتبط",
+    "Search…": "ابحث…"
 }
