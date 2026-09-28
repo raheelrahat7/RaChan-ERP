@@ -4,6 +4,7 @@ import {
     formatCompact,
     formatDate,
     formatMoney,
+    formatMonth,
     formatNumber,
     formatRelative,
     statFigure,
@@ -180,4 +181,10 @@ await test('relative times read naturally in both languages with Western digits'
     assert.equal(formatRelative('2026-09-28T09:39:50Z', 'en', now), 'now');
     assert.equal(formatRelative(null, 'en', now), '—');
     assert.equal(formatRelative('nonsense', 'en', now), '—');
+});
+
+await test('months read as short English or full Arabic names', () => {
+    assert.equal(formatMonth('2026-09', 'en'), 'Sep');
+    assert.equal(formatMonth('2026-01', 'ar'), 'يناير');
+    assert.equal(formatMonth('bad', 'en'), '—');
 });

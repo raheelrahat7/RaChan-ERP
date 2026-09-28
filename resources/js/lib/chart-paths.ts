@@ -27,14 +27,15 @@ export function chartSegments(
     width: number,
     height: number,
     padding = 0,
+    domain?: [number, number],
 ): Point[][] {
     const numbers = values.map(toFinite);
     const present = numbers.filter((value): value is number => value !== null);
     if (present.length === 0) {
         return [];
     }
-    const min = Math.min(...present);
-    const range = Math.max(...present) - min;
+    const min = domain ? domain[0] : Math.min(...present);
+    const range = domain ? domain[1] - domain[0] : Math.max(...present) - min;
     const inner = height - padding * 2;
     const step = values.length > 1 ? width / (values.length - 1) : 0;
     const segments: Point[][] = [];
@@ -69,8 +70,9 @@ export function chartPoints(
     width: number,
     height: number,
     padding = 0,
+    domain?: [number, number],
 ): Point[] {
-    return chartSegments(values, width, height, padding).flat();
+    return chartSegments(values, width, height, padding, domain).flat();
 }
 
 function segmentPath(points: Point[]): string {
@@ -98,8 +100,9 @@ export function linePath(
     width: number,
     height: number,
     padding = 0,
+    domain?: [number, number],
 ): string {
-    const segments = chartSegments(values, width, height, padding);
+    const segments = chartSegments(values, width, height, padding, domain);
     if (segments.length === 0) {
         return '';
     }
@@ -117,13 +120,14 @@ export function areaPath(
     width: number,
     height: number,
     padding = 0,
+    domain?: [number, number],
 ): string {
-    const segments = chartSegments(values, width, height, padding);
+    const segments = chartSegments(values, width, height, padding, domain);
     if (segments.length === 0) {
         return '';
     }
     if (values.length === 1) {
-        return `${linePath(values, width, height, padding)} L${width},${height} L0,${height} Z`;
+        return `${linePath(values, width, height, padding, domain)} L${width},${height} L0,${height} Z`;
     }
 
     return segments
@@ -134,4 +138,28 @@ export function areaPath(
             return `${segmentPath(points)} L${last},${height} L${first},${height} Z`;
         })
         .join(' ');
+}
+
+export function donutSegments(
+    values: number[],
+    circumference: number,
+    gap = 0,
+): { length: number; offset: number }[] {
+    const clean = values.map((value) => (value > 0 ? value : 0));
+    const total = clean.reduce((sum, value) => sum + value, 0);
+    if (total === 0) {
+        return [];
+    }
+    let used = 0;
+
+    return clean.map((value) => {
+        const share = (value / total) * circumference;
+        const segment = {
+            length: value > 0 ? round(Math.max(0, share - gap)) : 0,
+            offset: used === 0 ? 0 : -round(used),
+        };
+        used += share;
+
+        return segment;
+    });
 }
