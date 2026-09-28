@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
     areaPath,
     chartPoints,
+    donutSegments,
     linePath,
 } from '../../resources/js/lib/chart-paths.ts';
 
@@ -51,4 +52,29 @@ await test('decimal strings from Laravel casts are charted, not dropped', () => 
     const line = linePath(['1200.00', '1350.50', '1300.25'], 100, 24);
     assert.match(line, /^M0,/);
     assert.ok(!line.includes('NaN'));
+});
+
+await test('a shared domain keeps two series on the same scale', () => {
+    const high = chartPoints([50, 100], 100, 100, 0, [0, 100]);
+    const low = chartPoints([10, 20], 100, 100, 0, [0, 100]);
+    assert.deepEqual(
+        high.map(([, y]) => y),
+        [50, 0],
+    );
+    assert.deepEqual(
+        low.map(([, y]) => y),
+        [90, 80],
+    );
+});
+
+await test('donut segments split the ring in proportion, with gaps', () => {
+    assert.deepEqual(donutSegments([3, 1], 100, 2), [
+        { length: 73, offset: 0 },
+        { length: 23, offset: -75 },
+    ]);
+    assert.deepEqual(donutSegments([0, 0], 100), []);
+    assert.deepEqual(donutSegments([-5, 5], 100), [
+        { length: 0, offset: 0 },
+        { length: 100, offset: 0 },
+    ]);
 });

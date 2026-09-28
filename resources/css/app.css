@@ -193,6 +193,25 @@
     color: var(--muted-foreground);
 }
 
+@utility bg-brand-deep {
+    background-image: linear-gradient(
+        135deg,
+        #4a1320 0%,
+        #6b1b2a 55%,
+        #8a2b40 100%
+    );
+    color: #fbf3ef;
+}
+
+.dark .bg-brand-deep {
+    background-image: linear-gradient(
+        135deg,
+        #3a1520 0%,
+        #5a1b2b 55%,
+        #7a2438 100%
+    );
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

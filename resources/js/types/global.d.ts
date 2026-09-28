@@ -20,6 +20,13 @@ declare module '@inertiajs/core' {
             locale: 'en' | 'ar';
             auth: Auth;
             sidebarOpen: boolean;
+            organization?: { id: number; name: string; slug: string } | null;
+            abilities?: Record<string, boolean>;
+            counts?: {
+                notifications_unread: number;
+                crm_open_leads: number;
+                approvals_pending: number | null;
+            };
             [key: string]: unknown;
         };
     }

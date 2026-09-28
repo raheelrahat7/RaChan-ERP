@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Z1 Home Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{--bg:#F8F4F1;--card:#FDFBFA;--sunken:#F0EAE6;--line:rgba(60,16,24,.09);--line2:rgba(60,16,24,.16);--fg:#1E1215;--muted:#6F6064;--faint:#A6989B;--primary:#6B1B2A;--pfg:#FBF6F3;--champ:#C9A27A;--accent:#7A2233;--ok:#3E6E52;--info:#2F5E86;--warn:#8C5F18;--bad:#B23A1A;--side:#4A1320;--sideFg:#F6ECE8;--sideMuted:#C49CA3;--sideLine:rgba(255,255,255,.10);--shadow:0 1px 0 rgba(60,16,24,.03),0 18px 40px -28px rgba(60,16,24,.30);--deep:linear-gradient(140deg,#3A1019,#6B1B2A 60%,#8A2B40)}
+.dark{--bg:#1F1418;--card:#2A1B20;--sunken:#25171C;--line:rgba(255,225,232,.10);--line2:rgba(255,225,232,.18);--fg:#F4EBE8;--muted:#BCA7AC;--faint:#7D6A70;--primary:#A8344C;--pfg:#FFF5F2;--champ:#D9B68E;--accent:#E2C29C;--ok:#95CCA9;--info:#9BC0E3;--warn:#E6BD78;--bad:#F59A82;--side:#3A1520;--sideFg:#F6ECE8;--sideMuted:#CAA6AD;--sideLine:rgba(255,255,255,.08);--shadow:0 24px 48px -28px rgba(0,0,0,.6);--deep:linear-gradient(140deg,#2A0D15,#5A1B2B 60%,#7A2438)}
+*{box-sizing:border-box}html,body{margin:0}
+body{font:13px/1.55 Geist,system-ui,sans-serif;background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased}
+svg.lucide{width:16px;height:16px;stroke-width:1.6}
+.serif{font-family:'Cormorant Garamond',serif;font-weight:500}
+.chooser{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 20px;background:#140a0d;color:#f1e6e3;font-size:13px}
+.chooser b{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:500;margin-inline-end:auto}
+.tg{display:inline-flex;padding:3px;border-radius:999px;border:1px solid rgba(255,255,255,.18)}
+.tg button{font:inherit;font-size:12.5px;border:0;background:none;color:#bfaeb1;padding:5px 14px;border-radius:999px;cursor:pointer}
+.tg button.on{background:#f1e6e3;color:#1e1215}
+.app{display:flex;min-height:100vh}
+.side{position:sticky;top:50px;height:calc(100vh - 50px);width:248px;flex:none;background:var(--side);color:var(--sideFg);display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:11px;padding:18px 18px 14px}
+.mark{width:34px;height:34px;border-radius:6px;border:1px solid rgba(201,162,122,.45);display:grid;place-items:center;color:var(--champ);font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600}
+.brand b{display:block;font-size:14px}.brand small{color:var(--sideMuted);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase}
+.nav{flex:1;overflow-y:auto;padding:0 12px 14px;scrollbar-width:none}
+.sec{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--sideMuted);padding:14px 10px 6px}
+.it{position:relative;display:flex;align-items:center;gap:11px;padding:6.5px 10px;border-radius:6px;opacity:.78}
+.it.on{background:rgba(255,255,255,.09);opacity:1}.it.on::before{content:'';position:absolute;inset-inline-start:-12px;top:8px;bottom:8px;width:2.5px;border-radius:2px;background:var(--champ)}
+.it.on svg{color:var(--champ)}
+.it .soon{margin-inline-start:auto;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--sideMuted)}
+.main{flex:1;min-width:0}
+.concept{display:none}.concept.on{display:block}
+.top{display:flex;align-items:center;gap:10px;padding:14px 36px;border-bottom:1px solid var(--line)}
+.crumb{font-size:12.5px;color:var(--muted)}.crumb b{color:var(--fg);font-weight:500}
+.search{margin-inline-start:auto;height:34px;width:300px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:6px;background:var(--sunken);border:1px solid var(--line);color:var(--faint);font-size:12.5px}
+.search kbd{margin-inline-start:auto;font:inherit;font-size:10.5px;border:1px solid var(--line2);border-radius:4px;padding:0 6px;color:var(--muted);background:var(--card)}
+.ibtn{width:34px;height:34px;display:grid;place-items:center;border-radius:6px;border:1px solid var(--line2);background:var(--card);color:var(--muted);position:relative}
+.ibtn i{position:absolute;top:7px;inset-inline-end:8px;width:7px;height:7px;border-radius:50%;background:var(--champ)}
+.eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.btn{height:34px;padding:0 14px;border-radius:6px;font:inherit;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--card);color:var(--fg);cursor:pointer;white-space:nowrap}
+.btn.p{background:var(--primary);color:var(--pfg);border-color:transparent}
+.btn.sm{height:28px;padding:0 10px;font-size:11.5px}
+.btn svg{width:14px;height:14px}
+.up{color:var(--ok)}.dn{color:var(--bad)}.mut{color:var(--muted)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+h3.t{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:24px;margin:0;line-height:1.15}
+
+/* ===== A · The Briefing ===== */
+.A{padding:40px 44px 70px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:44px;max-width:1440px}
+.A .date{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:19px;color:var(--muted)}
+.A h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:58px;line-height:1;margin:6px 0 18px;letter-spacing:-.015em}
+.story{font-size:17px;line-height:1.75;max-width:760px;color:var(--fg)}
+.story .fig{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--accent);white-space:nowrap}
+.story .chip{display:inline-flex;align-items:center;gap:5px;padding:1px 9px;border-radius:999px;font-size:12.5px;font-weight:500;vertical-align:2px}
+.chip.bad{background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad)}
+.chip.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok)}
+.ledger{display:grid;grid-template-columns:repeat(4,1fr);margin:34px 0 8px;border-top:1px solid var(--fg);border-bottom:1px solid var(--line)}
+.ledger>div{padding:18px 20px 16px;border-inline-start:1px solid var(--line)}
+.ledger>div:first-child{border-inline-start:0;padding-inline-start:0}
+.lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:40px;line-height:1;margin:10px 0 8px;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.num small{font-family:Geist;font-size:11px;letter-spacing:.12em;color:var(--muted);margin-inline-end:6px;vertical-align:.95em}
+.chapter{margin-top:46px}
+.ch-h{display:flex;align-items:baseline;gap:16px;margin-bottom:18px}
+.ch-h .rn{font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--champ);letter-spacing:.1em}
+.ch-h h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;margin:0}
+.ch-h span{margin-inline-start:auto;font-size:12px;color:var(--muted)}
+.ch-h a{font-size:12px;color:var(--accent);text-decoration:none}
+.river{position:relative}
+.rings{display:grid;grid-template-columns:220px 1fr;gap:34px;align-items:center}
+.rkey{display:flex;flex-direction:column;gap:16px}
+.rkey div{display:grid;grid-template-columns:12px 1fr auto;gap:12px;align-items:baseline}
+.rkey i{width:10px;height:10px;border-radius:50%;transform:translateY(1px)}
+.rkey b{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500}
+.rkey small{grid-column:2/4;color:var(--muted);font-size:12px;margin-top:-6px}
+.people{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.person{padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.person .pa{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:'Cormorant Garamond',serif;font-size:18px;background:var(--sunken);border:1px solid var(--line2);margin-bottom:12px}
+.person:first-child .pa{border-color:var(--champ);color:var(--accent)}
+.person b{display:block;font-weight:500}
+.person .amt{font-family:'Cormorant Garamond',serif;font-size:24px;margin-top:8px}
+.queue{position:sticky;top:70px;align-self:start}
+.qh{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--fg)}
+.qh h3{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:26px;margin:0}
+.qg{padding:16px 0 6px;border-bottom:1px solid var(--line)}
+.qg .lbl{display:flex;justify-content:space-between;margin-bottom:10px}
+.qi{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0}
+.qi b{font-weight:500;display:block}.qi small{color:var(--muted);font-size:11.5px}
+.qi .acts{display:flex;gap:6px}
+
+/* ===== B · The Portfolio ===== */
+.B{padding:34px 40px 70px;display:flex;flex-direction:column;gap:26px;max-width:1480px}
+.bhead{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.bhead h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:46px;line-height:1;margin:8px 0 0}
+.bhead .mini{margin-inline-start:auto;display:flex;gap:30px}
+.bhead .mini div{text-align:end}
+.bhead .mini b{display:block;font-family:'Cormorant Garamond',serif;font-weight:500;font-size:28px;line-height:1.1}
+.skyline{background:var(--deep);border-radius:14px;padding:30px 34px 0;color:#FBF3EF;position:relative;overflow:hidden;box-shadow:0 34px 70px -40px rgba(74,19,32,.8)}
+.skyline::after{content:'';position:absolute;inset:auto 0 0 0;height:1px;background:rgba(255,255,255,.25)}
+.sky-h{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.sky-h h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;margin:4px 0 0}
+.sky-h .eyebrow{color:#E6C9A2}
+.skey{margin-inline-start:auto;display:flex;gap:16px;font-size:12px;color:rgba(251,243,239,.75);flex-wrap:wrap}
+.skey i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:6px;vertical-align:-1px}
+.towers{display:flex;align-items:flex-end;justify-content:space-between;gap:26px;margin-top:26px;min-height:300px}
+.tower{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+.tw{display:grid;gap:3px;padding:8px;border-radius:6px 6px 0 0;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.1);border-bottom:0}
+.tw span{width:13px;height:13px;border-radius:2px}
+.tname{width:100%;text-align:center;padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.25)}
+.tname b{display:block;font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tname small{color:rgba(251,243,239,.66);font-size:11.5px}
+.tower.sel .tw{outline:1.5px solid #E6C9A2;outline-offset:3px}
+.bgrid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:22px}
+.bgrid .panel{padding:22px 24px}
+.wf{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.wf div{display:grid;grid-template-columns:120px 1fr 90px;gap:12px;align-items:center;font-size:12.5px}
+.wf .tr{height:22px;position:relative}
+.wf .tr i{position:absolute;top:0;bottom:0;border-radius:3px}
+.wf b{text-align:end;font-weight:500;font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:2px;margin-top:14px}
+.stack div{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;font-size:12.5px}
+.stack div b{margin-inline-start:auto;font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500}
+
+/* ===== C · The Desk ===== */
+.C{padding:34px 40px 70px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:30px;max-width:1480px}
+.C h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:44px;line-height:1.05;margin:8px 0 6px}
+.dcards{display:flex;flex-direction:column;gap:14px;margin-top:26px}
+.dcard{display:grid;grid-template-columns:56px 1fr auto;gap:18px;align-items:center;padding:20px 22px;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.dcard .ic{width:56px;height:56px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--primary) 9%,transparent);color:var(--accent)}
+.dcard .ic svg{width:22px;height:22px}
+.dcard .ic.bad{background:color-mix(in srgb,var(--bad) 11%,transparent);color:var(--bad)}
+.dcard .ic.warn{background:color-mix(in srgb,var(--warn) 13%,transparent);color:var(--warn)}
+.dcard b{font-size:15px;font-weight:500;display:block}
+.dcard .meta{color:var(--muted);font-size:12.5px;margin-top:2px}
+.dcard .who{display:flex;margin-top:10px}
+.dcard .who span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;font-weight:600;background:var(--sunken);border:2px solid var(--card);margin-inline-start:-6px}
+.dcard .who span:first-child{margin-inline-start:0}
+.dcard .acts{display:flex;gap:8px}
+.timeline{margin-top:34px;padding:22px 26px 26px}
+.tl{position:relative;height:120px;margin-top:18px}
+.tl::before{content:'';position:absolute;inset-inline:0;top:58px;height:1px;background:var(--line2)}
+.tl .now{position:absolute;top:30px;bottom:18px;width:1.5px;background:var(--primary)}
+.tl .now::after{content:'Now';position:absolute;top:-18px;inset-inline-start:-12px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.ev{position:absolute;top:50px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:120px;text-align:center}
+.ev i{width:16px;height:16px;border-radius:50%;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line2)}
+.ev b{font-size:12px;font-weight:500;line-height:1.3}.ev small{font-size:11px;color:var(--muted)}
+.ev.hi{top:6px;flex-direction:column-reverse}
+.hours{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-top:6px}
+.pulse{padding:24px;display:flex;flex-direction:column;gap:22px;position:sticky;top:70px}
+.gauge{display:grid;grid-template-columns:86px 1fr;gap:16px;align-items:center}
+.gauge b{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;display:block;line-height:1}
+.gauge small{color:var(--muted);font-size:12px}
+.pulse .sep{height:1px;background:var(--line)}
+.pmoney{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pmoney b{display:block;font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;margin-top:4px}
+@media(max-width:1180px){.A,.C{grid-template-columns:1fr}.queue,.pulse{position:static}.bgrid{grid-template-columns:1fr}.people{grid-template-columns:1fr 1fr}.ledger{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){.side{display:none}.A,.B,.C{padding:24px 16px}.A h1{font-size:42px}.top{padding:12px 16px}.search{display:none}}
+</style>
+</head>
+<body>
+<div class="chooser"><b>Z1 · Home: three original layouts</b>
+  <div class="tg" id="concept"><button class="on" data-v="A">A · The Briefing</button><button data-v="B">B · The Portfolio</button><button data-v="C">C · The Desk</button></div>
+  <div class="tg" id="theme"><button class="on" data-v="light">Light</button><button data-v="dark">Dark</button></div>
+</div>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="mark">Z1</div><div><b>Z1 ERP</b><small>Marina Holdings</small></div></div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <header class="top"><span class="crumb"><b>Home</b></span><div class="search"><i data-lucide="search"></i>Search anything…<kbd>⌘K</kbd></div><div class="ibtn"><i></i><span data-lucide="bell"></span></div></header>
+
+    <!-- ================= A ================= -->
+    <section class="concept on" id="A"><div class="A">
+      <div>
+        <div class="date">Monday, the twenty-eighth of September</div>
+        <h1>Good morning, Layla.</h1>
+        <p class="story">Your portfolio earned <span class="fig">AED 188,250</span> this month, <span class="chip ok">▲ 6.4% on August</span>. Occupancy holds at <span class="fig">91%</span> across 136 units and collections are at <span class="fig">94%</span>. Two things need you today: <span class="chip bad">4 cheques bounced</span> worth AED 64,000, and seven approvals are waiting on your desk.</p>
+        <div class="ledger">
+          <div><div class="lbl">Revenue · Sep</div><div class="num"><small>AED</small>188,250</div><span class="up">▲ 6.4%</span> <span class="mut">vs Aug</span></div>
+          <div><div class="lbl">Net profit</div><div class="num"><small>AED</small>120,735</div><span class="mut">64.1% margin</span></div>
+          <div><div class="lbl">Cash</div><div class="num"><small>AED</small>50,760</div><span class="dn">▼ 12%</span> <span class="mut">this week</span></div>
+          <div><div class="lbl">Owed to us</div><div class="num"><small>AED</small>11,600</div><span class="mut">3 invoices overdue</span></div>
+        </div>
+
+        <div class="chapter"><div class="ch-h"><span class="rn">I.</span><h2>Money</h2><span>Sales and rental value, last twelve months</span></div><div id="aTrend"></div></div>
+
+        <div class="chapter"><div class="ch-h"><span class="rn">II.</span><h2>From enquiry to keys</h2><a href="#">Open pipeline →</a></div><div class="river" id="river"></div></div>
+
+        <div class="chapter"><div class="ch-h"><span class="rn">III.</span><h2>The portfolio</h2><span>136 units · 5 buildings</span></div>
+          <div class="rings"><div id="rings"></div><div class="rkey">
+            <div><i style="background:var(--primary)"></i><span>Occupied</span><b>91%</b><small>124 of 136 units let or sold</small></div>
+            <div><i style="background:var(--champ)"></i><span>Rent collected</span><b>94%</b><small>AED 2.28M of 2.42M due this month</small></div>
+            <div><i style="background:var(--ok)"></i><span>Renewed on time</span><b>78%</b><small>18 of 23 leases ending this quarter</small></div>
+          </div></div>
+        </div>
+
+        <div class="chapter"><div class="ch-h"><span class="rn">IV.</span><h2>The people</h2><span>Commission earned this month</span></div><div class="people" id="people"></div></div>
+      </div>
+
+      <aside class="queue">
+        <div class="qh"><h3>Your desk</h3><span class="mut">14 items</span></div>
+        <div class="qg"><div class="lbl"><span>To approve</span><span>7</span></div>
+          <div class="qi"><div><b>Deal DL-0418 · Marina Heights</b><small>AED 1.14M sale · commission 2%</small></div><div class="acts"><button class="btn sm p">Approve</button></div></div>
+          <div class="qi"><div><b>Deposit deduction · B-0310</b><small>AED 3,200 · cleaning & paint</small></div><div class="acts"><button class="btn sm p">Approve</button></div></div>
+          <div class="qi"><div><b>+ 5 more</b><small>Budgets, vendor bills</small></div><div class="acts"><button class="btn sm">Open</button></div></div>
+        </div>
+        <div class="qg"><div class="lbl"><span>To chase</span><span>4</span></div>
+          <div class="qi"><div><b>Bounced cheque · Gulf Line</b><small>AED 42,000 · Emirates NBD</small></div><div class="acts"><button class="btn sm">Call</button></div></div>
+          <div class="qi"><div><b>3 more bounced cheques</b><small>AED 22,000 in total</small></div><div class="acts"><button class="btn sm">Open</button></div></div>
+        </div>
+        <div class="qg" style="border-bottom:0"><div class="lbl"><span>To renew</span><span>3</span></div>
+          <div class="qi"><div><b>22 exclusive listings</b><small>Mandates end in 7 days</small></div><div class="acts"><button class="btn sm">Review</button></div></div>
+          <div class="qi"><div><b>3 agent Emirates IDs</b><small>Expire this month</small></div><div class="acts"><button class="btn sm">Remind</button></div></div>
+        </div>
+        <div class="panel" style="margin-top:18px;padding:18px 20px;background:var(--deep);color:#FBF3EF;border:0">
+          <div class="eyebrow" style="color:#E6C9A2">Z1 Intelligence</div>
+          <p style="margin:8px 0 0;font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.35">Off-plan leads are converting <b style="color:#E6C9A2;font-weight:600">2.3× faster</b> than secondary this month. Consider shifting Bayut spend.</p>
+        </div>
+      </aside>
+    </div></section>
+
+    <!-- ================= B ================= -->
+    <section class="concept" id="B"><div class="B">
+      <div class="bhead">
+        <div><div class="eyebrow">Home · September 2026</div><h1>The portfolio, today.</h1></div>
+        <div class="mini">
+          <div><span class="lbl">Revenue</span><b>AED 188,250</b><span class="up" style="font-size:12px">▲ 6.4%</span></div>
+          <div><span class="lbl">Net profit</span><b>AED 120,735</b><span class="mut" style="font-size:12px">64.1% margin</span></div>
+          <div><span class="lbl">Cash</span><b>AED 50,760</b><span class="dn" style="font-size:12px">▼ 12% this week</span></div>
+        </div>
+      </div>
+      <div class="skyline">
+        <div class="sky-h"><div><div class="eyebrow">Every unit, at a glance</div><h2>136 units · 91% occupied</h2></div>
+          <div class="skey"><span><i style="background:#F6ECE8"></i>Let / sold</span><span><i style="background:#E6C9A2"></i>Reserved</span><span><i style="background:rgba(255,255,255,.14);outline:1px solid rgba(255,255,255,.3)"></i>Vacant</span><span><i style="background:#F59A82"></i>Rent overdue</span><span><i style="background:#9BC0E3"></i>In maintenance</span></div>
+        </div>
+        <div class="towers" id="towers"></div>
+      </div>
+      <div class="bgrid">
+        <div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="t">Money in, money out</h3><span class="mut">September</span></div><div class="wf" id="wf"></div></div>
+        <div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="t">Deals in motion</h3><a style="font-size:12px;color:var(--accent)">Open →</a></div><div class="stack" id="stack"></div></div>
+        <div class="panel"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="t">Needs you</h3><span class="mut">14</span></div>
+          <div class="stack">
+            <div style="background:color-mix(in srgb,var(--bad) 8%,transparent)"><span data-lucide="banknote" style="color:var(--bad)"></span>Bounced cheques<b>4</b></div>
+            <div style="background:color-mix(in srgb,var(--primary) 7%,transparent)"><span data-lucide="check-check" style="color:var(--accent)"></span>Approvals waiting<b>7</b></div>
+            <div style="background:color-mix(in srgb,var(--warn) 9%,transparent)"><span data-lucide="calendar-x" style="color:var(--warn)"></span>Listings expiring<b>22</b></div>
+            <div style="background:var(--sunken)"><span data-lucide="id-card" style="color:var(--muted)"></span>IDs expiring<b>3</b></div>
+          </div>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- ================= C ================= -->
+    <section class="concept" id="C"><div class="C">
+      <div>
+        <div class="eyebrow">Home · Your desk</div>
+        <h1>Four decisions are waiting, Layla.</h1>
+        <p class="mut" style="font-size:15px;margin:0">Everything else is running on plan. Revenue is <span class="up">up 6.4%</span> and collections are at 94%.</p>
+        <div class="dcards">
+          <div class="dcard"><div class="ic"><span data-lucide="handshake"></span></div><div><b>Approve sale · Penthouse PH-02, Marina Heights</b><div class="meta">AED 1,140,000 · buyer Hamdan Family Office · agent Sara Al Marzooqi · 2% commission</div><div class="who"><span>SM</span><span>HF</span><span>FN</span></div></div><div class="acts"><button class="btn">Review</button><button class="btn p">Approve</button></div></div>
+          <div class="dcard"><div class="ic bad"><span data-lucide="banknote"></span></div><div><b>4 cheques bounced this week</b><div class="meta">AED 64,000 · Gulf Line Logistics and 2 others · Emirates NBD, ADCB</div></div><div class="acts"><button class="btn">Open register</button><button class="btn p">Start recovery</button></div></div>
+          <div class="dcard"><div class="ic warn"><span data-lucide="calendar-x"></span></div><div><b>22 exclusive listings expire in 7 days</b><div class="meta">Business Bay 12 · Downtown 7 · Marina 3</div></div><div class="acts"><button class="btn">Review</button><button class="btn p">Renew all</button></div></div>
+          <div class="dcard"><div class="ic"><span data-lucide="piggy-bank"></span></div><div><b>Q4 operating budget submitted</b><div class="meta">AED 2.8M · 4% above Q3 · submitted by Finance</div></div><div class="acts"><button class="btn">Review</button><button class="btn p">Approve</button></div></div>
+        </div>
+        <div class="panel timeline"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="t">Today</h3><span class="mut">Viewings, handovers and money due</span></div>
+          <div class="tl" id="tl"></div><div class="hours"><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span><span>18:00</span></div>
+        </div>
+      </div>
+      <aside class="panel pulse">
+        <div><div class="eyebrow">Pulse</div><h3 class="t" style="margin-top:4px">How the business is doing</h3></div>
+        <div class="gauge"><div id="g1"></div><div><b>94%</b><small>Rent collected · AED 2.28M of 2.42M</small></div></div>
+        <div class="gauge"><div id="g2"></div><div><b>91%</b><small>Occupancy · 124 of 136 units</small></div></div>
+        <div class="gauge"><div id="g3"></div><div><b>11%</b><small>Lead to deal · 17 of 156 this month</small></div></div>
+        <div class="sep"></div>
+        <div class="pmoney">
+          <div><span class="lbl">Revenue</span><b>188,250</b><span class="up" style="font-size:11.5px">▲ 6.4%</span></div>
+          <div><span class="lbl">Net profit</span><b>120,735</b><span class="mut" style="font-size:11.5px">64% margin</span></div>
+          <div><span class="lbl">Cash</span><b>50,760</b><span class="dn" style="font-size:11.5px">▼ 12%</span></div>
+          <div><span class="lbl">VAT due</span><b>4,027</b><span class="mut" style="font-size:11.5px">by 28 Oct</span></div>
+        </div>
+        <div class="sep"></div>
+        <div><span class="lbl">Leading agents</span>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;font-size:12.5px" id="agents"></div>
+        </div>
+      </aside>
+    </div></section>
+  </div>
+</div>
+
+<script>
+const NAV=[['',[['home','Home',1],['search','Search'],['bell','Notifications']]],['Sales & CRM',[['users','CRM & Leads'],['sparkles','AI Matchmaker','s'],['building','Property & Listings'],['briefcase','Owners & Developers'],['construction','Off-Plan Projects','s'],['repeat','Secondary Market'],['key-round','Leasing & Rental'],['handshake','Deals'],['badge-percent','Agents & Commission'],['megaphone','Marketing & Portals','s'],['route','Broker Allocation'],['trophy','Broker Performance']]],['Finance',[['landmark','Accounting & Tax'],['banknote','Cheques (PDC)'],['file-text','Receivables'],['file-minus','Payables'],['pie-chart','Budgets'],['package','Procurement']]],['Operations',[['wrench','Maintenance'],['life-buoy','Helpdesk'],['hard-hat','Projects'],['truck','Fleet']]],['Workflow',[['check-square','Approvals','s'],['list-todo','Tasks','s'],['calendar-days','Viewings','s'],['file-signature','Contracts']]],['Company',[['id-card','People & HR','s'],['bar-chart-3','Reports'],['shield-check','Compliance'],['settings','Settings']]]];
+document.getElementById('nav').innerHTML=NAV.map(([s,it])=>(s?`<div class="sec">${s}</div>`:'<div style="height:6px"></div>')+it.map(([i,l,x])=>`<div class="it${x===1?' on':''}"><i data-lucide="${i}"></i><span>${l}</span>${x==='s'?'<span class="soon">Soon</span>':''}</div>`).join('')).join('');
+
+function smooth(p){return p.map((q,i)=>i?`C${(p[i-1][0]+q[0])/2},${p[i-1][1]} ${(p[i-1][0]+q[0])/2},${q[1]} ${q[0]},${q[1]}`:`M${q[0]},${q[1]}`).join(' ')}
+function draw(){
+ // A · trend: minimal editorial line with month labels + annotation
+ {const W=900,H=200,s=[58,61,63,68,71,66,74,79,81,82,84,86],r=[18,19,20,20,22,21,22,23,23,22,22,21],m=['O','N','D','J','F','M','A','M','J','J','A','S'];const y=v=>12+(1-v/100)*(H-24),x=i=>i*(W/11);
+ const ps=s.map((v,i)=>[x(i),y(v)]),pr=r.map((v,i)=>[x(i),y(v)]);
+ document.getElementById('aTrend').innerHTML=`<svg viewBox="0 -10 ${W} ${H+34}" style="width:100%;height:auto;display:block"><defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity=".16"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>
+ <path d="${smooth(ps)} L${W},${H} L0,${H}Z" fill="url(#ag)"/><path d="${smooth(ps)}" fill="none" stroke="var(--primary)" stroke-width="2.2"/><path d="${smooth(pr)}" fill="none" stroke="var(--champ)" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round"/>
+ <line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="var(--fg)" stroke-width=".8"/>
+ <circle cx="${x(11)}" cy="${y(86)}" r="4.5" fill="var(--primary)"/><text x="${x(11)-10}" y="${y(86)-14}" text-anchor="end" font-family="Cormorant Garamond" font-style="italic" font-size="17" fill="var(--fg)">Sales 86M, a twelve-month high</text>
+ <text x="${x(11)-10}" y="${y(21)+22}" text-anchor="end" font-family="Cormorant Garamond" font-style="italic" font-size="15" fill="var(--muted)">Rental 21M</text>
+ ${m.map((t,i)=>`<text x="${x(i)}" y="${H+22}" font-size="11" letter-spacing="1" fill="var(--faint)" text-anchor="${i==0?'start':i==11?'end':'middle'}">${t}</text>`).join('')}</svg>`;}
+ // A · river (flow narrowing)
+ {const st=[['Enquiries',312],['Qualified',142],['Viewings',64],['Offers',28],['Won',17],['Keys handed',12]],W=900,H=150,mx=312,seg=W/(st.length-1);
+ const top=v=>H/2-(v/mx)*(H/2-6),bot=v=>H/2+(v/mx)*(H/2-6);let up=st.map((s,i)=>[i*seg,top(s[1])]),dn=st.map((s,i)=>[i*seg,bot(s[1])]).reverse();
+ const path=`${smooth(up)} L${dn[0][0]},${dn[0][1]} ${smooth(dn).replace('M','L')} Z`;
+ document.getElementById('river').innerHTML=`<svg viewBox="-10 -40 ${W+20} ${H+80}" style="width:100%;height:auto;display:block"><defs><linearGradient id="rv" x1="0" x2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity=".9"/><stop offset="1" stop-color="var(--champ)" stop-opacity=".95"/></linearGradient></defs><path d="${path}" fill="url(#rv)"/>
+ ${st.map((s,i)=>`<line x1="${i*seg}" x2="${i*seg}" y1="-6" y2="${H+6}" stroke="var(--bg)" stroke-width="2"/><text x="${i*seg}" y="-18" text-anchor="${i==0?'start':i==st.length-1?'end':'middle'}" font-family="Cormorant Garamond" font-size="24" fill="var(--fg)">${s[1]}</text><text x="${i*seg}" y="${H+26}" text-anchor="${i==0?'start':i==st.length-1?'end':'middle'}" font-size="10.5" letter-spacing="1.4" fill="var(--muted)">${s[0].toUpperCase()}</text>`).join('')}</svg>`;}
+ // A · rings
+ {const rs=[[91,'var(--primary)',92],[94,'var(--champ)',72],[78,'var(--ok)',52]];document.getElementById('rings').innerHTML=`<svg viewBox="0 0 220 220" width="220" height="220">${rs.map(([p,c,r])=>{const C=2*Math.PI*r;return`<circle cx="110" cy="110" r="${r}" fill="none" stroke="var(--sunken)" stroke-width="13"/><circle cx="110" cy="110" r="${r}" fill="none" stroke="${c}" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*p/100} ${C}" transform="rotate(-90 110 110)"/>`}).join('')}</svg>`;}
+ // A · people
+ document.getElementById('people').innerHTML=[['SM','Sara Al Marzooqi','Dubai Marina','98,500','6 deals'],['OK','Omar Khalifa','Business Bay','81,900','5 deals'],['AR','Ayesha Rahman','Downtown','64,300','4 deals'],['MD',"Michael D'Souza",'Sharjah','55,700','4 deals']].map(p=>`<div class="person"><div class="pa">${p[0]}</div><b>${p[1]}</b><span class="mut" style="font-size:12px">${p[2]} · ${p[4]}</span><div class="amt">AED ${p[3]}</div></div>`).join('');
+ // B · towers
+ {const T=[['Marina Heights',12,4,'40 of 44 let'],['Business Bay Tower',10,4,'35 of 40 let'],['Downtown Residence',8,3,'22 of 24 let'],['Al Nahda Villas',3,4,'11 of 12 let'],['Sharjah Plaza',7,4,'16 of 16 let']];let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+ const col=()=>{const r=rnd();return r<.07?'rgba(255,255,255,.14)':r<.11?'#E6C9A2':r<.15?'#F59A82':r<.18?'#9BC0E3':'#F6ECE8'};
+ document.getElementById('towers').innerHTML=T.map((t,i)=>`<div class="tower${i==0?' sel':''}"><div class="tw" style="grid-template-columns:repeat(${t[2]},13px)">${Array.from({length:t[1]*t[2]},()=>`<span style="background:${col()}"></span>`).join('')}</div><div class="tname"><b>${t[0]}</b><small>${t[3]}</small></div></div>`).join('');}
+ // B · waterfall
+ {const rows=[['Rent collected',228,0,'var(--ok)','+ 228K'],['Sales commission',96,228,'var(--ok)','+ 96K'],['Operating costs',-41,283,'var(--bad)','− 41K'],['Maintenance',-18,265,'var(--bad)','− 18K'],['Marketing',-9,256,'var(--bad)','− 9K'],['Net',256,0,'var(--primary)','= 256K']];const mx=330;
+ document.getElementById('wf').innerHTML=rows.map(r=>{const v=Math.abs(r[1]),start=r[1]<0?r[2]-v+ (r[1]<0?0:0):r[2];const s=r[1]<0?r[2]+r[1]:r[2];return`<div><span>${r[0]}</span><div class="tr"><i style="inset-inline-start:${(r[1]<0?s:r[2])/mx*100}%;width:${v/mx*100}%;background:${r[3]}"></i></div><b>${r[4]}</b></div>`}).join('');}
+ document.getElementById('stack').innerHTML=[['Negotiation','12.4M',5],['Documentation','8.1M',4],['Awaiting approval','5.6M',3],['Closed this month','9.8M',4]].map((r,i)=>`<div style="background:color-mix(in srgb,var(--primary) ${12-i*2.5}%,transparent)"><span>${r[0]}<br><small class="mut">${r[2]} deals</small></span><b>AED ${r[1]}</b></div>`).join('');
+ // C · timeline
+ {const ev=[[9.5,'var(--info)','Viewing · A-1204','Sara · 2 clients'],[11,'var(--ok)','Cheque clearing','AED 36,250',1],[13.5,'var(--champ)','Handover · PH-02','Hamdan Family'],[15,'var(--bad)','Cheque due','AED 42,000 · Gulf Line',1],[17,'var(--info)','Viewing · B-1102','Omar · 1 client']];const pos=h=>(h-8)/10*100;
+ document.getElementById('tl').innerHTML=`<div class="now" style="inset-inline-start:${pos(10.3)}%"></div>`+ev.map(e=>`<div class="ev${e[4]?' hi':''}" style="inset-inline-start:${pos(e[0])}%"><i style="background:${e[1]}"></i><div><b>${e[2]}</b><br><small>${e[3]}</small></div></div>`).join('');}
+ // C · gauges
+ [['g1',94,'var(--champ)'],['g2',91,'var(--primary)'],['g3',11,'var(--ok)']].forEach(([id,p,c])=>{const r=34,C=2*Math.PI*r;document.getElementById(id).innerHTML=`<svg viewBox="0 0 86 86" width="86" height="86"><circle cx="43" cy="43" r="${r}" fill="none" stroke="var(--sunken)" stroke-width="7"/><circle cx="43" cy="43" r="${r}" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C*p/100} ${C}" transform="rotate(-90 43 43)"/></svg>`});
+ document.getElementById('agents').innerHTML=[['Sara Al Marzooqi',98.5],['Omar Khalifa',81.9],['Ayesha Rahman',64.3]].map(a=>`<div style="display:grid;grid-template-columns:1fr auto;gap:4px"><span>${a[0]}</span><b style="font-weight:500">AED ${a[1]}K</b><div style="grid-column:1/3;height:3px;border-radius:2px;background:var(--sunken)"><div style="height:100%;width:${a[1]}%;border-radius:2px;background:linear-gradient(90deg,var(--primary),var(--champ))"></div></div></div>`).join('');
+ lucide.createIcons();
+}
+function bind(id,fn){document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.toggle('on',x===b));fn(b.dataset.v)})}
+bind('concept',v=>{document.querySelectorAll('.concept').forEach(c=>c.classList.toggle('on',c.id===v));window.scrollTo(0,0)});
+bind('theme',v=>{document.documentElement.classList.toggle('dark',v==='dark');draw()});
+draw();
+</script>
+</body>
+</html>

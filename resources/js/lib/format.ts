@@ -275,3 +275,14 @@ export function formatRelative(
 
     return EMPTY_VALUE;
 }
+
+export function formatMonth(value: string, locale: AppLocale = 'en'): string {
+    if (!/^\d{4}-\d{2}$/.test(value)) {
+        return EMPTY_VALUE;
+    }
+
+    return new Intl.DateTimeFormat(
+        locale === 'ar' ? 'ar-AE-u-nu-latn' : 'en-US',
+        { month: locale === 'ar' ? 'long' : 'short', timeZone: 'UTC' },
+    ).format(new Date(`${value}-01T00:00:00Z`));
+}
