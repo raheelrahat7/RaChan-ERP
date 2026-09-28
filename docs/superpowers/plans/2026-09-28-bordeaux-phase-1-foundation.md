@@ -5,6 +5,7 @@
 **Goal:** Put the Bordeaux design system in place: tokens, fonts, restyled and new primitives, the Z1 building blocks, and a local-only `/styleguide` page. Every later phase converts pages onto this foundation.
 
 **Architecture:**
+
 - Bordeaux values replace the stock shadcn-vue CSS variables in `resources/css/app.css`, keeping the same token names. All 74 existing pages restyle without edits.
 - Formatting, status tones, navigation data, table state and chart geometry live as pure TypeScript in `resources/js/lib`, unit-tested with `node:test`.
 - Vue building blocks in `resources/js/components` consume those modules.
@@ -19,9 +20,9 @@
 The host has no Node. PHP runs in the `z1erp-web` container, and Node runs in a throwaway `node:22` container. Both are covered by the owner's standing permissions: the test database only, and `docker run --rm` only. Run everything from `/Users/RR/Docker/z1-erp`.
 
 - **node-run** = `docker run --rm -v "$PWD":/workspace -w /workspace node:22`
-  - Example: `docker run --rm -v "$PWD":/workspace -w /workspace node:22 npm run typecheck`
+    - Example: `docker run --rm -v "$PWD":/workspace -w /workspace node:22 npm run typecheck`
 - **php-run** = `docker exec z1erp-web sh -lc 'cd /workspace && <command>'`
-  - Example: `docker exec z1erp-web sh -lc 'cd /workspace && php artisan test --filter=StyleguideTest'`
+    - Example: `docker exec z1erp-web sh -lc 'cd /workspace && php artisan test --filter=StyleguideTest'`
 - **Frontend unit test:** `docker run --rm -v "$PWD":/workspace -w /workspace node:22 node --experimental-strip-types --test tests/Frontend/<file>.test.mjs`
 - **Build:** first run `docker exec z1erp-web sh -lc 'cd /workspace && php artisan wayfinder:generate --with-form'`, then `docker run --rm -v "$PWD":/workspace -w /workspace -e WAYFINDER_GENERATED=1 node:22 npm run build`
 - **Lint and format check:** `docker run --rm -v "$PWD":/workspace -w /workspace node:22 npm run lint`. To auto-format, use `npm run check:fix` the same way.
@@ -35,8 +36,8 @@ Pure modules in `resources/js/lib` that are imported by `tests/Frontend/*.test.m
 - Keep shadcn-vue token names (`--primary`, `--muted-foreground`, `--sidebar-*`, …). Add new tokens alongside them.
 - Colors (hex) as in the spec's §2.1 table. They are exactly the values in the Task 1 CSS. Readable text pairs must reach ≥ 4.5:1 and focus rings ≥ 3:1 in both themes.
 - Fonts:
-  - Interface: `'Geist', 'IBM Plex Sans Arabic'`
-  - Display: `'Cormorant Garamond', 'Noto Naskh Arabic'`
+    - Interface: `'Geist', 'IBM Plex Sans Arabic'`
+    - Display: `'Cormorant Garamond', 'Noto Naskh Arabic'`
 - Numbers use Western digits in both languages. Money displays as `AED 212,000.00` in English and `212,000.00 د.إ` in Arabic. Missing values display `—`.
 - Direction-dependent CSS uses logical utilities (`ms-/me-/ps-/pe-/start-/end-/text-start/text-end`). Never use `ml-/mr-/pl-/pr-/left-/right-/text-left/text-right` in new code.
 - Every user-visible string in a building block passes through `t()` from `useLocale`. New English keys get an Arabic entry in `resources/js/locales/ar.json`. After editing that file, run `docker exec z1erp-web sh -lc 'cd /workspace && php scripts/sync-arabic-catalog.php'`. Never overwrite an existing key's Arabic value.
@@ -58,17 +59,19 @@ Also covered, in Task 4: navigation links pointing at routes that don't exist, a
 ### Task 1: Bordeaux tokens, fonts and utilities
 
 **Files:**
+
 - Modify: `resources/css/app.css` (full replacement below)
 - Modify: `vite.config.ts:14-18` (fonts array)
 - Modify: `resources/views/app.blade.php:26-32` (inline background colors)
 - Test: `tests/Frontend/bordeaux-contrast.test.mjs`
 
 **Interfaces:**
+
 - Produces Tailwind utilities used by every later task:
-  - Colors: `bg-surface-sunken`, `text-faint`, `bg-faint`, `bg-champagne`, `text-champagne`, `text-accent-text`, `bg-success`, `text-success`, `bg-info`, `text-info`, `bg-warning`, `text-warning`, `bg-primary-hover`, `text-sidebar-muted`
-  - Shadows: `shadow-panel`, `shadow-overlay`
-  - Type: `font-display`, `text-eyebrow`, `text-label`
-  - Radii: `rounded-sm` = 3px, `rounded-md` = 4px, `rounded-lg` = 6px, `rounded-xl` = 8px
+    - Colors: `bg-surface-sunken`, `text-faint`, `bg-faint`, `bg-champagne`, `text-champagne`, `text-accent-text`, `bg-success`, `text-success`, `bg-info`, `text-info`, `bg-warning`, `text-warning`, `bg-primary-hover`, `text-sidebar-muted`
+    - Shadows: `shadow-panel`, `shadow-overlay`
+    - Type: `font-display`, `text-eyebrow`, `text-label`
+    - Radii: `rounded-sm` = 3px, `rounded-md` = 4px, `rounded-lg` = 6px, `rounded-xl` = 8px
 
 - [ ] **Step 1: Write the failing contrast test**
 
@@ -141,9 +144,15 @@ for (const [theme, selector] of [
     await test(`${theme} theme text pairs meet WCAG AA 4.5:1`, () => {
         const tokens = block(selector);
         for (const [fg, bg] of TEXT_PAIRS) {
-            assert.ok(tokens[fg] && tokens[bg], `${theme}: --${fg} or --${bg} is not a 6-digit hex`);
+            assert.ok(
+                tokens[fg] && tokens[bg],
+                `${theme}: --${fg} or --${bg} is not a 6-digit hex`,
+            );
             const ratio = contrast(tokens[fg], tokens[bg]);
-            assert.ok(ratio >= 4.5, `${theme}: --${fg} on --${bg} is ${ratio.toFixed(2)}:1`);
+            assert.ok(
+                ratio >= 4.5,
+                `${theme}: --${fg} on --${bg} is ${ratio.toFixed(2)}:1`,
+            );
         }
     });
 
@@ -151,7 +160,10 @@ for (const [theme, selector] of [
         const tokens = block(selector);
         for (const [fg, bg] of RING_PAIRS) {
             const ratio = contrast(tokens[fg], tokens[bg]);
-            assert.ok(ratio >= 3, `${theme}: --${fg} on --${bg} is ${ratio.toFixed(2)}:1`);
+            assert.ok(
+                ratio >= 3,
+                `${theme}: --${fg} on --${bg} is ${ratio.toFixed(2)}:1`,
+            );
         }
     });
 }
@@ -282,7 +294,8 @@ Expected: FAIL. The current tokens use `hsl()` and have no `--surface-sunken`, s
     --elevation-panel:
         0 1px 0 rgba(60, 16, 24, 0.03), 0 18px 40px -28px rgba(60, 16, 24, 0.3);
     --elevation-overlay:
-        0 1px 2px rgba(60, 16, 24, 0.06), 0 40px 80px -30px rgba(30, 10, 14, 0.45);
+        0 1px 2px rgba(60, 16, 24, 0.06),
+        0 40px 80px -30px rgba(30, 10, 14, 0.45);
     --sidebar-background: #4a1320;
     --sidebar: #4a1320;
     --sidebar-foreground: #f6ece8;
@@ -330,7 +343,8 @@ Expected: FAIL. The current tokens use `hsl()` and have no `--surface-sunken`, s
     --chart-5: #e3a5b1;
     --elevation-panel: 0 24px 48px -28px rgba(0, 0, 0, 0.9);
     --elevation-overlay:
-        0 0 0 1px rgba(255, 255, 255, 0.03), 0 40px 80px -30px rgba(0, 0, 0, 0.85);
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 40px 80px -30px rgba(0, 0, 0, 0.85);
     --sidebar-background: #140c0e;
     --sidebar: #140c0e;
     --sidebar-foreground: #f1e9e7;
@@ -432,15 +446,15 @@ Replace the `fonts: [ … ]` array inside `laravel({ … })` with:
 Replace the inline `<style>` block:
 
 ```html
-        <style>
-            html {
-                background-color: #f8f4f1;
-            }
+<style>
+    html {
+        background-color: #f8f4f1;
+    }
 
-            html.dark {
-                background-color: #0e0a0b;
-            }
-        </style>
+    html.dark {
+        background-color: #0e0a0b;
+    }
+</style>
 ```
 
 - [ ] **Step 8: Build to prove the CSS and fonts compile**
@@ -463,6 +477,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 2: Locale-aware formatting (`lib/format.ts`, `useFormat`, `Money`, `DateText`)
 
 **Files:**
+
 - Create: `resources/js/lib/format.ts`
 - Create: `resources/js/composables/useFormat.ts`
 - Create: `resources/js/components/Money.vue`
@@ -470,20 +485,21 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Test: `tests/Frontend/format.test.mjs`
 
 **Interfaces:**
+
 - Produces (`@/lib/format`):
-  - `type AppLocale = 'en' | 'ar'`
-  - `type NumericInput = number | string | null | undefined`
-  - `EMPTY_VALUE = '—'`
-  - `toNumber(value: NumericInput): number | null`
-  - `formatNumber(value: NumericInput, decimals = 0): string`
-  - `formatCompact(value: NumericInput, locale: AppLocale = 'en'): string`
-  - `currencySymbol(currency: string, locale: AppLocale): string`
-  - `formatMoney(value: NumericInput, currency = 'AED', locale: AppLocale = 'en', options: { compact?: boolean; decimals?: number } = {}): string`
-  - `formatDate(value: string | Date | null | undefined, locale: AppLocale = 'en', options: { withTime?: boolean; timeZone?: string } = {}): string`
+    - `type AppLocale = 'en' | 'ar'`
+    - `type NumericInput = number | string | null | undefined`
+    - `EMPTY_VALUE = '—'`
+    - `toNumber(value: NumericInput): number | null`
+    - `formatNumber(value: NumericInput, decimals = 0): string`
+    - `formatCompact(value: NumericInput, locale: AppLocale = 'en'): string`
+    - `currencySymbol(currency: string, locale: AppLocale): string`
+    - `formatMoney(value: NumericInput, currency = 'AED', locale: AppLocale = 'en', options: { compact?: boolean; decimals?: number } = {}): string`
+    - `formatDate(value: string | Date | null | undefined, locale: AppLocale = 'en', options: { withTime?: boolean; timeZone?: string } = {}): string`
 - Produces (`@/composables/useFormat`): `useFormat()` returns `{ money(value, currency?, options?), compact(value), number(value, decimals?), date(value, options?) }`, bound to the current locale.
 - Produces components:
-  - `<Money :value currency? compact? decimals? />`
-  - `<DateText :value with-time? />`
+    - `<Money :value currency? compact? decimals? />`
+    - `<DateText :value with-time? />`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -521,11 +537,22 @@ await test('compact figures round cleanly across unit boundaries', () => {
         formatMoney(2418500, 'AED', 'ar', { compact: true }),
         '2.42 مليون د.إ',
     );
-    assert.equal(formatMoney(2418500, 'AED', 'en', { compact: true }), 'AED 2.42M');
+    assert.equal(
+        formatMoney(2418500, 'AED', 'en', { compact: true }),
+        'AED 2.42M',
+    );
 });
 
 await test('missing or invalid values render an em dash, never NaN or -0', () => {
-    for (const value of [null, undefined, '', '   ', 'abc', Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const value of [
+        null,
+        undefined,
+        '',
+        '   ',
+        'abc',
+        Number.NaN,
+        Number.POSITIVE_INFINITY,
+    ]) {
         assert.equal(formatMoney(value), '—');
         assert.equal(formatNumber(value), '—');
         assert.equal(formatCompact(value), '—');
@@ -539,18 +566,30 @@ await test('dates use Western digits and a fixed day month year order', () => {
     assert.equal(formatDate('2026-09-14', 'en'), '14 Sep 2026');
     assert.equal(formatDate('2026-09-14', 'ar'), '14 سبتمبر 2026');
     assert.equal(
-        formatDate('2026-09-14T09:40:00Z', 'en', { withTime: true, timeZone: 'UTC' }),
+        formatDate('2026-09-14T09:40:00Z', 'en', {
+            withTime: true,
+            timeZone: 'UTC',
+        }),
         '14 Sep 2026, 09:40',
     );
     assert.equal(
-        formatDate('2026-09-14T09:40:00Z', 'ar', { withTime: true, timeZone: 'UTC' }),
+        formatDate('2026-09-14T09:40:00Z', 'ar', {
+            withTime: true,
+            timeZone: 'UTC',
+        }),
         '14 سبتمبر 2026، 09:40',
     );
     assert.equal(
-        formatDate('2026-09-14 09:40:00', 'en', { withTime: true, timeZone: 'UTC' }),
+        formatDate('2026-09-14 09:40:00', 'en', {
+            withTime: true,
+            timeZone: 'UTC',
+        }),
         '14 Sep 2026, 09:40',
     );
-    assert.equal(formatDate('2026-09-14', 'en', { withTime: true }), '14 Sep 2026');
+    assert.equal(
+        formatDate('2026-09-14', 'en', { withTime: true }),
+        '14 Sep 2026',
+    );
     assert.equal(formatDate('not a date'), '—');
     assert.equal(formatDate(null), '—');
     assert.equal(formatDate(''), '—');
@@ -877,20 +916,22 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 3: Shared status language (`lib/status-tones.ts`, `StatusDot`)
 
 **Files:**
+
 - Create: `resources/js/lib/status-tones.ts`
 - Create: `resources/js/components/StatusDot.vue`
 - Modify: `resources/js/locales/ar.json` (add missing status labels), then run the sync script (updates `lang/ar.json`)
 - Test: `tests/Frontend/status-tones.test.mjs`
 
 **Interfaces:**
+
 - Produces (`@/lib/status-tones`):
-  - `type StatusTone = 'success' | 'info' | 'warning' | 'danger' | 'neutral'`
-  - `STATUS_TONES: Record<string, StatusTone>`
-  - `STATUS_TONE_CLASSES: Record<StatusTone, string>`
-  - `normalizeStatus(value: string): string`
-  - `statusTone(value: string | null | undefined): StatusTone`
-  - `statusLabel(value: string | null | undefined): string`
-  - `isStruck(value: string | null | undefined): boolean`
+    - `type StatusTone = 'success' | 'info' | 'warning' | 'danger' | 'neutral'`
+    - `STATUS_TONES: Record<string, StatusTone>`
+    - `STATUS_TONE_CLASSES: Record<StatusTone, string>`
+    - `normalizeStatus(value: string): string`
+    - `statusTone(value: string | null | undefined): StatusTone`
+    - `statusLabel(value: string | null | undefined): string`
+    - `isStruck(value: string | null | undefined): boolean`
 - Produces the component `<StatusDot :status label? tone? />`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -909,7 +950,10 @@ import {
 } from '../../resources/js/lib/status-tones.ts';
 
 const arabic = JSON.parse(
-    readFileSync(new URL('../../resources/js/locales/ar.json', import.meta.url), 'utf8'),
+    readFileSync(
+        new URL('../../resources/js/locales/ar.json', import.meta.url),
+        'utf8',
+    ),
 );
 
 await test('known statuses map to a tone regardless of case, spaces or dashes', () => {
@@ -922,7 +966,10 @@ await test('known statuses map to a tone regardless of case, spaces or dashes', 
 
 await test('unknown, empty and null statuses fall back to neutral with a readable label', () => {
     assert.equal(statusTone('brand_new_backend_state'), 'neutral');
-    assert.equal(statusLabel('brand_new_backend_state'), 'Brand new backend state');
+    assert.equal(
+        statusLabel('brand_new_backend_state'),
+        'Brand new backend state',
+    );
     assert.equal(statusTone(null), 'neutral');
     assert.equal(statusTone(undefined), 'neutral');
     assert.equal(statusLabel(null), '');
@@ -1023,7 +1070,10 @@ export const STATUS_TONE_CLASSES: Record<StatusTone, string> = {
 const STRUCK = new Set(['void', 'voided']);
 
 export function normalizeStatus(value: string): string {
-    return value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, '_');
 }
 
 export function statusTone(value: string | null | undefined): StatusTone {
@@ -1155,20 +1205,22 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 4: Navigation config (`lib/navigation.ts`)
 
 **Files:**
+
 - Create: `resources/js/lib/navigation.ts`
 - Modify: `resources/js/locales/ar.json` (missing navigation labels), then run the sync script (updates `lang/ar.json`)
 - Test: `tests/Frontend/navigation.test.mjs`
 
 **Interfaces:**
+
 - Produces (`@/lib/navigation`):
-  - `type NavIcon` (string union, listed below)
-  - `type NavChild = { label: string; href: string }`
-  - `type NavLink = { label: string; href: string; icon: NavIcon; children?: NavChild[] }`
-  - `type NavGroup = { id: string; label: string; items: NavLink[]; placement?: 'bottom' }`
-  - `NAVIGATION: NavGroup[]`
-  - `navHrefs(): string[]`
-  - `activeHref(url: string): string | null` (the longest nav href that matches the path)
-  - `activeGroupId(url: string): string | null`
+    - `type NavIcon` (string union, listed below)
+    - `type NavChild = { label: string; href: string }`
+    - `type NavLink = { label: string; href: string; icon: NavIcon; children?: NavChild[] }`
+    - `type NavGroup = { id: string; label: string; items: NavLink[]; placement?: 'bottom' }`
+    - `NAVIGATION: NavGroup[]`
+    - `navHrefs(): string[]`
+    - `activeHref(url: string): string | null` (the longest nav href that matches the path)
+    - `activeGroupId(url: string): string | null`
 - Phase 2 renders this in `AppSidebar.vue` and maps each `NavIcon` to a Lucide component. Phase 1 does not change the sidebar.
 
 - [ ] **Step 1: Write the failing tests**
@@ -1186,7 +1238,8 @@ import {
     navHrefs,
 } from '../../resources/js/lib/navigation.ts';
 
-const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
+const read = (path) =>
+    readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const routeSource = read('routes/web.php') + read('routes/settings.php');
 const getRoutes = new Set(
     [...routeSource.matchAll(/Route::(?:get|inertia)\('([^']+)'/g)].map(
@@ -1212,7 +1265,11 @@ await test('groups are unique, non-empty, and parents open their first child', (
         assert.ok(group.items.length > 0, `${group.id} is empty`);
         for (const item of group.items) {
             if (item.children) {
-                assert.equal(item.href, item.children[0].href, `${item.label} must open its first child`);
+                assert.equal(
+                    item.href,
+                    item.children[0].href,
+                    `${item.label} must open its first child`,
+                );
             }
         }
     }
@@ -1221,14 +1278,20 @@ await test('groups are unique, non-empty, and parents open their first child', (
 await test('every group, item and child label has an Arabic translation', () => {
     const labels = NAVIGATION.flatMap((group) => [
         group.label,
-        ...group.items.flatMap((item) => [item.label, ...(item.children ?? []).map((child) => child.label)]),
+        ...group.items.flatMap((item) => [
+            item.label,
+            ...(item.children ?? []).map((child) => child.label),
+        ]),
     ]);
     const missing = [...new Set(labels)].filter((label) => !arabic[label]);
     assert.deepEqual(missing, []);
 });
 
 await test('the active link is the longest matching path, ignoring query strings', () => {
-    assert.equal(activeHref('/accounting/vat-return?period=2026-09'), '/accounting/vat-return');
+    assert.equal(
+        activeHref('/accounting/vat-return?period=2026-09'),
+        '/accounting/vat-return',
+    );
     assert.equal(activeHref('/accounting'), '/accounting');
     assert.equal(activeHref('/operations/fleet/12'), '/operations/fleet');
     assert.equal(activeHref('/crm/leads-archive'), null);
@@ -1249,15 +1312,48 @@ Expected: FAIL, module not found.
 
 ```ts
 export type NavIcon =
-    | 'dashboard' | 'search' | 'notifications' | 'leads' | 'contacts'
-    | 'pipelines' | 'report' | 'assignment' | 'hierarchy' | 'inventory'
-    | 'listings' | 'people' | 'brokerage' | 'reservations' | 'agreements'
-    | 'handovers' | 'compliance' | 'invoices' | 'bills' | 'refunds' | 'bank'
-    | 'accounting' | 'performance' | 'statements' | 'operations'
-    | 'maintenance' | 'preventive' | 'helpdesk' | 'amc' | 'parts'
-    | 'projects' | 'fleet' | 'reports' | 'scheduled' | 'documents'
-    | 'signatures' | 'procurement' | 'organization' | 'activity' | 'portal'
-    | 'tokens' | 'settings';
+    | 'dashboard'
+    | 'search'
+    | 'notifications'
+    | 'leads'
+    | 'contacts'
+    | 'pipelines'
+    | 'report'
+    | 'assignment'
+    | 'hierarchy'
+    | 'inventory'
+    | 'listings'
+    | 'people'
+    | 'brokerage'
+    | 'reservations'
+    | 'agreements'
+    | 'handovers'
+    | 'compliance'
+    | 'invoices'
+    | 'bills'
+    | 'refunds'
+    | 'bank'
+    | 'accounting'
+    | 'performance'
+    | 'statements'
+    | 'operations'
+    | 'maintenance'
+    | 'preventive'
+    | 'helpdesk'
+    | 'amc'
+    | 'parts'
+    | 'projects'
+    | 'fleet'
+    | 'reports'
+    | 'scheduled'
+    | 'documents'
+    | 'signatures'
+    | 'procurement'
+    | 'organization'
+    | 'activity'
+    | 'portal'
+    | 'tokens'
+    | 'settings';
 
 export type NavChild = { label: string; href: string };
 
@@ -1282,7 +1378,11 @@ export const NAVIGATION: NavGroup[] = [
         items: [
             { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
             { label: 'Search', href: '/search', icon: 'search' },
-            { label: 'Notifications', href: '/notifications', icon: 'notifications' },
+            {
+                label: 'Notifications',
+                href: '/notifications',
+                icon: 'notifications',
+            },
         ],
     },
     {
@@ -1292,8 +1392,16 @@ export const NAVIGATION: NavGroup[] = [
             { label: 'Leads', href: '/crm/leads', icon: 'leads' },
             { label: 'Contacts', href: '/crm/contacts', icon: 'contacts' },
             { label: 'Pipelines', href: '/crm/pipelines', icon: 'pipelines' },
-            { label: 'Pipeline report', href: '/crm/pipeline-report', icon: 'report' },
-            { label: 'Assignment', href: '/crm/assignment', icon: 'assignment' },
+            {
+                label: 'Pipeline report',
+                href: '/crm/pipeline-report',
+                icon: 'report',
+            },
+            {
+                label: 'Assignment',
+                href: '/crm/assignment',
+                icon: 'assignment',
+            },
             { label: 'Hierarchy', href: '/crm/hierarchy', icon: 'hierarchy' },
         ],
     },
@@ -1302,19 +1410,39 @@ export const NAVIGATION: NavGroup[] = [
         label: 'Portfolio',
         items: [
             { label: 'Inventory', href: '/inventory', icon: 'inventory' },
-            { label: 'Listings', href: '/real-estate/listings', icon: 'listings' },
-            { label: 'Owners, tenants & brokers', href: '/real-estate/people', icon: 'people' },
-            { label: 'Brokerage', href: '/real-estate/brokerage', icon: 'brokerage' },
+            {
+                label: 'Listings',
+                href: '/real-estate/listings',
+                icon: 'listings',
+            },
+            {
+                label: 'Owners, tenants & brokers',
+                href: '/real-estate/people',
+                icon: 'people',
+            },
+            {
+                label: 'Brokerage',
+                href: '/real-estate/brokerage',
+                icon: 'brokerage',
+            },
         ],
     },
     {
         id: 'leasing',
         label: 'Leasing & sales',
         items: [
-            { label: 'Reservations', href: '/reservations', icon: 'reservations' },
+            {
+                label: 'Reservations',
+                href: '/reservations',
+                icon: 'reservations',
+            },
             { label: 'Agreements', href: '/agreements', icon: 'agreements' },
             { label: 'Handovers', href: '/handovers', icon: 'handovers' },
-            { label: 'Lease compliance', href: '/lease-compliance', icon: 'compliance' },
+            {
+                label: 'Lease compliance',
+                href: '/lease-compliance',
+                icon: 'compliance',
+            },
         ],
     },
     {
@@ -1323,62 +1451,147 @@ export const NAVIGATION: NavGroup[] = [
         items: [
             { label: 'Invoices', href: '/invoices', icon: 'invoices' },
             { label: 'Vendor bills', href: '/vendor-bills', icon: 'bills' },
-            { label: 'Vendor refunds', href: '/finance/vendor-cash-refunds', icon: 'refunds' },
-            { label: 'Bank reconciliation', href: '/bank-reconciliation', icon: 'bank' },
+            {
+                label: 'Vendor refunds',
+                href: '/finance/vendor-cash-refunds',
+                icon: 'refunds',
+            },
+            {
+                label: 'Bank reconciliation',
+                href: '/bank-reconciliation',
+                icon: 'bank',
+            },
             {
                 label: 'Accounting',
                 href: '/accounting',
                 icon: 'accounting',
                 children: [
                     { label: 'Accounting overview', href: '/accounting' },
-                    { label: 'Journal register', href: '/accounting/journal-register' },
-                    { label: 'Financial statements', href: '/accounting/statements' },
+                    {
+                        label: 'Journal register',
+                        href: '/accounting/journal-register',
+                    },
+                    {
+                        label: 'Financial statements',
+                        href: '/accounting/statements',
+                    },
                     { label: 'VAT return', href: '/accounting/vat-return' },
-                    { label: 'Corporate tax', href: '/accounting/corporate-tax' },
+                    {
+                        label: 'Corporate tax',
+                        href: '/accounting/corporate-tax',
+                    },
                     { label: 'Budgets', href: '/accounting/budgets' },
                     { label: 'Fixed assets', href: '/accounting/fixed-assets' },
-                    { label: 'Outstanding balances', href: '/accounting/outstanding-balances' },
+                    {
+                        label: 'Outstanding balances',
+                        href: '/accounting/outstanding-balances',
+                    },
                     { label: 'Account activity', href: '/accounting/activity' },
                     { label: 'Audit trail', href: '/accounting/audit-trail' },
-                    { label: 'Legacy mappings', href: '/accounting/legacy-mappings' },
+                    {
+                        label: 'Legacy mappings',
+                        href: '/accounting/legacy-mappings',
+                    },
                 ],
             },
-            { label: 'Property performance', href: '/reports/property-profitability', icon: 'performance' },
-            { label: 'Owner statements', href: '/reports/owner-statements', icon: 'statements' },
+            {
+                label: 'Property performance',
+                href: '/reports/property-profitability',
+                icon: 'performance',
+            },
+            {
+                label: 'Owner statements',
+                href: '/reports/owner-statements',
+                icon: 'statements',
+            },
         ],
     },
     {
         id: 'operations',
         label: 'Operations',
         items: [
-            { label: 'Operations overview', href: '/operations', icon: 'operations' },
+            {
+                label: 'Operations overview',
+                href: '/operations',
+                icon: 'operations',
+            },
             { label: 'Maintenance', href: '/maintenance', icon: 'maintenance' },
-            { label: 'Preventive maintenance', href: '/preventive-maintenance', icon: 'preventive' },
-            { label: 'Helpdesk', href: '/operations/helpdesk', icon: 'helpdesk' },
+            {
+                label: 'Preventive maintenance',
+                href: '/preventive-maintenance',
+                icon: 'preventive',
+            },
+            {
+                label: 'Helpdesk',
+                href: '/operations/helpdesk',
+                icon: 'helpdesk',
+            },
             { label: 'AMC contracts', href: '/operations/amc', icon: 'amc' },
-            { label: 'Spare parts', href: '/operations/spare-parts', icon: 'parts' },
-            { label: 'Projects', href: '/operations/projects', icon: 'projects' },
+            {
+                label: 'Spare parts',
+                href: '/operations/spare-parts',
+                icon: 'parts',
+            },
+            {
+                label: 'Projects',
+                href: '/operations/projects',
+                icon: 'projects',
+            },
             { label: 'Fleet', href: '/operations/fleet', icon: 'fleet' },
-            { label: 'Operations reports', href: '/operations/reports', icon: 'reports' },
-            { label: 'Scheduled reports', href: '/operations/scheduled-reports', icon: 'scheduled' },
-            { label: 'Compliance documents', href: '/compliance-documents', icon: 'documents' },
-            { label: 'Signatures', href: '/documents/signatures', icon: 'signatures' },
+            {
+                label: 'Operations reports',
+                href: '/operations/reports',
+                icon: 'reports',
+            },
+            {
+                label: 'Scheduled reports',
+                href: '/operations/scheduled-reports',
+                icon: 'scheduled',
+            },
+            {
+                label: 'Compliance documents',
+                href: '/compliance-documents',
+                icon: 'documents',
+            },
+            {
+                label: 'Signatures',
+                href: '/documents/signatures',
+                icon: 'signatures',
+            },
         ],
     },
     {
         id: 'procurement',
         label: 'Procurement',
-        items: [{ label: 'Procurement', href: '/procurement', icon: 'procurement' }],
+        items: [
+            { label: 'Procurement', href: '/procurement', icon: 'procurement' },
+        ],
     },
     {
         id: 'administration',
         label: 'Administration',
         placement: 'bottom',
         items: [
-            { label: 'Organization', href: '/organization', icon: 'organization' },
-            { label: 'Organization activity', href: '/organization/activity', icon: 'activity' },
-            { label: 'Portal access', href: '/organization/portal-access', icon: 'portal' },
-            { label: 'API tokens', href: '/organization/api-tokens', icon: 'tokens' },
+            {
+                label: 'Organization',
+                href: '/organization',
+                icon: 'organization',
+            },
+            {
+                label: 'Organization activity',
+                href: '/organization/activity',
+                icon: 'activity',
+            },
+            {
+                label: 'Portal access',
+                href: '/organization/portal-access',
+                icon: 'portal',
+            },
+            {
+                label: 'API tokens',
+                href: '/organization/api-tokens',
+                icon: 'tokens',
+            },
             { label: 'Settings', href: '/settings/profile', icon: 'settings' },
         ],
     },
@@ -1387,7 +1600,9 @@ export const NAVIGATION: NavGroup[] = [
 export function navHrefs(): string[] {
     return NAVIGATION.flatMap((group) =>
         group.items.flatMap((item) =>
-            item.children ? item.children.map((child) => child.href) : [item.href],
+            item.children
+                ? item.children.map((child) => child.href)
+                : [item.href],
         ),
     );
 }
@@ -1406,7 +1621,10 @@ export function activeHref(url: string): string | null {
     const path = pathOf(url);
     let best: string | null = null;
     for (const href of navHrefs()) {
-        if (matches(href, path) && (best === null || href.length > best.length)) {
+        if (
+            matches(href, path) &&
+            (best === null || href.length > best.length)
+        ) {
             best = href;
         }
     }
@@ -1489,17 +1707,19 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 5: Restyle existing primitives, `InputError` and `EmptyState`
 
 **Files (modify):**
+
 - `resources/js/components/ui/button/index.ts` (full `buttonVariants` replacement)
 - `resources/js/components/ui/badge/index.ts` (full `badgeVariants` replacement)
 - `resources/js/components/ui/input/Input.vue`, `resources/js/components/ui/select/SelectTrigger.vue`, `resources/js/components/ui/checkbox/Checkbox.vue`, `resources/js/components/ui/card/Card.vue`, `resources/js/components/ui/card/CardTitle.vue`, `resources/js/components/ui/dialog/DialogContent.vue`, `resources/js/components/ui/dialog/DialogTitle.vue`, `resources/js/components/ui/dropdown-menu/DropdownMenuContent.vue`, `resources/js/components/ui/skeleton/Skeleton.vue`, `resources/js/components/ui/alert/index.ts` (class strings as specified below)
 - `resources/js/components/InputError.vue`, `resources/js/components/EmptyState.vue` (full replacements)
 
 **Interfaces:**
+
 - Produces:
-  - Button variants `default | destructive | destructive-outline | outline | secondary | ghost | link`
-  - Button sizes `default (36px) | sm (30px) | lg (44px) | icon | icon-sm | icon-lg`
-  - `EmptyState` keeps its props `title` and `description?`, plus its default slot, and gains an optional `#icon` slot
-  - `InputError` keeps its `message?` prop
+    - Button variants `default | destructive | destructive-outline | outline | secondary | ghost | link`
+    - Button sizes `default (36px) | sm (30px) | lg (44px) | icon | icon-sm | icon-lg`
+    - `EmptyState` keeps its props `title` and `description?`, plus its default slot, and gains an optional `#icon` slot
+    - `InputError` keeps its `message?` prop
 
 The test for this task is the build plus the visual styleguide (Task 9), because these files are markup and classes only. No behavior changes.
 
@@ -1507,64 +1727,62 @@ The test for this task is the build plus the visual styleguide (Task 9), because
 
 ```ts
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-[13px] font-medium tracking-[0.01em] transition-[color,background-color,border-color,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-invalid:border-destructive",
-  {
-    variants: {
-      variant: {
-        default:
-          "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] hover:bg-primary-hover",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        "destructive-outline":
-          "border border-destructive/40 bg-transparent text-destructive hover:bg-destructive/5",
-        outline:
-          "border border-input bg-card hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground",
-        link: "text-accent-text underline decoration-accent-text/35 underline-offset-4 hover:decoration-accent-text",
-      },
-      size: {
-        "default": "h-9 px-4 has-[>svg]:px-3.5",
-        "sm": "h-[30px] gap-1.5 px-3 text-xs has-[>svg]:px-2.5",
-        "lg": "h-11 px-6 text-[13.5px] has-[>svg]:px-5",
-        "icon": "size-9",
-        "icon-sm": "size-[30px]",
-        "icon-lg": "size-11",
-      },
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-[13px] font-medium tracking-[0.01em] transition-[color,background-color,border-color,box-shadow] duration-150 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-invalid:border-destructive",
+    {
+        variants: {
+            variant: {
+                default:
+                    'bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] hover:bg-primary-hover',
+                destructive:
+                    'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                'destructive-outline':
+                    'border border-destructive/40 bg-transparent text-destructive hover:bg-destructive/5',
+                outline:
+                    'border border-input bg-card hover:bg-accent hover:text-accent-foreground',
+                secondary:
+                    'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+                ghost: 'hover:bg-accent hover:text-accent-foreground',
+                link: 'text-accent-text underline decoration-accent-text/35 underline-offset-4 hover:decoration-accent-text',
+            },
+            size: {
+                default: 'h-9 px-4 has-[>svg]:px-3.5',
+                sm: 'h-[30px] gap-1.5 px-3 text-xs has-[>svg]:px-2.5',
+                lg: 'h-11 px-6 text-[13.5px] has-[>svg]:px-5',
+                icon: 'size-9',
+                'icon-sm': 'size-[30px]',
+                'icon-lg': 'size-11',
+            },
+        },
+        defaultVariants: {
+            variant: 'default',
+            size: 'default',
+        },
     },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  },
-)
+);
 ```
 
 - [ ] **Step 2: Replace `badgeVariants` in `ui/badge/index.ts`**
 
 ```ts
 export const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1.5 [&>svg]:pointer-events-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
-  {
-    variants: {
-      variant: {
-        default:
-          "border-transparent bg-primary/10 text-accent-text dark:bg-champagne/12",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground",
-        destructive:
-          "border-transparent bg-destructive/10 text-destructive",
-        outline:
-          "border-input text-foreground",
-      },
+    'inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1.5 [&>svg]:pointer-events-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
+    {
+        variants: {
+            variant: {
+                default:
+                    'border-transparent bg-primary/10 text-accent-text dark:bg-champagne/12',
+                secondary:
+                    'border-transparent bg-secondary text-secondary-foreground',
+                destructive:
+                    'border-transparent bg-destructive/10 text-destructive',
+                outline: 'border-input text-foreground',
+            },
+        },
+        defaultVariants: {
+            variant: 'default',
+        },
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  },
-)
+);
 ```
 
 - [ ] **Step 3: Replace class strings in the remaining primitives**
@@ -1588,7 +1806,7 @@ In each file, replace the first argument of `cn(...)` (or the class attribute sh
 `ui/checkbox/Checkbox.vue`, first string in `cn(`:
 
 ```ts
-'peer border-input bg-card data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground focus-visible:ring-ring aria-invalid:border-destructive size-4 shrink-0 rounded-[3px] border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50'
+'peer border-input bg-card data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground focus-visible:ring-ring aria-invalid:border-destructive size-4 shrink-0 rounded-[3px] border transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50';
 ```
 
 `ui/card/Card.vue`, first string: `'bg-card text-card-foreground flex flex-col gap-6 rounded-lg border py-6 shadow-panel'`
@@ -1692,20 +1910,22 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 6: Add the new shadcn-vue primitives
 
 **Files:**
+
 - Create (via the CLI): `resources/js/components/ui/{table,tabs,popover,command,textarea,switch,progress,scroll-area,hover-card}/*`
 - Then modify the class strings listed in Step 3.
 
 **Interfaces:**
+
 - Produces imports used by Tasks 8–9:
-  - `Table, TableHeader, TableBody, TableRow, TableHead, TableCell` from `@/components/ui/table`
-  - `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs`
-  - `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
-  - `Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem` from `@/components/ui/command`
-  - `Textarea` from `@/components/ui/textarea`
-  - `Switch` from `@/components/ui/switch`
-  - `Progress` from `@/components/ui/progress`
-  - `ScrollArea` from `@/components/ui/scroll-area`
-  - `HoverCard, HoverCardTrigger, HoverCardContent` from `@/components/ui/hover-card`
+    - `Table, TableHeader, TableBody, TableRow, TableHead, TableCell` from `@/components/ui/table`
+    - `Tabs, TabsList, TabsTrigger, TabsContent` from `@/components/ui/tabs`
+    - `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
+    - `Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem` from `@/components/ui/command`
+    - `Textarea` from `@/components/ui/textarea`
+    - `Switch` from `@/components/ui/switch`
+    - `Progress` from `@/components/ui/progress`
+    - `ScrollArea` from `@/components/ui/scroll-area`
+    - `HoverCard, HoverCardTrigger, HoverCardContent` from `@/components/ui/hover-card`
 
 - [ ] **Step 1: Run the shadcn-vue CLI**
 
@@ -1722,12 +1942,14 @@ git diff --stat package.json package-lock.json resources/css/app.css components.
 ```
 
 Expected: empty output.
+
 - If `package.json` or the lock file changed, stop and report the added packages to the owner before continuing.
 - If `app.css` or `components.json` changed, restore just the CLI's additions by hand with Edit, so the file matches the Task 1 version. Show the diff to confirm.
 
 - [ ] **Step 3: Apply the Bordeaux class strings**
 
 Replace the class string passed to `cn(` (first argument) in each generated file:
+
 - `table/Table.vue`, the `<table>` element: `'w-full caption-bottom text-[13px]'`
 - `table/TableRow.vue`: `'hover:bg-primary/[0.035] dark:hover:bg-ring/[0.05] data-[state=selected]:bg-champagne/10 border-b transition-colors'`
 - `table/TableHead.vue`: `'text-muted-foreground h-11 px-3.5 text-start align-middle text-[10px] font-medium tracking-[0.16em] whitespace-nowrap uppercase first:ps-5 last:pe-5 [&:has([role=checkbox])]:w-10 [&:has([role=checkbox])]:pe-0'`
@@ -1767,28 +1989,30 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 7: Page building blocks (charts, `PageHeader`, stats, detail and form layouts)
 
 **Files:**
+
 - Create: `resources/js/lib/chart-paths.ts`
 - Create: `resources/js/components/Sparkline.vue`, `AreaChart.vue`, `PageHeader.vue`, `StatGrid.vue`, `StatTile.vue`, `DetailLayout.vue`, `FormSection.vue`, `FormField.vue`
 - Modify: `resources/js/locales/ar.json` (key `optional`), then run the sync script (updates `lang/ar.json`)
 - Test: `tests/Frontend/chart-paths.test.mjs`
 
 **Interfaces:**
+
 - Consumes:
-  - `formatCompact`, `formatNumber`, `currencySymbol`, `NumericInput` (Task 2)
-  - `StatusDot` (Task 3)
-  - `Label` from `@/components/ui/label`
-  - `InputError` (Task 5)
+    - `formatCompact`, `formatNumber`, `currencySymbol`, `NumericInput` (Task 2)
+    - `StatusDot` (Task 3)
+    - `Label` from `@/components/ui/label`
+    - `InputError` (Task 5)
 - Produces:
-  - `chartPoints(values: number[], width: number, height: number, padding = 0): [number, number][]`
-  - `linePath(values: number[], width: number, height: number, padding = 0): string`
-  - `areaPath(values: number[], width: number, height: number, padding = 0): string`
-  - `<Sparkline :values width? height? />`
-  - `<AreaChart :values labels? height? label />`
-  - `<PageHeader title eyebrow? description?>` with `#actions` and `#meta` slots
-  - `<StatGrid>` wrapping `<StatTile label :value currency? unit? decimals? compact? trend? trend-tone? series? />`
-  - `<DetailLayout title eyebrow? status? facts?>` with `#actions` and default slots
-  - `<FormSection title description?>`
-  - `<FormField id label optional? help? error? full?>`
+    - `chartPoints(values: number[], width: number, height: number, padding = 0): [number, number][]`
+    - `linePath(values: number[], width: number, height: number, padding = 0): string`
+    - `areaPath(values: number[], width: number, height: number, padding = 0): string`
+    - `<Sparkline :values width? height? />`
+    - `<AreaChart :values labels? height? label />`
+    - `<PageHeader title eyebrow? description?>` with `#actions` and `#meta` slots
+    - `<StatGrid>` wrapping `<StatTile label :value currency? unit? decimals? compact? trend? trend-tone? series? />`
+    - `<DetailLayout title eyebrow? status? facts?>` with `#actions` and default slots
+    - `<FormSection title description?>`
+    - `<FormField id label optional? help? error? full?>`
 
 - [ ] **Step 1: Write the failing chart tests**
 
@@ -1797,7 +2021,11 @@ Create `tests/Frontend/chart-paths.test.mjs`:
 ```js
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { areaPath, chartPoints, linePath } from '../../resources/js/lib/chart-paths.ts';
+import {
+    areaPath,
+    chartPoints,
+    linePath,
+} from '../../resources/js/lib/chart-paths.ts';
 
 await test('points span the full width and respect padding', () => {
     const points = chartPoints([1, 3, 2], 100, 24, 2);
@@ -1810,10 +2038,16 @@ await test('flat, single and empty series never produce NaN', () => {
     assert.equal(linePath([], 86, 24), '');
     assert.equal(areaPath([], 86, 24), '');
     assert.equal(linePath([5], 86, 24), 'M0,12 L86,12');
-    for (const path of [linePath([5, 5, 5], 86, 24, 2), linePath([1, Number.NaN, 3], 86, 24)]) {
+    for (const path of [
+        linePath([5, 5, 5], 86, 24, 2),
+        linePath([1, Number.NaN, 3], 86, 24),
+    ]) {
         assert.ok(!path.includes('NaN'), path);
     }
-    assert.deepEqual(chartPoints([5, 5, 5], 86, 24).map(([, y]) => y), [12, 12, 12]);
+    assert.deepEqual(
+        chartPoints([5, 5, 5], 86, 24).map(([, y]) => y),
+        [12, 12, 12],
+    );
 });
 
 await test('line paths are smooth curves and areas close to the baseline', () => {
@@ -1921,7 +2155,9 @@ const props = withDefaults(
     { width: 86, height: 24 },
 );
 
-const path = computed(() => linePath(props.values, props.width, props.height, 2));
+const path = computed(() =>
+    linePath(props.values, props.width, props.height, 2),
+);
 </script>
 
 <template>
@@ -1990,8 +2226,16 @@ function labelAnchor(index: number): 'start' | 'middle' | 'end' {
         >
             <defs>
                 <linearGradient :id="gradientId" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stop-color="currentColor" stop-opacity="0.2" />
-                    <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+                    <stop
+                        offset="0"
+                        stop-color="currentColor"
+                        stop-opacity="0.2"
+                    />
+                    <stop
+                        offset="1"
+                        stop-color="currentColor"
+                        stop-opacity="0"
+                    />
                 </linearGradient>
             </defs>
             <line
@@ -2005,7 +2249,12 @@ function labelAnchor(index: number): 'start' | 'middle' | 'end' {
                 stroke-dasharray="2 4"
             />
             <path :d="area" :fill="`url(#${gradientId})`" />
-            <path :d="line" fill="none" stroke="currentColor" stroke-width="1.6" />
+            <path
+                :d="line"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+            />
             <text
                 v-for="(text, index) in labels"
                 :key="index"
@@ -2248,9 +2497,7 @@ const { t } = useLocale();
 </script>
 
 <template>
-    <section
-        class="grid gap-6 border-b py-7 md:grid-cols-[240px_1fr] md:gap-8"
-    >
+    <section class="grid gap-6 border-b py-7 md:grid-cols-[240px_1fr] md:gap-8">
         <div>
             <h2 class="font-display text-[22px] leading-tight font-medium">
                 {{ t(title) }}
@@ -2338,29 +2585,31 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: `DataTable`, `FilterBar` and `FilterChip`
 
 **Files:**
+
 - Create: `resources/js/lib/data-table.ts`
 - Create: `resources/js/components/DataTable.vue`, `FilterBar.vue`, `FilterChip.vue`
 - Modify: `resources/js/locales/ar.json` (keys listed in Step 7), then run the sync script (updates `lang/ar.json`)
 - Test: `tests/Frontend/data-table.test.mjs`
 
 **Interfaces:**
+
 - Consumes:
-  - `Table*`, `Checkbox`, `Skeleton`, `Alert*`, `Button`, `Input` primitives
-  - `EmptyState` (Task 5)
+    - `Table*`, `Checkbox`, `Skeleton`, `Alert*`, `Button`, `Input` primitives
+    - `EmptyState` (Task 5)
 - Produces (`@/lib/data-table`):
-  - `type RowKey = string | number`
-  - `type SortDirection = 'asc' | 'desc'`
-  - `type SortState = { key: string; direction: SortDirection } | null`
-  - `type DataTableColumn = { key: string; label: string; align?: 'start' | 'end'; sortable?: boolean; class?: string }`
-  - `nextSort(current: SortState, key: string): SortState`
-  - `ariaSort(current: SortState, key: string): 'ascending' | 'descending' | 'none'`
-  - `toggleOne(selected: RowKey[], key: RowKey): RowKey[]`
-  - `toggleAll(selected: RowKey[], visible: RowKey[]): RowKey[]`
-  - `selectionState(selected: RowKey[], visible: RowKey[]): boolean | 'indeterminate'`
+    - `type RowKey = string | number`
+    - `type SortDirection = 'asc' | 'desc'`
+    - `type SortState = { key: string; direction: SortDirection } | null`
+    - `type DataTableColumn = { key: string; label: string; align?: 'start' | 'end'; sortable?: boolean; class?: string }`
+    - `nextSort(current: SortState, key: string): SortState`
+    - `ariaSort(current: SortState, key: string): 'ascending' | 'descending' | 'none'`
+    - `toggleOne(selected: RowKey[], key: RowKey): RowKey[]`
+    - `toggleAll(selected: RowKey[], visible: RowKey[]): RowKey[]`
+    - `selectionState(selected: RowKey[], visible: RowKey[]): boolean | 'indeterminate'`
 - Produces components:
-  - `<DataTable :columns :rows :row-key loading? error? empty-title? empty-description? selectable? caption? v-model:sort v-model:selected @retry>` with slots `#toolbar`, `#bulk`, `#cell-<key>="{ row, value }"`, `#empty-action`, `#footer`
-  - `<FilterBar v-model placeholder? result-label? clearable? @clear>` with a default slot for chips
-  - `<FilterChip label value? removable? @remove>`
+    - `<DataTable :columns :rows :row-key loading? error? empty-title? empty-description? selectable? caption? v-model:sort v-model:selected @retry>` with slots `#toolbar`, `#bulk`, `#cell-<key>="{ row, value }"`, `#empty-action`, `#footer`
+    - `<FilterBar v-model placeholder? result-label? clearable? @clear>` with a default slot for chips
+    - `<FilterChip label value? removable? @remove>`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2384,7 +2633,10 @@ await test('sorting cycles ascending, descending, then off, and resets on a new 
     assert.deepEqual(sort, { key: 'amount', direction: 'desc' });
     assert.equal(nextSort(sort, 'amount'), null);
     assert.deepEqual(nextSort(sort, 'due'), { key: 'due', direction: 'asc' });
-    assert.equal(ariaSort({ key: 'amount', direction: 'desc' }, 'amount'), 'descending');
+    assert.equal(
+        ariaSort({ key: 'amount', direction: 'desc' }, 'amount'),
+        'descending',
+    );
     assert.equal(ariaSort({ key: 'amount', direction: 'asc' }, 'due'), 'none');
     assert.equal(ariaSort(null, 'due'), 'none');
 });
@@ -2804,7 +3056,9 @@ const { t } = useLocale();
             {{ t(label)
             }}<template v-if="value"
                 >:
-                <b class="text-accent-text font-medium">{{ value }}</b></template
+                <b class="text-accent-text font-medium">{{
+                    value
+                }}</b></template
             >
         </span>
         <button
@@ -2850,12 +3104,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 9: Local-only `/styleguide` page
 
 **Files:**
+
 - Create: `app/Http/Controllers/StyleguideController.php`
 - Modify: `routes/web.php` (add a `use` import and one route inside the `auth`/`verified` group, next to `dashboard`)
 - Create: `resources/js/pages/Styleguide.vue`
 - Test: `tests/Feature/StyleguideTest.php`
 
 **Interfaces:**
+
 - Consumes every component from Tasks 2–8.
 - Produces the route `GET /styleguide` (name `styleguide`). It returns 404 unless the environment is `local` or `testing`.
 
@@ -2931,6 +3187,7 @@ class StyleguideController extends Controller
 ```
 
 In `routes/web.php`:
+
 - Add `use App\Http\Controllers\StyleguideController;` to the alphabetised `use` block. It goes after `SparePartsController`.
 - Directly after the line `Route::get('dashboard', DashboardController::class)->name('dashboard');`, add:
 
@@ -2993,12 +3250,60 @@ type Invoice = {
 };
 
 const invoices: Invoice[] = [
-    { id: 1, reference: 'INV-2294', tenant: 'Al Noor Trading LLC', unit: 'A-1204', due: '2026-09-15', amount: 36250, status: 'paid' },
-    { id: 2, reference: 'INV-2293', tenant: 'Sara Al Mansoori', unit: 'B-0310', due: '2026-09-30', amount: 24125, status: 'pending' },
-    { id: 3, reference: 'INV-2291', tenant: 'Gulf Line Logistics', unit: 'C-0701', due: '2026-09-14', amount: 212000, status: 'overdue' },
-    { id: 4, reference: 'INV-2288', tenant: 'Hamdan Family Office', unit: 'PH-02', due: '2026-09-28', amount: 1140000, status: 'partially_paid' },
-    { id: 5, reference: 'INV-2287', tenant: 'Rania Khoury', unit: 'B-1102', due: '', amount: 8400, status: 'draft' },
-    { id: 6, reference: 'INV-2280', tenant: 'Omar Tahir', unit: 'P-114', due: '2026-08-20', amount: 1500, status: 'void' },
+    {
+        id: 1,
+        reference: 'INV-2294',
+        tenant: 'Al Noor Trading LLC',
+        unit: 'A-1204',
+        due: '2026-09-15',
+        amount: 36250,
+        status: 'paid',
+    },
+    {
+        id: 2,
+        reference: 'INV-2293',
+        tenant: 'Sara Al Mansoori',
+        unit: 'B-0310',
+        due: '2026-09-30',
+        amount: 24125,
+        status: 'pending',
+    },
+    {
+        id: 3,
+        reference: 'INV-2291',
+        tenant: 'Gulf Line Logistics',
+        unit: 'C-0701',
+        due: '2026-09-14',
+        amount: 212000,
+        status: 'overdue',
+    },
+    {
+        id: 4,
+        reference: 'INV-2288',
+        tenant: 'Hamdan Family Office',
+        unit: 'PH-02',
+        due: '2026-09-28',
+        amount: 1140000,
+        status: 'partially_paid',
+    },
+    {
+        id: 5,
+        reference: 'INV-2287',
+        tenant: 'Rania Khoury',
+        unit: 'B-1102',
+        due: '',
+        amount: 8400,
+        status: 'draft',
+    },
+    {
+        id: 6,
+        reference: 'INV-2280',
+        tenant: 'Omar Tahir',
+        unit: 'P-114',
+        due: '2026-08-20',
+        amount: 1500,
+        status: 'void',
+    },
 ];
 
 const columns: DataTableColumn[] = [
@@ -3051,8 +3356,23 @@ const facts = computed(() => [
     { label: 'Balance', value: money(212000) },
 ]);
 
-const collection = [1.21, 1.34, 1.3, 1.42, 1.39, 1.55, 1.61, 1.58, 1.72, 1.79, 1.86, 2.02];
-const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
+const collection = [
+    1.21, 1.34, 1.3, 1.42, 1.39, 1.55, 1.61, 1.58, 1.72, 1.79, 1.86, 2.02,
+];
+const months = [
+    'Oct',
+    'Nov',
+    'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+];
 </script>
 
 <template>
@@ -3073,10 +3393,38 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
         <section class="flex flex-col gap-4">
             <h2 class="text-eyebrow">Stat tiles</h2>
             <StatGrid>
-                <StatTile label="Occupancy" :value="94.2" unit="%" :compact="false" :decimals="1" trend="▲ 1.8 pts" trend-tone="positive" :series="[3, 4, 3.6, 4.4, 4.2, 5, 5.4, 6]" />
-                <StatTile label="Collected" :value="2418500" currency="AED" trend="▲ 6.4%" trend-tone="positive" :series="[2, 2.6, 2.4, 3.2, 3.4, 4.1, 4.3, 5]" />
-                <StatTile label="Overdue" :value="186200" currency="AED" trend="12 invoices" trend-tone="negative" :series="[3, 3.4, 3.1, 4, 4.6, 4.4, 5.2, 5.6]" />
-                <StatTile label="Open work orders" :value="37" trend="5 past SLA" trend-tone="negative" />
+                <StatTile
+                    label="Occupancy"
+                    :value="94.2"
+                    unit="%"
+                    :compact="false"
+                    :decimals="1"
+                    trend="▲ 1.8 pts"
+                    trend-tone="positive"
+                    :series="[3, 4, 3.6, 4.4, 4.2, 5, 5.4, 6]"
+                />
+                <StatTile
+                    label="Collected"
+                    :value="2418500"
+                    currency="AED"
+                    trend="▲ 6.4%"
+                    trend-tone="positive"
+                    :series="[2, 2.6, 2.4, 3.2, 3.4, 4.1, 4.3, 5]"
+                />
+                <StatTile
+                    label="Overdue"
+                    :value="186200"
+                    currency="AED"
+                    trend="12 invoices"
+                    trend-tone="negative"
+                    :series="[3, 3.4, 3.1, 4, 4.6, 4.4, 5.2, 5.6]"
+                />
+                <StatTile
+                    label="Open work orders"
+                    :value="37"
+                    trend="5 past SLA"
+                    trend-tone="negative"
+                />
             </StatGrid>
         </section>
 
@@ -3099,7 +3447,11 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
                 :rows="tableState === 'empty' ? [] : rows"
                 :row-key="(row) => row.id"
                 :loading="tableState === 'loading'"
-                :error="tableState === 'error' ? 'The bank feed did not respond.' : null"
+                :error="
+                    tableState === 'error'
+                        ? 'The bank feed did not respond.'
+                        : null
+                "
                 selectable
                 empty-title="No invoices yet"
                 empty-description="Invoices appear here when a lease or sale generates them."
@@ -3114,32 +3466,59 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
                         @clear="search = ''"
                     >
                         <FilterChip label="Status" value="All" />
-                        <FilterChip label="Property" value="Marina Heights" removable />
+                        <FilterChip
+                            label="Property"
+                            value="Marina Heights"
+                            removable
+                        />
                     </FilterBar>
                 </template>
                 <template #bulk>
-                    <Button size="sm" variant="outline"><Send />Send reminders</Button>
+                    <Button size="sm" variant="outline"
+                        ><Send />Send reminders</Button
+                    >
                 </template>
                 <template #cell-reference="{ row }">
-                    <span class="font-medium tracking-[0.02em]">{{ row.reference }}</span>
+                    <span class="font-medium tracking-[0.02em]">{{
+                        row.reference
+                    }}</span>
                 </template>
-                <template #cell-due="{ row }"><DateText :value="row.due" /></template>
-                <template #cell-amount="{ row }"><Money :value="row.amount" /></template>
-                <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
-                <template #empty-action><Button><Plus />New invoice</Button></template>
+                <template #cell-due="{ row }"
+                    ><DateText :value="row.due"
+                /></template>
+                <template #cell-amount="{ row }"
+                    ><Money :value="row.amount"
+                /></template>
+                <template #cell-status="{ row }"
+                    ><StatusDot :status="row.status"
+                /></template>
+                <template #empty-action
+                    ><Button><Plus />New invoice</Button></template
+                >
             </DataTable>
         </section>
 
         <section class="flex flex-col gap-4">
             <h2 class="text-eyebrow">Status language</h2>
-            <div class="bg-card shadow-panel flex flex-wrap gap-x-7 gap-y-3 rounded-lg border p-5">
-                <StatusDot v-for="status in Object.keys(STATUS_TONES)" :key="status" :status="status" />
+            <div
+                class="bg-card shadow-panel flex flex-wrap gap-x-7 gap-y-3 rounded-lg border p-5"
+            >
+                <StatusDot
+                    v-for="status in Object.keys(STATUS_TONES)"
+                    :key="status"
+                    :status="status"
+                />
             </div>
         </section>
 
         <section class="flex flex-col gap-4">
             <h2 class="text-eyebrow">Record page</h2>
-            <DetailLayout eyebrow="Invoice · Commercial lease" title="INV-2291" status="overdue" :facts="facts">
+            <DetailLayout
+                eyebrow="Invoice · Commercial lease"
+                title="INV-2291"
+                status="overdue"
+                :facts="facts"
+            >
                 <template #actions>
                     <Button variant="outline"><Send />Send reminder</Button>
                     <Button><FileText />Record payment</Button>
@@ -3152,20 +3531,34 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
                     </TabsList>
                     <TabsContent value="overview" class="pt-6">
                         <div class="bg-card shadow-panel rounded-lg border p-6">
-                            <h3 class="font-display mb-2 text-[22px] font-medium">Rent collection</h3>
-                            <AreaChart :values="collection" :labels="months" label="Rent collection over twelve months" />
+                            <h3
+                                class="font-display mb-2 text-[22px] font-medium"
+                            >
+                                Rent collection
+                            </h3>
+                            <AreaChart
+                                :values="collection"
+                                :labels="months"
+                                label="Rent collection over twelve months"
+                            />
                         </div>
                     </TabsContent>
                     <TabsContent value="payments" class="pt-6">
                         <div class="bg-card shadow-panel rounded-lg border">
-                            <EmptyState title="No payments yet" description="Payments recorded against this invoice appear here.">
+                            <EmptyState
+                                title="No payments yet"
+                                description="Payments recorded against this invoice appear here."
+                            >
                                 <template #icon><Inbox /></template>
                                 <Button><Plus />Record payment</Button>
                             </EmptyState>
                         </div>
                     </TabsContent>
                     <TabsContent value="activity" class="pt-6">
-                        <p class="text-muted-foreground text-sm">The activity timeline arrives with the finance phase.</p>
+                        <p class="text-muted-foreground text-sm">
+                            The activity timeline arrives with the finance
+                            phase.
+                        </p>
                     </TabsContent>
                 </Tabs>
             </DetailLayout>
@@ -3173,30 +3566,61 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
 
         <section class="flex max-w-4xl flex-col">
             <h2 class="text-eyebrow">Form</h2>
-            <FormSection title="Tenant & unit" description="Who is leasing, and which unit.">
+            <FormSection
+                title="Tenant & unit"
+                description="Who is leasing, and which unit."
+            >
                 <FormField id="sg-tenant" label="Tenant" full>
                     <Input id="sg-tenant" model-value="Al Noor Trading LLC" />
                 </FormField>
-                <FormField id="sg-unit" label="Unit" help="Only vacant or reserved units are listed." full>
-                    <Input id="sg-unit" model-value="Marina Heights · A-1204" aria-describedby="sg-unit-help" />
+                <FormField
+                    id="sg-unit"
+                    label="Unit"
+                    help="Only vacant or reserved units are listed."
+                    full
+                >
+                    <Input
+                        id="sg-unit"
+                        model-value="Marina Heights · A-1204"
+                        aria-describedby="sg-unit-help"
+                    />
                 </FormField>
             </FormSection>
-            <FormSection title="Term & rent" description="Dates, rent and payment schedule.">
+            <FormSection
+                title="Term & rent"
+                description="Dates, rent and payment schedule."
+            >
                 <FormField id="sg-start" label="Start date">
                     <Input id="sg-start" type="date" model-value="2026-10-01" />
                 </FormField>
                 <FormField id="sg-end" label="End date">
                     <Input id="sg-end" type="date" model-value="2029-09-30" />
                 </FormField>
-                <FormField id="sg-rent" label="Annual rent" error="Annual rent must be greater than zero." full>
+                <FormField
+                    id="sg-rent"
+                    label="Annual rent"
+                    error="Annual rent must be greater than zero."
+                    full
+                >
                     <Input id="sg-rent" model-value="0" aria-invalid="true" />
                 </FormField>
                 <FormField id="sg-notes" label="Notes" optional full>
-                    <Textarea id="sg-notes" placeholder="Anything the leasing team should know…" />
+                    <Textarea
+                        id="sg-notes"
+                        placeholder="Anything the leasing team should know…"
+                    />
                 </FormField>
             </FormSection>
-            <FormSection title="Notifications" description="What happens when the lease is created.">
-                <FormField id="sg-welcome" label="Email the tenant a welcome pack" help="Includes the signed agreement, payment schedule and portal invitation." full>
+            <FormSection
+                title="Notifications"
+                description="What happens when the lease is created."
+            >
+                <FormField
+                    id="sg-welcome"
+                    label="Email the tenant a welcome pack"
+                    help="Includes the signed agreement, payment schedule and portal invitation."
+                    full
+                >
                     <Switch id="sg-welcome" v-model="welcomePack" />
                 </FormField>
             </FormSection>
@@ -3214,12 +3638,18 @@ const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', '
                 <CommandList>
                     <CommandEmpty>No results.</CommandEmpty>
                     <CommandGroup heading="Pages">
-                        <CommandItem value="invoices"><FileText />Invoices</CommandItem>
-                        <CommandItem value="bank">Bank reconciliation</CommandItem>
+                        <CommandItem value="invoices"
+                            ><FileText />Invoices</CommandItem
+                        >
+                        <CommandItem value="bank"
+                            >Bank reconciliation</CommandItem
+                        >
                         <CommandItem value="vat">VAT return</CommandItem>
                     </CommandGroup>
                     <CommandGroup heading="Actions">
-                        <CommandItem value="lease"><Plus />New lease</CommandItem>
+                        <CommandItem value="lease"
+                            ><Plus />New lease</CommandItem
+                        >
                     </CommandGroup>
                 </CommandList>
             </Command>
@@ -3349,11 +3779,12 @@ If the owner declines a login, skip the screenshots and say so in the report.
 - [ ] **Step 4: Report to the owner**
 
 The report includes:
+
 - the command outputs (pass counts)
 - the commit list: `git log --oneline 39ecd7a..HEAD`
 - what visibly changes on existing pages: colors, fonts, buttons, cards, inputs, error text, empty states. Page structure does not change until phase 2+.
 - the URL to review: `http://localhost:8000/styleguide`, in light, dark and Arabic
 - known gaps:
-  - the sidebar is still the old flat list until phase 2
-  - Arabic wording needs review by a native speaker
+    - the sidebar is still the old flat list until phase 2
+    - Arabic wording needs review by a native speaker
 - the next step: ask for approval to plan phase 2 (app shell and dashboard)
