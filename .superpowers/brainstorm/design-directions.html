@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Z1 Design Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --page:#f4f4f2; --ink:#1a1a1a; --sub:#666; --line:#ddd; }
+  @media (prefers-color-scheme: dark) { :root { --page:#161616; --ink:#eee; --sub:#9a9a9a; --line:#333; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+  .wrap { max-width:1280px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  .intro { color:var(--sub); margin:0 0 32px; max-width:760px; }
+  .dir { border:1px solid var(--line); border-radius:14px; padding:24px; margin-bottom:40px; background:color-mix(in srgb, var(--page) 70%, transparent); }
+  .dir-head { display:flex; flex-wrap:wrap; gap:16px 32px; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .dir-head h2 { margin:0; font-size:22px; }
+  .dir-head .tag { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); }
+  .dir-head p { margin:6px 0 0; color:var(--sub); max-width:620px; }
+  .swatches { display:flex; gap:6px; flex-wrap:wrap; }
+  .sw { width:44px; text-align:center; font-size:10px; color:var(--sub); }
+  .sw i { display:block; height:32px; border-radius:6px; border:1px solid var(--line); margin-bottom:3px; }
+  .label { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); margin:18px 0 8px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width: 980px) { .grid2 { grid-template-columns:1fr; } }
+
+  /* ---- mini app, driven entirely by per-theme variables ---- */
+  .app { display:flex; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:var(--bg); color:var(--fg); font-family:var(--font); font-size:13px; min-height:330px; box-shadow:0 1px 2px rgb(0 0 0/.06), 0 8px 24px -12px rgb(0 0 0/.18); }
+  .app aside { width:150px; flex:none; background:var(--side); border-inline-end:1px solid var(--border); padding:14px 10px; display:flex; flex-direction:column; gap:2px; }
+  .logo { display:flex; align-items:center; gap:8px; font-weight:600; margin:0 4px 14px; }
+  .logo b { width:24px; height:24px; border-radius:var(--r); background:var(--primary); color:var(--pfg); display:grid; place-items:center; font-size:11px; font-family:var(--display); }
+  .nav { padding:6px 8px; border-radius:calc(var(--r) - 2px); color:var(--muted); }
+  .nav.on { background:var(--surface); color:var(--fg); font-weight:500; box-shadow:0 0 0 1px var(--border); }
+  .nav.on::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-inline-end:6px; vertical-align:middle; }
+  .app main { flex:1; padding:16px 18px; min-width:0; }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .top h3 { margin:0; font-family:var(--display); font-weight:var(--dw); font-size:17px; letter-spacing:var(--dls); }
+  .top small { display:block; color:var(--muted); font-size:11.5px; font-family:var(--font); font-weight:400; letter-spacing:0; }
+  .btns { display:flex; gap:6px; flex:none; }
+  .btn { border-radius:var(--r); padding:6px 11px; font:inherit; font-size:12px; font-weight:500; border:1px solid var(--border); background:var(--surface); color:var(--fg); }
+  .btn.p { background:var(--primary); color:var(--pfg); border-color:transparent; }
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:9px 10px; }
+  .kpi span { color:var(--muted); font-size:11px; display:block; }
+  .kpi strong { font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; display:block; margin-top:2px; white-space:nowrap; }
+  .kpi em { font-style:normal; font-size:10.5px; color:var(--ok); }
+  .kpi em.bad { color:var(--bad); }
+  table { width:100%; border-collapse:separate; border-spacing:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+  th { text-align:start; font-weight:500; color:var(--muted); font-size:11px; padding:7px 10px; background:var(--side); border-bottom:1px solid var(--border); }
+  td { padding:7px 10px; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
+  tr:last-child td { border-bottom:0; }
+  td.num, th.num { text-align:end; }
+  .b { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:500; }
+  .b.ok { background:color-mix(in srgb, var(--ok) 14%, transparent); color:var(--ok); }
+  .b.warn { background:color-mix(in srgb, var(--warn) 16%, transparent); color:var(--warn); }
+  .b.bad { background:color-mix(in srgb, var(--bad) 14%, transparent); color:var(--bad); }
+  @media (max-width: 640px) { .app aside { display:none; } .kpis { grid-template-columns:1fr 1fr; } }
+
+  /* ---- mini website hero ---- */
+  .hero { border-radius:12px; overflow:hidden; border:1px solid var(--border); background:var(--bg); color:var(--fg); font-family:var(--font); padding:36px 32px; position:relative; }
+  .hero::after { content:''; position:absolute; inset:auto -10% -60% 40%; height:120%; background:radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent); pointer-events:none; }
+  .hero .eyebrow { font-size:12px; color:var(--accent-text); font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  .hero h4 { font-family:var(--display); font-weight:var(--dw); letter-spacing:var(--dls); font-size:34px; line-height:1.12; margin:10px 0 12px; max-width:560px; }
+  .hero p { color:var(--muted); max-width:480px; margin:0 0 20px; }
+  .hero .btn { padding:9px 16px; font-size:13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Z1 ERP: three brand and design directions</h1>
+  <p class="intro">Each direction shows the same dashboard in light and dark, the same screen in Arabic (RTL), and a website hero, all with the same content so you're comparing only the look. Pick one, or name what you like from each, and reply in the terminal.</p>
+  <div id="dirs"></div>
+</div>
+
+<script>
+const EN = { nav:['Dashboard','Leasing','Finance','Maintenance','CRM'], title:'Portfolio overview', sub:'Marina Heights · September 2026', b1:'Export', b2:'New lease',
+  k:[['Occupancy','94.2%','+1.8 pts',0],['Rent collected','AED 2,418,500','+6.4%',0],['Overdue','AED 186,200','12 invoices',1],['Open work orders','37','5 past SLA',1]],
+  th:['Unit','Tenant','Rent','Status'], rows:[['A-1204','Al Noor Trading LLC','AED 145,000','ok','Paid'],['B-0310','Sara Al Mansoori','AED 96,500','warn','Due in 3 days'],['C-0701','Gulf Line Logistics','AED 212,000','bad','Overdue 14 days']] };
+const AR = { nav:['لوحة التحكم','التأجير','المالية','الصيانة','إدارة العملاء'], title:'نظرة عامة على المحفظة', sub:'مارينا هايتس · سبتمبر 2026', b1:'تصدير', b2:'عقد إيجار جديد',
+  k:[['نسبة الإشغال','94.2%','+1.8 نقطة',0],['الإيجار المحصل','2,418,500 د.إ','+6.4%',0],['المتأخرات','186,200 د.إ','12 فاتورة',1],['أوامر العمل المفتوحة','37','5 تجاوزت الموعد',1]],
+  th:['الوحدة','المستأجر','الإيجار','الحالة'], rows:[['A-1204','شركة النور للتجارة','145,000 د.إ','ok','مدفوع'],['B-0310','سارة المنصوري','96,500 د.إ','warn','مستحق خلال 3 أيام'],['C-0701','جلف لاين للخدمات اللوجستية','212,000 د.إ','bad','متأخر 14 يومًا']] };
+
+const DIRS = [
+  { id:'A', name:'Oasis', tag:'Warm · regional · trustworthy',
+    why:'Deep emerald-teal on warm sand neutrals, with a restrained gold accent. It feels rooted in the Gulf without cliché. Readex Pro is one family designed for both Arabic and Latin, so English and Arabic match perfectly. Friendly-premium: the most approachable of the three.',
+    fonts:'Readex Pro (Latin + Arabic, one family)',
+    font:"'Readex Pro', sans-serif", display:"'Readex Pro', sans-serif", dw:600, dls:'-0.01em', r:'10px',
+    light:{bg:'#FAF8F4',side:'#F3EFE8',surface:'#FFFFFF',border:'#E6E0D5',fg:'#1C1A17',muted:'#6B645A',primary:'#0E6B5F',pfg:'#FFFFFF',accent:'#C0912F',accentText:'#8A6516',ok:'#1D7A4C',warn:'#9A5B00',bad:'#B42318'},
+    dark:{bg:'#0E1312',side:'#121917',surface:'#172020',border:'#25302D',fg:'#ECEAE5',muted:'#9AA39F',primary:'#3CC4AE',pfg:'#062019',accent:'#D9A948',accentText:'#E2B75E',ok:'#4ACB8A',warn:'#E5A641',bad:'#F2786D'},
+    hero:['Real-estate operations','Run every property, lease and dirham from one place.','Leasing, finance, maintenance and CRM for Gulf property companies, in English and Arabic.','Book a demo','See the platform'] },
+  { id:'B', name:'Ink', tag:'Precise · technical · modern SaaS',
+    why:'Cool slate neutrals with a confident indigo, in the Linear/Stripe school: crisp, high-contrast, built for speed and density. Inter for Latin, IBM Plex Sans Arabic for Arabic. It reads as a serious software company; the dark theme is especially strong.',
+    fonts:'Inter + IBM Plex Sans Arabic',
+    font:"'Inter', 'IBM Plex Sans Arabic', sans-serif", display:"'Inter', 'IBM Plex Sans Arabic', sans-serif", dw:650, dls:'-0.025em', r:'8px',
+    light:{bg:'#F7F8FA',side:'#F1F3F6',surface:'#FFFFFF',border:'#E3E6EC',fg:'#0B1020',muted:'#5B6478',primary:'#3446D4',pfg:'#FFFFFF',accent:'#3446D4',accentText:'#3446D4',ok:'#137A4B',warn:'#9A5800',bad:'#C0262D'},
+    dark:{bg:'#090B11',side:'#0D1017',surface:'#12151D',border:'#222734',fg:'#E8EAF0',muted:'#8B93A7',primary:'#7D8CFF',pfg:'#090B11',accent:'#7D8CFF',accentText:'#9BA7FF',ok:'#4ADE9A',warn:'#F2B04C',bad:'#FF7A80'},
+    hero:['The real-estate ERP','The operating system for property companies.','One platform for leasing, finance, maintenance and CRM, fast enough for daily work and precise enough for your auditors.','Book a demo','Explore modules'] },
+  { id:'C', name:'Stone & Brass', tag:'Luxury · editorial · understated',
+    why:'Near-monochrome graphite and warm paper, with a single brass accent and an editorial serif for headings. This is the language of high-end developers and private banks, and the most premium feeling of the three. The trade-off: the serif is for headings only; screens stay in IBM Plex Sans for density.',
+    fonts:'Fraunces / Noto Naskh Arabic (headings) + IBM Plex Sans / IBM Plex Sans Arabic',
+    font:"'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif", display:"'Fraunces', 'Noto Naskh Arabic', serif", dw:500, dls:'-0.01em', r:'6px',
+    light:{bg:'#F5F3EF',side:'#EFECE6',surface:'#FCFBF9',border:'#E0DCD3',fg:'#191816',muted:'#6B665D',primary:'#1F1E1C',pfg:'#F5F3EF',accent:'#A47A34',accentText:'#86621F',ok:'#2F6B45',warn:'#8C5A0B',bad:'#A3312A'},
+    dark:{bg:'#121110',side:'#171614',surface:'#1C1B19',border:'#2E2C28',fg:'#EDEAE4',muted:'#A29C91',primary:'#EDEAE4',pfg:'#121110',accent:'#C9A266',accentText:'#D4B07A',ok:'#7FC49A',warn:'#E0B065',bad:'#EC8A80'},
+    hero:['Property, managed beautifully','Quiet software for serious property portfolios.','Leasing, finance and operations for the Gulf’s leading real-estate companies, in English and Arabic.','Request a private demo','View the platform'] },
+];
+
+const vars = (d, t) => `--bg:${t.bg};--side:${t.side};--surface:${t.surface};--border:${t.border};--fg:${t.fg};--muted:${t.muted};--primary:${t.primary};--pfg:${t.pfg};--accent:${t.accent};--accent-text:${t.accentText};--ok:${t.ok};--warn:${t.warn};--bad:${t.bad};--font:${d.font};--display:${d.display};--dw:${d.dw};--dls:${d.dls};--r:${d.r};`;
+
+const app = (d, t, L, dir='ltr') => `
+<div class="app" dir="${dir}" style="${vars(d,t)}">
+  <aside><div class="logo"><b>Z1</b>Z1 ERP</div>${L.nav.map((n,i)=>`<div class="nav${i==0?' on':''}">${n}</div>`).join('')}</aside>
+  <main>
+    <div class="top"><h3>${L.title}<small>${L.sub}</small></h3><div class="btns"><button class="btn">${L.b1}</button><button class="btn p">${L.b2}</button></div></div>
+    <div class="kpis">${L.k.map(k=>`<div class="kpi"><span>${k[0]}</span><strong>${k[1]}</strong><em class="${k[3]?'bad':''}">${k[2]}</em></div>`).join('')}</div>
+    <table><thead><tr><th>${L.th[0]}</th><th>${L.th[1]}</th><th class="num">${L.th[2]}</th><th>${L.th[3]}</th></tr></thead>
+    <tbody>${L.rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td><td><span class="b ${r[3]}">${r[4]}</span></td></tr>`).join('')}</tbody></table>
+  </main>
+</div>`;
+
+const hero = (d, t) => `<div class="hero" style="${vars(d,t)}"><div class="eyebrow">${d.hero[0]}</div><h4>${d.hero[1]}</h4><p>${d.hero[2]}</p><button class="btn p">${d.hero[3]}</button> <button class="btn">${d.hero[4]}</button></div>`;
+
+const sw = t => [['bg',t.bg],['surface',t.surface],['text',t.fg],['primary',t.primary],['accent',t.accent],['success',t.ok],['warning',t.warn],['danger',t.bad]]
+  .map(([n,c])=>`<div class="sw"><i style="background:${c}"></i>${n}</div>`).join('');
+
+document.getElementById('dirs').innerHTML = DIRS.map(d => `
+<section class="dir">
+  <div class="dir-head">
+    <div><div class="tag">Direction ${d.id} · ${d.tag}</div><h2>${d.name}</h2><p>${d.why}</p><p><strong>Type:</strong> ${d.fonts}</p></div>
+    <div><div class="label" style="margin-top:0">Light</div><div class="swatches">${sw(d.light)}</div><div class="label">Dark</div><div class="swatches">${sw(d.dark)}</div></div>
+  </div>
+  <div class="label">ERP dashboard: light and dark</div>
+  <div class="grid2">${app(d,d.light,EN)}${app(d,d.dark,EN)}</div>
+  <div class="label">Arabic (RTL) and website hero</div>
+  <div class="grid2">${app(d,d.light,AR,'rtl')}${hero(d,d.dark)}</div>
+</section>`).join('');
+</script>
+</body>
+</html>
