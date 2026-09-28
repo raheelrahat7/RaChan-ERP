@@ -84,10 +84,11 @@ export type CommandEntry = {
     icon: NavIcon;
 };
 
-const soon = (label: string, icon: NavIcon): NavLink => ({
+const soon = (label: string, icon: NavIcon, ability?: string): NavLink => ({
     label,
     icon,
     soon: true,
+    ...(ability ? { ability } : {}),
 });
 
 export const NAVIGATION: NavGroup[] = [
@@ -122,7 +123,7 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'contacts',
                 ability: 'crm',
             },
-            soon('AI Matchmaker', 'matchmaker'),
+            soon('AI Matchmaker', 'matchmaker', 'crm'),
             {
                 label: 'Property & Listings',
                 href: '/real-estate/listings',
@@ -141,8 +142,8 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'owners',
                 ability: 'listings',
             },
-            soon('Off-Plan Projects', 'offPlan'),
-            soon('Secondary Market', 'secondary'),
+            soon('Off-Plan Projects', 'offPlan', 'listings'),
+            soon('Secondary Market', 'secondary', 'listings'),
             {
                 label: 'Reservations',
                 href: '/reservations',
@@ -191,11 +192,11 @@ export const NAVIGATION: NavGroup[] = [
         id: 'marketing',
         label: 'Marketing',
         items: [
-            soon('Marketing & Portals', 'marketing'),
-            soon('Portal Listings', 'portalListings'),
-            soon('Portal Subscriptions', 'portalSubscriptions'),
-            soon('Portal Invoicing', 'portalInvoicing'),
-            soon('Listing Costing', 'costing'),
+            soon('Marketing & Portals', 'marketing', 'marketing'),
+            soon('Portal Listings', 'portalListings', 'marketing'),
+            soon('Portal Subscriptions', 'portalSubscriptions', 'marketing'),
+            soon('Portal Invoicing', 'portalInvoicing', 'marketing'),
+            soon('Listing Costing', 'costing', 'marketing'),
         ],
     },
     {
@@ -236,7 +237,7 @@ export const NAVIGATION: NavGroup[] = [
                     },
                 ],
             },
-            soon('Cheques (PDC)', 'cheques'),
+            soon('Cheques (PDC)', 'cheques', 'pdc'),
             {
                 label: 'Receivables',
                 href: '/invoices',

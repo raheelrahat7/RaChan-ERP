@@ -68,6 +68,22 @@ export type AttentionItem = {
 
 const SOON: Figure = { value: null, change: null, count: null, soon: true };
 
+type Numeric = number | string | null | undefined;
+
+/** Laravel sends DECIMAL sums and decimal casts as strings; coerce once here. */
+function num(value: Numeric): number | null {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const number = typeof value === 'number' ? value : Number(value);
+
+    return Number.isFinite(number) ? number : null;
+}
+
+function amount(value: Numeric): number {
+    return num(value) ?? 0;
+}
+
 export function percentChange(
     value: number,
     previous: number | null,
@@ -80,18 +96,19 @@ export function percentChange(
 }
 
 function figure(
-    value: number | null | undefined,
-    previous: number | null = null,
-    count: number | null = null,
+    raw: Numeric,
+    previous: Numeric = null,
+    count: Numeric = null,
 ): Figure {
-    if (value === null || value === undefined) {
+    const value = num(raw);
+    if (value === null) {
         return SOON;
     }
 
     return {
         value,
-        change: percentChange(value, previous),
-        count,
+        change: percentChange(value, num(previous)),
+        count: num(count),
         soon: false,
     };
 }
@@ -108,14 +125,15 @@ export function normalizeHome(props: HomeProps): HomeView {
                 k?.net_profit.value,
                 k?.net_profit.previous ?? null,
             ),
-            cash_balance: k
-                ? {
-                      value: k.cash_balance.value,
-                      change: k.cash_balance.change_7d_pct,
-                      count: null,
-                      soon: false,
-                  }
-                : SOON,
+            cash_balance:
+                k && num(k.cash_balance.value) !== null
+                    ? {
+                          value: num(k.cash_balance.value),
+                          change: num(k.cash_balance.change_7d_pct),
+                          count: null,
+                          soon: false,
+                      }
+                    : SOON,
             receivables: figure(
                 k ? k.receivables.value : props.metrics?.outstandingAed,
             ),
@@ -137,13 +155,54 @@ export function normalizeHome(props: HomeProps): HomeView {
             pending_approvals: figure(k?.pending_approvals?.count),
             overdue_tasks: figure(k?.overdue_tasks?.count),
         },
-        trend: props.trend ?? null,
-        commission: props.commission_split ?? null,
-        topAgents: props.top_agents ?? null,
-        leadPipeline: props.lead_pipeline ?? null,
-        leadSources: props.lead_sources ?? null,
-        dealPipeline: props.deal_pipeline?.stages ?? null,
-        costCentres: props.cost_centres ?? null,
+        trend: props.trend
+            ? {
+                  months: props.trend.months,
+                  sales_value: props.trend.sales_value.map(amount),
+                  rental_value: props.trend.rental_value.map(amount),
+              }
+            : null,
+        commission: props.commission_split
+            ? {
+                  net_company: amount(props.commission_split.net_company),
+                  agent_payable: amount(props.commission_split.agent_payable),
+                  co_broker: amount(props.commission_split.co_broker),
+                  referral: amount(props.commission_split.referral),
+              }
+            : null,
+        topAgents:
+            props.top_agents?.map((agent) => ({
+                ...agent,
+                commission: amount(agent.commission),
+                deals: amount(agent.deals),
+            })) ?? null,
+        leadPipeline: props.lead_pipeline
+            ? {
+                  pipeline: props.lead_pipeline.pipeline,
+                  stages: props.lead_pipeline.stages.map((stage) => ({
+                      ...stage,
+                      count: amount(stage.count),
+                  })),
+              }
+            : null,
+        leadSources:
+            props.lead_sources?.map((source) => ({
+                ...source,
+                count: amount(source.count),
+            })) ?? null,
+        dealPipeline:
+            props.deal_pipeline?.stages.map((stage) => ({
+                ...stage,
+                count: amount(stage.count),
+                value: amount(stage.value),
+            })) ?? null,
+        costCentres:
+            props.cost_centres?.map((row) => ({
+                ...row,
+                revenue: amount(row.revenue),
+                expense: amount(row.expense),
+                profit: amount(row.profit),
+            })) ?? null,
         insights: props.insights ?? null,
         alerts: props.alerts ?? [],
         legacy: props.metrics ?? null,

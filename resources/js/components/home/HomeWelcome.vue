@@ -67,14 +67,20 @@ function money(figure: Figure) {
                 </template>
             </p>
             <div class="mt-5 flex flex-wrap gap-2">
-                <span
+                <button
+                    type="button"
+                    disabled
                     class="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md bg-[#e6c9a2]/60 px-4 text-sm font-medium text-[#3a1520]"
                     :title="t('Soon')"
-                    ><CheckCheck class="size-4" />{{
-                        t('Review approvals')
-                    }}</span
                 >
+                    <CheckCheck class="size-4" />{{ t('Review approvals') }}
+                    <span
+                        class="text-[10px] tracking-[0.1em] uppercase opacity-70"
+                        >· {{ t('Soon') }}</span
+                    >
+                </button>
                 <Link
+                    v-if="page.props.abilities?.deals !== false"
                     href="/reservations"
                     class="inline-flex h-9 items-center gap-2 rounded-md border border-white/25 bg-white/10 px-4 text-sm font-medium hover:bg-white/15"
                     ><Plus class="size-4" />{{ t('New deal') }}</Link
@@ -117,7 +123,13 @@ function money(figure: Figure) {
                         t('Coming soon')
                     }}</template>
                     <template v-else-if="item.figure.change !== null"
-                        >{{ item.figure.change > 0 ? '▲' : '▼' }}
+                        >{{
+                            item.figure.change > 0
+                                ? '▲'
+                                : item.figure.change < 0
+                                  ? '▼'
+                                  : '■'
+                        }}
                         {{ Math.abs(item.figure.change) }}%</template
                     >
                     <template

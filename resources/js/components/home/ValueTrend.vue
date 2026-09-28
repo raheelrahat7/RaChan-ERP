@@ -2,13 +2,15 @@
 import { computed, ref, useId } from 'vue';
 import ComingSoon from '@/components/home/ComingSoon.vue';
 import HomePanel from '@/components/home/HomePanel.vue';
+import { useFormat } from '@/composables/useFormat';
 import { useLocale } from '@/composables/useLocale';
 import { areaPath, linePath } from '@/lib/chart-paths';
-import { formatCompact, formatMonth } from '@/lib/format';
+import { formatMonth } from '@/lib/format';
 import type { HomeTrend } from '@/types/home';
 
 const props = defineProps<{ trend: HomeTrend | null }>();
 const { t, locale } = useLocale();
+const { money } = useFormat();
 const span = ref<3 | 6 | 12>(12);
 const spans = [3, 6, 12] as const;
 const id = useId();
@@ -35,10 +37,11 @@ const domain = computed<[number, number]>(() => {
 
     return [0, Math.max(1, ...values) * 1.1];
 });
-const total = computed(
-    () =>
-        (props.trend?.sales_value ?? []).reduce((sum, v) => sum + v, 0) +
-        (props.trend?.rental_value ?? []).reduce((sum, v) => sum + v, 0),
+const total = computed(() =>
+    [...(slice.value?.sales ?? []), ...(slice.value?.rental ?? [])].reduce(
+        (sum, v) => sum + v,
+        0,
+    ),
 );
 </script>
 
@@ -65,7 +68,7 @@ const total = computed(
                     ]"
                     @click="span = n"
                 >
-                    {{ n }}M
+                    {{ t(`${n}M`) }}
                 </button>
             </div>
         </template>
@@ -85,10 +88,10 @@ const total = computed(
                     }}</span
                 >
                 <span class="ms-auto"
-                    >{{ t('12-month total') }}
-                    <b class="text-foreground font-medium"
-                        >AED {{ formatCompact(total, locale) }}</b
-                    ></span
+                    >{{ t('Total for the period shown') }}
+                    <b class="text-foreground font-medium">{{
+                        money(total, 'AED', { compact: true })
+                    }}</b></span
                 >
             </div>
             <figure dir="ltr">

@@ -85,7 +85,7 @@ const { t } = useLocale();
                 <SidebarMenuItem v-else-if="item.soon">
                     <SidebarMenuButton
                         :tooltip="`${t(item.label)} · ${t('Soon')}`"
-                        class="cursor-default opacity-55 hover:bg-transparent active:bg-transparent"
+                        class="cursor-default opacity-55 hover:bg-transparent active:bg-transparent aria-disabled:pointer-events-auto"
                         aria-disabled="true"
                         tabindex="-1"
                     >
@@ -102,6 +102,7 @@ const { t } = useLocale();
                         as-child
                         :is-active="item.href === active"
                         :tooltip="t(item.label)"
+                        :class="badge(item.badge) ? 'pe-8' : ''"
                     >
                         <Link :href="item.href ?? '/dashboard'">
                             <component :is="NAV_ICONS[item.icon]" />

@@ -6,10 +6,8 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useLocale } from '@/composables/useLocale';
 
 const page = usePage();
-const { t } = useLocale();
 const organization = computed(
     () => page.props.organization?.name ?? page.props.name,
 );
@@ -23,7 +21,7 @@ const organization = computed(
                 as-child
                 class="hover:bg-transparent active:bg-transparent"
             >
-                <Link href="/dashboard" :aria-label="t('Home')">
+                <Link href="/dashboard">
                     <span
                         class="border-champagne/45 text-champagne font-display grid size-9 shrink-0 place-items-center rounded-md border bg-white/5 text-lg font-semibold"
                         >Z1</span

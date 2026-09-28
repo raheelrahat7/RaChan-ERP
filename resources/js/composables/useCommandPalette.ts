@@ -3,7 +3,10 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 const open = ref(false);
 
 function onKey(event: KeyboardEvent): void {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    if (
+        (event.metaKey || event.ctrlKey) &&
+        (event.code === 'KeyK' || event.key.toLowerCase() === 'k')
+    ) {
         event.preventDefault();
         open.value = !open.value;
     }

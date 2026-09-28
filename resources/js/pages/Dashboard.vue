@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
     BadgePercent,
     Banknote,
@@ -48,7 +48,12 @@ defineOptions({
 });
 
 const { t } = useLocale();
-const { compact } = useFormat();
+const { compact, money } = useFormat();
+const page = usePage();
+
+function can(ability: string): boolean {
+    return page.props.abilities?.[ability] !== false;
+}
 const view = computed(() => normalizeHome(props));
 const f = computed(() => view.value.figures);
 
@@ -224,7 +229,10 @@ const dealStages = computed(() =>
                 :subtitle="view.leadPipeline?.pipeline?.name ?? 'CRM'"
             >
                 <template #action>
-                    <Link href="/crm/leads" class="text-accent-text text-xs"
+                    <Link
+                        v-if="can('crm')"
+                        href="/crm/leads"
+                        class="text-accent-text text-xs"
                         >{{ t('Open CRM') }} →</Link
                     >
                 </template>
@@ -234,8 +242,9 @@ const dealStages = computed(() =>
                     <p class="text-muted-foreground mt-5 mb-2.5 text-xs">
                         {{ t('Leads by source') }}
                     </p>
+                    <ComingSoon v-if="view.leadSources === null" />
                     <BarList
-                        v-if="view.leadSources?.length"
+                        v-else-if="view.leadSources.length"
                         :rows="
                             view.leadSources.map((source) => ({
                                 label: source.source,
@@ -250,7 +259,10 @@ const dealStages = computed(() =>
             </HomePanel>
             <HomePanel title="Deal pipeline" subtitle="Deals & commission">
                 <template #action>
-                    <Link href="/agreements" class="text-accent-text text-xs"
+                    <Link
+                        v-if="can('deals')"
+                        href="/agreements"
+                        class="text-accent-text text-xs"
                         >{{ t('Open deals') }} →</Link
                     >
                 </template>
@@ -280,7 +292,9 @@ const dealStages = computed(() =>
                             >{{
                                 f.commission_payable.soon
                                     ? '—'
-                                    : `AED ${compact(f.commission_payable.value)}`
+                                    : money(f.commission_payable.value, 'AED', {
+                                          compact: true,
+                                      })
                             }}</b
                         >
                     </div>

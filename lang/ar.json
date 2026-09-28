@@ -767,5 +767,21 @@
     "Company": "الشركة",
     "Branch": "الفرع",
     "All companies": "جميع الشركات",
-    "All branches": "جميع الفروع"
+    "All branches": "جميع الفروع",
+    "Overdue CRM follow-ups": "متابعات إدارة العملاء المتأخرة",
+    "CRM follow-ups due today": "متابعات إدارة العملاء المستحقة اليوم",
+    "Expiring leases": "عقود إيجار تنتهي قريبًا",
+    "Expiring documents": "مستندات تنتهي قريبًا",
+    "Expiring Ejari registrations": "تسجيلات إيجاري تنتهي قريبًا",
+    "Overdue invoices": "فواتير متأخرة",
+    "Overdue vendor bills": "فواتير موردين متأخرة",
+    "Due preventive plans": "خطط صيانة وقائية مستحقة",
+    "Total for the period shown": "إجمالي الفترة المعروضة",
+    "3M": "3 أشهر",
+    "6M": "6 أشهر",
+    "12M": "12 شهرًا",
+    "Notifications (:count unread)": "الإشعارات (:count غير مقروءة)",
+    "Period": "الفترة",
+    "Sale or rent": "بيع أو إيجار",
+    "Styleguide": "دليل التصميم"
 }

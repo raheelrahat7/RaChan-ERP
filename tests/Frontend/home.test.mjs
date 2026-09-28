@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
     attentionItems,
@@ -134,4 +135,97 @@ await test('the greeting follows the time of day', () => {
     assert.equal(greetingKey(13), 'Good afternoon, :name.');
     assert.equal(greetingKey(19), 'Good evening, :name.');
     assert.equal(greetingKey(2), 'Good evening, :name.');
+});
+
+await test('every backend alert title has Arabic', () => {
+    const read = (path) =>
+        readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
+    const arabic = JSON.parse(read('resources/js/locales/ar.json'));
+    const titles = [
+        read('app/Support/CurrentOperationalAlerts.php'),
+        read('app/Domain/Crm/Queries/FollowUpAlerts.php'),
+    ].flatMap((source) =>
+        [...source.matchAll(/'title' => (?:__\()?'([^']+)'/g)].map((m) => m[1]),
+    );
+    assert.ok(titles.length >= 9);
+    assert.deepEqual(
+        titles.filter((title) => !arabic[title]),
+        [],
+    );
+});
+
+await test('money and counts sent as strings are coerced to numbers', () => {
+    const view = normalizeHome({
+        kpis: {
+            ...kpis,
+            revenue: { value: '188250.00', previous: '176900.00' },
+            pdc_due: { count: '3', amount: '9000.50' },
+        },
+        trend: {
+            months: ['2026-08', '2026-09'],
+            sales_value: ['1000.00', '2000.00'],
+            rental_value: ['10.00', null],
+        },
+        commission_split: {
+            net_company: '10.00',
+            agent_payable: '5',
+            co_broker: '0.00',
+            referral: 'x',
+        },
+        top_agents: [
+            {
+                user_id: 1,
+                name: 'A',
+                team: null,
+                commission: '98500.00',
+                deals: '6',
+            },
+        ],
+        deal_pipeline: {
+            stages: [
+                { key: 'draft', label: 'Draft', count: '2', value: '100.5' },
+            ],
+        },
+    });
+    assert.equal(view.figures.revenue.value, 188250);
+    assert.equal(view.figures.revenue.change, 6.4);
+    assert.deepEqual(view.figures.pdc_due, {
+        value: 9000.5,
+        change: null,
+        count: 3,
+        soon: false,
+    });
+    assert.deepEqual(view.trend.sales_value, [1000, 2000]);
+    assert.deepEqual(view.trend.rental_value, [10, 0]);
+    assert.deepEqual(view.commission, {
+        net_company: 10,
+        agent_payable: 5,
+        co_broker: 0,
+        referral: 0,
+    });
+    assert.equal(view.topAgents[0].commission, 98500);
+    assert.equal(view.topAgents[0].deals, 6);
+    assert.deepEqual(view.dealPipeline[0], {
+        key: 'draft',
+        label: 'Draft',
+        count: 2,
+        value: 100.5,
+    });
+});
+
+await test('empty lists stay empty, and missing ones stay coming soon', () => {
+    const view = normalizeHome({
+        top_agents: [],
+        lead_sources: [],
+        cost_centres: [],
+        insights: [],
+        lead_pipeline: { pipeline: null, stages: [] },
+        deal_pipeline: { stages: [] },
+    });
+    assert.deepEqual(view.topAgents, []);
+    assert.deepEqual(view.leadSources, []);
+    assert.deepEqual(view.costCentres, []);
+    assert.deepEqual(view.insights, []);
+    assert.deepEqual(view.dealPipeline, []);
+    assert.equal(normalizeHome({}).leadSources, null);
 });

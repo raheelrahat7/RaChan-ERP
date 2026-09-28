@@ -18,6 +18,11 @@ const page = usePage();
 const { t } = useLocale();
 const { toggle } = useCommandPalette();
 const unread = computed(() => page.props.counts?.notifications_unread ?? 0);
+const shortcut =
+    typeof navigator !== 'undefined' &&
+    /Mac|iPhone|iPad/.test(navigator.userAgent)
+        ? '⌘K'
+        : 'Ctrl K';
 </script>
 
 <template>
@@ -34,8 +39,9 @@ const unread = computed(() => page.props.counts?.notifications_unread ?? 0);
             >
                 <Search class="size-4" />
                 {{ t('Search or jump to…') }}
-                <kbd class="bg-card ms-auto rounded border px-1.5 text-[10.5px]"
-                    >⌘K</kbd
+                <kbd
+                    class="bg-card ms-auto rounded border px-1.5 text-[10.5px]"
+                    >{{ shortcut }}</kbd
                 >
             </button>
             <Button
@@ -51,7 +57,13 @@ const unread = computed(() => page.props.counts?.notifications_unread ?? 0);
                 <Link
                     href="/notifications"
                     class="relative"
-                    :aria-label="t('Notifications')"
+                    :aria-label="
+                        unread > 0
+                            ? t('Notifications (:count unread)', {
+                                  count: unread,
+                              })
+                            : t('Notifications')
+                    "
                 >
                     <Bell />
                     <span

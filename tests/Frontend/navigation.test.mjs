@@ -128,3 +128,26 @@ await test('the command palette lists enabled pages only, children included', ()
     );
     assert.equal(vat.section, 'Finance');
 });
+
+await test('a real section disappears when abilities hide all of its items, soon ones included', () => {
+    const groupIds = (abilities) =>
+        visibleNavigation(NAVIGATION, abilities).map((group) => group.id);
+    assert.ok(
+        !groupIds({
+            accounting: false,
+            procurement: false,
+            pdc: false,
+        }).includes('finance'),
+    );
+    assert.ok(
+        !groupIds({
+            crm: false,
+            listings: false,
+            deals: false,
+            leasing: false,
+            commission: false,
+        }).includes('sales'),
+    );
+    assert.ok(!groupIds({ marketing: false }).includes('marketing'));
+    assert.ok(groupIds({}).includes('finance'));
+});
