@@ -1,11 +1,11 @@
-# Backend handoff to Codex: Command Centre, shared props and new modules
+# Backend handoff to Codex: Home dashboard, shared props and new modules
 
 > **Implementation update, 2026-09-28:** The owner approved Parts A, B, D and C1–C11. Backend routes, modules and focused tests are implemented on `codex/command-centre-data` in an isolated worktree. See [the implementation scope and frontend route contract](CODEX_RED_MODULE_SCOPES_2026_09_28.md) for exact route names, props and data-source limits. The original contract below records the requested shape; the implementation update documents permission-based nullable values and provider-dependent fields.
 
 - **Date:** 2026-09-28
 - **From:** the frontend team (Claude). The owner has decided that Codex does all backend work and Claude does all frontend work.
 - **Read first:** `AGENTS.md`, `docs/MASTER_DEVELOPMENT_PLAN.md`, `docs/PROVIDER_NEUTRAL_CONTRACTS.md`, and `docs/superpowers/specs/2026-09-28-bordeaux-frontend-redesign-design.md` §3.3 and §5.2.
-- **Visual target:** `.superpowers/brainstorm/command-centre.html`. Open it in a browser and click **Data readiness**: orange = data exists but isn't sent to the page; red = a new module.
+- **Visual target:** `.superpowers/brainstorm/home-dashboard.html`. Open it in a browser and click **Data readiness**: orange = data exists but isn't sent to the page; red = a new module.
 
 ## How we work together
 
@@ -22,9 +22,9 @@
 
 ---
 
-## Part A: Command Centre data (orange). Highest priority
+## Part A: Home dashboard data (orange). Highest priority
 
-Extend `app/Http/Controllers/DashboardController.php`. Put the aggregation in a new query class, `app/Domain/Platform/Queries/CommandCentre.php` (or split it across the owning modules' `Queries/`), not in the controller.
+Extend `app/Http/Controllers/DashboardController.php`. Put the aggregation in a new query class, `app/Domain/Platform/Queries/HomeDashboard.php` (or split it across the owning modules' `Queries/`), not in the controller.
 
 **Query string filters:**
 
@@ -199,6 +199,35 @@ This is spec §5.2, unchanged, now owned by Codex:
 - feature tests: happy path, validation, honeypot, throttle, missing config
 
 Route: `POST /demo`, named `marketing.demo.store`. It should redirect back with a `success` flash message. Claude builds the page against that.
+
+---
+
+## Part E: Building skyline data (for later module phases)
+
+The owner wants a "building skyline" visual in the facility management and property sales sections: each building drawn as its floors and units, each unit coloured by status. The reference is concept B in `.superpowers/brainstorm/home-concepts.html`. Claude will build it during those module phases. The data it will need, from a property page or an operations page:
+
+```ts
+type BuildingSkyline = {
+    building: { id: number; name: string; property: string; floors: number };
+    floors: {
+        label: string; // e.g. "12", "G", "P1"
+        units: {
+            id: number;
+            number: string;
+            status:
+                | 'let'
+                | 'sold'
+                | 'reserved'
+                | 'vacant'
+                | 'rent_overdue'
+                | 'maintenance';
+            href: string; // unit page
+        }[];
+    }[]; // top floor first
+};
+```
+
+Derive the status from units, leases, sales contracts, reservations, invoices and maintenance requests. Today `buildings` has a `floors` count and `units` has a `building_id`, but units have no floor. Adding a nullable `units.floor` (or deriving it from the unit number) is a small inventory change for the owner to approve first. This part is not urgent; schedule it with the facility-management or sales phase.
 
 ---
 
