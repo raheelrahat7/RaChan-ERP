@@ -63,13 +63,13 @@ class ManageLeadPipeline
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createPublicInquiry(Organization $org, array $data): CrmLead
+    public function createPublicInquiry(Organization $org, array $data, string $historyNote = 'Submitted through a public listing page.'): CrmLead
     {
-        return DB::transaction(function () use ($org, $data): CrmLead {
+        return DB::transaction(function () use ($org, $data, $historyNote): CrmLead {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
             $lead = $org->leads()->create($data);
             $this->autoAssign->handle($org, $lead, $lead->stage);
-            $this->record($org, null, $lead, null, $lead->stage, null, 'Submitted through a public listing page.');
+            $this->record($org, null, $lead, null, $lead->stage, null, $historyNote);
             $this->audit->handle($org, null, 'crm.lead.public_inquiry_created', $lead, ['listing_id' => $lead->listing_id]);
 
             return $lead;

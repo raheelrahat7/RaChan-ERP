@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['journal_entry_id', 'ledger_account_id', 'description', 'debit', 'credit'])]
+#[Fillable(['journal_entry_id', 'ledger_account_id', 'company_id', 'branch_id', 'cost_centre_id', 'description', 'debit', 'credit'])]
 class JournalLine extends Model
 {
     /** @return BelongsTo<LedgerAccount, $this> */
