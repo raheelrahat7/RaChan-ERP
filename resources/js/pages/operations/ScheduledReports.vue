@@ -58,7 +58,7 @@ function toggle(id: number, enabled: boolean): void {
 </script>
 <template>
     <Head title="Private scheduled reports" />
-    <div class="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Private scheduled reports"
             description="PDF and XLSX operations reports delivered inside the app to you."

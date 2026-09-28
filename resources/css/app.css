@@ -129,52 +129,52 @@
 }
 
 .dark {
-    --background: #0e0a0b;
-    --foreground: #f1e9e7;
-    --surface-sunken: #150f11;
-    --faint: #6a5c5f;
-    --card: #181214;
-    --card-foreground: #f1e9e7;
-    --popover: #181214;
-    --popover-foreground: #f1e9e7;
-    --primary: #9e2f45;
-    --primary-hover: #b03750;
-    --primary-foreground: #fff4f1;
-    --secondary: #221a1c;
-    --secondary-foreground: #f1e9e7;
-    --muted: #1d1618;
-    --muted-foreground: #a8989b;
-    --accent: #211a1c;
-    --accent-foreground: #f1e9e7;
-    --accent-text: #d9b892;
-    --champagne: #d2ae86;
-    --success: #8dc3a1;
-    --info: #8db5dc;
-    --warning: #ddb46e;
-    --destructive: #f08a70;
+    --background: #1f1418;
+    --foreground: #f4ebe8;
+    --surface-sunken: #25171c;
+    --faint: #7d6a70;
+    --card: #2a1b20;
+    --card-foreground: #f4ebe8;
+    --popover: #2a1b20;
+    --popover-foreground: #f4ebe8;
+    --primary: #a8344c;
+    --primary-hover: #b83d57;
+    --primary-foreground: #fff5f2;
+    --secondary: #33222a;
+    --secondary-foreground: #f4ebe8;
+    --muted: #2d1c22;
+    --muted-foreground: #bca7ac;
+    --accent: #34222a;
+    --accent-foreground: #f4ebe8;
+    --accent-text: #e2c29c;
+    --champagne: #d9b68e;
+    --success: #95cca9;
+    --info: #9bc0e3;
+    --warning: #e6bd78;
+    --destructive: #f59a82;
     --destructive-foreground: #1e1215;
-    --border: rgba(245, 225, 228, 0.09);
-    --input: rgba(245, 225, 228, 0.16);
-    --ring: #d2ae86;
-    --chart-1: #c75a6e;
-    --chart-2: #d2ae86;
+    --border: rgba(255, 225, 232, 0.1);
+    --input: rgba(255, 225, 232, 0.18);
+    --ring: #d9b68e;
+    --chart-1: #d0687c;
+    --chart-2: #d9b68e;
     --chart-3: #9aa8b6;
     --chart-4: #9dbba3;
     --chart-5: #e3a5b1;
-    --elevation-panel: 0 24px 48px -28px rgba(0, 0, 0, 0.9);
+    --elevation-panel: 0 24px 48px -28px rgba(0, 0, 0, 0.6);
     --elevation-overlay:
-        0 0 0 1px rgba(255, 255, 255, 0.03),
-        0 40px 80px -30px rgba(0, 0, 0, 0.85);
-    --sidebar-background: #140c0e;
-    --sidebar: #140c0e;
-    --sidebar-foreground: #f1e9e7;
-    --sidebar-muted: #9a878b;
-    --sidebar-primary: #d2ae86;
-    --sidebar-primary-foreground: #140c0e;
-    --sidebar-accent: rgba(255, 255, 255, 0.05);
-    --sidebar-accent-foreground: #f1e9e7;
-    --sidebar-border: rgba(255, 255, 255, 0.06);
-    --sidebar-ring: #d2ae86;
+        0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 40px 80px -30px rgba(0, 0, 0, 0.7);
+    --sidebar-background: #3a1520;
+    --sidebar: #3a1520;
+    --sidebar-foreground: #f6ece8;
+    --sidebar-muted: #caa6ad;
+    --sidebar-primary: #d9b68e;
+    --sidebar-primary-foreground: #3a1520;
+    --sidebar-accent: rgba(255, 255, 255, 0.08);
+    --sidebar-accent-foreground: #f6ece8;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: #d9b68e;
 }
 
 @utility text-eyebrow {
@@ -210,6 +210,59 @@
        RTL text. Explicit dir="ltr" islands (codes, charts) keep their tracking. */
     [dir='rtl'] :not([dir='ltr'], [dir='ltr'] *) {
         letter-spacing: normal !important;
+    }
+
+    /* Raw form controls on existing pages match the design-system inputs.
+       Plain element selectors outrank Tailwind's `font: inherit` reset; page
+       utilities still win because they live in the utilities layer. */
+    select,
+    textarea,
+    input:not(
+        [type='checkbox'],
+        [type='radio'],
+        [type='file'],
+        [type='range'],
+        [type='color']
+    ) {
+        background-color: var(--card);
+        color: var(--foreground);
+        border-color: var(--input);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+
+    select::placeholder,
+    textarea::placeholder,
+    input::placeholder {
+        color: var(--muted-foreground);
+    }
+
+    select:focus-visible,
+    textarea:focus-visible,
+    input:not(
+            [type='checkbox'],
+            [type='radio'],
+            [type='file'],
+            [type='range'],
+            [type='color']
+        ):focus-visible {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 35%, transparent);
+    }
+
+    .dark select:focus-visible,
+    .dark textarea:focus-visible,
+    .dark
+        input:not(
+            [type='checkbox'],
+            [type='radio'],
+            [type='file'],
+            [type='range'],
+            [type='color']
+        ):focus-visible {
+        border-color: var(--ring);
     }
 
     ::selection {

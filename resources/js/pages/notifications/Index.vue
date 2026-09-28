@@ -50,7 +50,7 @@ function label(category: string): string {
 
 <template>
     <Head title="Notifications" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Notifications"
             :description="`${unreadCount} unread · CRM and operational alerts`"

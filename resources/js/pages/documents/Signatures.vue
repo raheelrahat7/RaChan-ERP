@@ -52,7 +52,7 @@ function cancel(): void {
 </script>
 <template>
     <Head title="Signature requests" />
-    <div class="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Signature requests"
             description="Prepare a signing request for an exact PDF version and preserve its audit history."

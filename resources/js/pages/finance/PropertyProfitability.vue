@@ -17,7 +17,7 @@ defineProps<{ properties: Property[] }>();
 
 <template>
     <Head title="Property performance" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Property performance"
             description="AED operating view: active contracted rent, vendor-bill commitments, and actual maintenance costs."

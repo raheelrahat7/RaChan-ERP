@@ -113,7 +113,7 @@ function isDue(plan: Plan): boolean {
 
 <template>
     <Head title="Preventive maintenance" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Preventive maintenance"
             description="Schedule recurring service and generate due work orders."

@@ -80,16 +80,15 @@ function removeMember(member: Member): void {
 </script>
 
 <template>
-    <Link
-        v-if="canPrepareSignatures"
-        href="/documents/signatures"
-        class="m-4 inline-block text-sm underline"
-        >Document signature requests (owner)</Link
-    >
-
     <Head title="Organization settings" />
 
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+        <Link
+            v-if="canPrepareSignatures"
+            href="/documents/signatures"
+            class="self-start text-sm underline"
+            >Document signature requests (owner)</Link
+        >
         <Heading
             title="Organization settings"
             :description="`Manage access for ${organization.name}.`"

@@ -255,7 +255,7 @@ function postForfeiture(deductionId: number) {
 </script>
 <template>
     <Head title="Lease compliance" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Lease compliance"
             description="Ejari, deposits, service charges, and post-dated cheques for each lease."

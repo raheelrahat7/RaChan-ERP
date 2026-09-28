@@ -114,7 +114,7 @@ function status(): void {
 </script>
 <template>
     <Head :title="vehicle.reference" />
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             :translate-text="false"
             :title="`${vehicle.reference} · ${vehicle.plate}`"

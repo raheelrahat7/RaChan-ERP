@@ -66,7 +66,7 @@ function link(): void {
 </script>
 <template>
     <Head title="Customer portal access" />
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Customer portal access"
             description="Invite tenants and landlords through explicit party links."

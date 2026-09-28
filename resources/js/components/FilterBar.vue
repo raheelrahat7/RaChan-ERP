@@ -29,7 +29,7 @@ const { t } = useLocale();
                 v-model="search"
                 type="search"
                 :placeholder="t(placeholder)"
-                class="bg-surface-sunken border-border h-[34px] ps-9"
+                class="bg-surface-sunken border-border h-9 ps-9"
             />
         </label>
         <slot />

@@ -28,7 +28,7 @@ function create(): void {
 </script>
 <template>
     <Head title="Construction projects" />
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Construction projects"
             description="Track gross budgets, BOQ progress and owner-approved contractor claims in AED."

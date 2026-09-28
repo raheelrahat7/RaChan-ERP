@@ -75,7 +75,7 @@ function act(reverse: boolean): void {
 </script>
 <template>
     <Head title="Vendor cash refunds" />
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Cash received back from vendors"
             description="Owner-approved receipts against supplier credits and actual overpayments."

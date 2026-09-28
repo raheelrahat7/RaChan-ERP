@@ -157,7 +157,7 @@ function status(): void {
 </script>
 <template>
     <Head :title="project.reference" />
-    <div class="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             :translate-text="false"
             :title="`${project.reference} · ${project.title}`"

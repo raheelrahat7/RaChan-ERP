@@ -52,7 +52,7 @@ function archive(): void {
 </script>
 <template>
     <Head :title="t('Document versions')" />
-    <div class="mx-auto w-full max-w-4xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             :translate-text="false"
             :title="root.name"

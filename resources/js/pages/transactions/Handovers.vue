@@ -137,7 +137,7 @@ function complete(handover: Handover): void {
 
 <template>
     <Head title="Handovers" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Move-in and move-out"
             description="Operational handovers for active leases. Completing a move-out makes the unit available."

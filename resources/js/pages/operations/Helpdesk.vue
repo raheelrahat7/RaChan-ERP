@@ -34,7 +34,7 @@ function search(): void {
 
 <template>
     <Head title="Service helpdesk" />
-    <div class="space-y-6 p-4 sm:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Service helpdesk"
             description="Track jobs, acknowledgements and service targets."

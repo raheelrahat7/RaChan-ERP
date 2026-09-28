@@ -122,14 +122,13 @@ function apply(): void {
 </script>
 
 <template>
-    <Link
-        href="/operations/scheduled-reports"
-        class="m-4 inline-block text-sm underline"
-        >Private scheduled PDF/XLSX reports</Link
-    >
-
     <Head title="Operations reports" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+        <Link
+            href="/operations/scheduled-reports"
+            class="self-start text-sm underline"
+            >Private scheduled PDF/XLSX reports</Link
+        >
         <Card
             ><CardHeader><CardTitle>Your saved filters</CardTitle></CardHeader
             ><CardContent class="space-y-3">

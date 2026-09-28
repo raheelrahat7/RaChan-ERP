@@ -107,7 +107,7 @@ function accountName(id: number): string {
 
 <template>
     <Head title="Historical journal mappings" />
-    <div class="space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Historical journal mappings"
             description="Review account allocations for historical summaries. Approved allocations appear in reports on the original journal date."

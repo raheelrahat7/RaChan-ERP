@@ -78,7 +78,7 @@ const scopeName = (item: Grant) =>
 
 <template>
     <Head title="Departments and CRM access" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Departments and CRM access"
             description="Organize members and grant extra lead visibility to individuals."

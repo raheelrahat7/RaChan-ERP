@@ -34,7 +34,7 @@ function label(event: string): string {
 </script>
 <template>
     <Head title="Organization activity" />
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Organization activity"
             description="Recorded changes across your organization."

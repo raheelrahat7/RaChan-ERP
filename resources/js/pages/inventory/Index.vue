@@ -65,15 +65,14 @@ function updateStatus(unit: Unit, status: string): void {
 }
 </script>
 <template>
-    <Link
-        v-if="canManageInventory"
-        href="/inventory/imports"
-        class="m-4 inline-block text-sm underline"
-        >Import inventory CSV</Link
-    >
-
     <Head title="Inventory" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+        <Link
+            v-if="canManageInventory"
+            href="/inventory/imports"
+            class="self-start text-sm underline"
+            >Import inventory CSV</Link
+        >
         <Heading
             title="Property inventory"
             description="Manage properties and units available for leasing or sale."

@@ -17,7 +17,7 @@ const page = usePage();
 </script>
 <template>
     <Head title="CRM pipeline management" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="CRM pipeline management"
             description="Configure organization pipelines, stages and lost reasons."

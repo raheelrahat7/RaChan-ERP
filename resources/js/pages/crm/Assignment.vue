@@ -121,7 +121,7 @@ function cancelMetaEdit(): void {
 
 <template>
     <Head title="CRM assignment routing" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="CRM assignment routing"
             description="Route incoming leads to available agents with capacity."

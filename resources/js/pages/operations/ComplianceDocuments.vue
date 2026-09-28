@@ -52,7 +52,7 @@ function upload(): void {
 </script>
 <template>
     <Head title="Document compliance" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Document compliance"
             description="Secure documents and expiry alerts for property, leases, tenants, and vendors."

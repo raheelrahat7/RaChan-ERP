@@ -24,7 +24,7 @@ const modelValue = useVModel(props, "modelValue", emits, {
     v-model="modelValue"
     data-slot="input"
     :class="cn(
-      'file:text-foreground placeholder:text-muted-foreground selection:bg-champagne/35 border-input bg-card h-[38px] w-full min-w-0 rounded-sm border px-3 py-1 text-base transition-[color,box-shadow,border-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-[13px]',
+      'file:text-foreground placeholder:text-muted-foreground selection:bg-champagne/35 border-input bg-card h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base transition-[color,box-shadow,border-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
       'focus-visible:border-primary dark:focus-visible:border-ring focus-visible:ring-ring/35 focus-visible:ring-[3px]',
       'aria-invalid:border-destructive aria-invalid:ring-destructive/15 aria-invalid:ring-[3px]',
       props.class,

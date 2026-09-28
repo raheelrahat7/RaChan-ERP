@@ -30,7 +30,7 @@ function revoke(id: number): void {
 </script>
 <template>
     <Head title="Read-only API tokens" />
-    <div class="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Read-only API tokens"
             description="Personal access to organization data. Current permissions and job assignments are checked on every request."

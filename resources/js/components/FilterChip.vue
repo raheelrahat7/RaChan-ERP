@@ -13,7 +13,7 @@ const { t } = useLocale();
 
 <template>
     <span
-        class="border-input inline-flex h-[30px] items-center gap-1.5 rounded-full border px-3 text-xs"
+        class="border-input inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs"
     >
         <span>
             {{ t(label)

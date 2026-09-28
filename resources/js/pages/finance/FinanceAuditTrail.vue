@@ -47,7 +47,7 @@ function apply(): void {
 
 <template>
     <Head title="Finance audit trail" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Finance audit trail"
             description="Organization-scoped accounting and finance actions with actor, subject, timestamp, and recorded properties."

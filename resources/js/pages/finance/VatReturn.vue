@@ -137,7 +137,7 @@ function settlementAction(
 </script>
 <template>
     <Head title="VAT201 preparation" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="VAT201 preparation"
             :description="`${frequency} internal report · TRN ${trn} · no FTA submission`"

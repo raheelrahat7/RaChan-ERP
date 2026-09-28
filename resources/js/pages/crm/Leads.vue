@@ -175,7 +175,7 @@ function switchLeadView(view: 'board' | 'list'): void {
 <template>
     <Head title="CRM leads" />
 
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="CRM leads"
             description="Capture prospects and convert qualified leads into contacts and accounts."

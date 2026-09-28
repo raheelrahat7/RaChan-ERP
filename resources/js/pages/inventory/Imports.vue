@@ -39,7 +39,7 @@ function commit(id: number): void {
 </script>
 <template>
     <Head title="Inventory imports" />
-    <div class="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="Inventory imports"
             description="Preview and validate a CSV before creating inventory records."

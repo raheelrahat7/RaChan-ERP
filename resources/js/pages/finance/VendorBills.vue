@@ -113,7 +113,7 @@ function pay(bill: Bill): void {
 
 <template>
     <Head title="Vendor bills" />
-    <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Vendor bills"
             description="Property-allocated payables and vendor payments in AED."

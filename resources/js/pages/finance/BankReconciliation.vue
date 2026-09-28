@@ -126,7 +126,7 @@ function unmatch(line: BankLine): void {
 
 <template>
     <Head title="Bank reconciliation" />
-    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4 md:p-6">
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
             title="Bank reconciliation"
             description="Import AED bank rows, manually match clearing entries, then approve settlement into the linked bank ledger account."

@@ -97,7 +97,7 @@ function cancel(): void {
 </script>
 <template>
     <Head title="AMC coverage" />
-    <div class="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
         <Heading
             title="AMC contracts and coverage"
             description="Record service coverage, equipment and visit limits."
