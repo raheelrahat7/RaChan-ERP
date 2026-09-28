@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { areaPath, linePath } from '@/lib/chart-paths';
+import type { ChartValue } from '@/lib/chart-paths';
 
 const props = withDefaults(
     defineProps<{
-        values: number[];
+        values: ChartValue[];
         label: string;
         labels?: string[];
         height?: number;

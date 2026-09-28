@@ -22,11 +22,13 @@ const COMPACT_UNITS: Record<AppLocale, [number, string][]> = {
         [1e3, 'K'],
         [1e6, 'M'],
         [1e9, 'B'],
+        [1e12, 'T'],
     ],
     ar: [
         [1e3, ' ألف'],
         [1e6, ' مليون'],
         [1e9, ' مليار'],
+        [1e12, ' تريليون'],
     ],
 };
 
@@ -87,9 +89,11 @@ export function formatCompact(
         return EMPTY_VALUE;
     }
     const units = COMPACT_UNITS[locale];
+    // Compare the value as it will be shown, so 999.999 becomes 1K, not 1,000.00.
+    const shown = Math.abs(Number(number.toFixed(2)));
     let index = -1;
     for (let i = units.length - 1; i >= 0; i--) {
-        if (Math.abs(number) >= units[i][0]) {
+        if (shown >= units[i][0]) {
             index = i;
             break;
         }
@@ -193,4 +197,81 @@ export function formatDate(
     }
 
     return text;
+}
+
+export type StatFigureInput = {
+    value: NumericInput;
+    currency?: string;
+    unit?: string;
+    compact?: boolean;
+    decimals?: number;
+};
+
+export type StatFigure = {
+    prefix: string | null;
+    figure: string;
+    suffix: string | null;
+};
+
+export function statFigure(
+    input: StatFigureInput,
+    locale: AppLocale,
+): StatFigure {
+    const figure =
+        input.compact === false
+            ? formatNumber(input.value, input.decimals ?? 0)
+            : formatCompact(input.value, locale);
+    if (figure === EMPTY_VALUE) {
+        return { prefix: null, figure, suffix: null };
+    }
+    if (input.currency) {
+        return locale === 'ar'
+            ? {
+                  prefix: null,
+                  figure,
+                  suffix: currencySymbol(input.currency, 'ar'),
+              }
+            : { prefix: input.currency, figure, suffix: null };
+    }
+
+    return { prefix: null, figure, suffix: input.unit ?? null };
+}
+
+const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['second', 60],
+    ['minute', 60],
+    ['hour', 24],
+    ['day', 30],
+    ['month', 12],
+    ['year', Number.POSITIVE_INFINITY],
+];
+
+export function formatRelative(
+    value: string | Date | null | undefined,
+    locale: AppLocale = 'en',
+    now: Date = new Date(),
+): string {
+    if (value === null || value === undefined || value === '') {
+        return EMPTY_VALUE;
+    }
+    const date = typeof value === 'string' ? new Date(value) : value;
+    if (Number.isNaN(date.getTime())) {
+        return EMPTY_VALUE;
+    }
+    const formatter = new Intl.RelativeTimeFormat(
+        locale === 'ar' ? 'ar-AE-u-nu-latn' : 'en',
+        { numeric: 'auto' },
+    );
+    let amount = (date.getTime() - now.getTime()) / 1000;
+    for (const [unit, size] of RELATIVE_STEPS) {
+        if (Math.abs(amount) < size) {
+            return formatter.format(
+                unit === 'second' ? 0 : Math.round(amount),
+                unit,
+            );
+        }
+        amount /= size;
+    }
+
+    return EMPTY_VALUE;
 }

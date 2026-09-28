@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
     ariaSort,
     nextSort,
+    pruneSelection,
     selectionState,
     toggleAll,
     toggleOne,
@@ -36,4 +37,10 @@ await test('the header checkbox reflects none, some or all visible rows', () => 
     assert.equal(selectionState([1], [1, 2]), 'indeterminate');
     assert.equal(selectionState([1, 2, 7], [1, 2]), true);
     assert.equal(selectionState([7], []), false);
+});
+
+await test('selection drops rows that are no longer shown, and keeps identity when nothing changes', () => {
+    assert.deepEqual(pruneSelection([1, 2, 9], [1, 2, 3]), [1, 2]);
+    const kept = [1, 2];
+    assert.equal(pruneSelection(kept, [1, 2, 3]), kept);
 });

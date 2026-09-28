@@ -48,6 +48,8 @@ export type NavLink = {
     label: string;
     href: string;
     icon: NavIcon;
+    /** Path prefix that marks this link active when it differs from href. */
+    match?: string;
     children?: NavChild[];
 };
 
@@ -283,7 +285,12 @@ export const NAVIGATION: NavGroup[] = [
                 href: '/organization/api-tokens',
                 icon: 'tokens',
             },
-            { label: 'Settings', href: '/settings/profile', icon: 'settings' },
+            {
+                label: 'Settings',
+                href: '/settings/profile',
+                icon: 'settings',
+                match: '/settings',
+            },
         ],
     },
 ];
@@ -308,19 +315,32 @@ function matches(href: string, path: string): boolean {
     return path === href || path.startsWith(`${href}/`);
 }
 
+function candidates(): { href: string; prefix: string }[] {
+    return NAVIGATION.flatMap((group) =>
+        group.items.flatMap((item) =>
+            item.children
+                ? item.children.map((child) => ({
+                      href: child.href,
+                      prefix: child.href,
+                  }))
+                : [{ href: item.href, prefix: item.match ?? item.href }],
+        ),
+    );
+}
+
 export function activeHref(url: string): string | null {
     const path = pathOf(url);
-    let best: string | null = null;
-    for (const href of navHrefs()) {
+    let best: { href: string; prefix: string } | null = null;
+    for (const candidate of candidates()) {
         if (
-            matches(href, path) &&
-            (best === null || href.length > best.length)
+            matches(candidate.prefix, path) &&
+            (best === null || candidate.prefix.length > best.prefix.length)
         ) {
-            best = href;
+            best = candidate;
         }
     }
 
-    return best;
+    return best?.href ?? null;
 }
 
 export function activeGroupId(url: string): string | null {

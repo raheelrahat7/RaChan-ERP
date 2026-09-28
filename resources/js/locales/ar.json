@@ -600,5 +600,8 @@
     "Something went wrong": "حدث خطأ ما",
     "Try again": "إعادة المحاولة",
     "Nothing here yet": "لا يوجد شيء هنا بعد",
-    "Remove filter": "إزالة عامل التصفية"
+    "Remove filter": "إزالة عامل التصفية",
+    "Select :row": "تحديد :row",
+    "Command Palette": "لوحة الأوامر",
+    "Search for a command to run...": "ابحث عن أمر لتنفيذه..."
 }

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { linePath } from '@/lib/chart-paths';
+import type { ChartValue } from '@/lib/chart-paths';
 
 const props = withDefaults(
-    defineProps<{ values: number[]; width?: number; height?: number }>(),
+    defineProps<{ values: ChartValue[]; width?: number; height?: number }>(),
     { width: 86, height: 24 },
 );
 

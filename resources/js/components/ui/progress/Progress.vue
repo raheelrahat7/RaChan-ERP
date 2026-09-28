@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ProgressRootProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
+import { computed } from "vue"
 import { reactiveOmit } from "@vueuse/core"
 import {
   ProgressIndicator,
@@ -16,6 +17,11 @@ const props = withDefaults(
 )
 
 const delegatedProps = reactiveOmit(props, "class")
+
+const percent = computed(() => {
+  const max = props.max && props.max > 0 ? props.max : 100
+  return Math.min(100, Math.max(0, ((props.modelValue ?? 0) / max) * 100))
+})
 </script>
 
 <template>
@@ -24,7 +30,7 @@ const delegatedProps = reactiveOmit(props, "class")
     v-bind="delegatedProps"
     :class="
       cn(
-        'bg-primary/20 relative h-2 w-full overflow-hidden rounded-full',
+        'bg-primary/15 relative h-1.5 w-full overflow-hidden rounded-full rtl:-scale-x-100',
         props.class,
       )
     "
@@ -32,7 +38,7 @@ const delegatedProps = reactiveOmit(props, "class")
     <ProgressIndicator
       data-slot="progress-indicator"
       class="bg-primary h-full w-full flex-1 transition-all"
-      :style="`transform: translateX(-${100 - (props.modelValue ?? 0)}%);`"
+      :style="`transform: translateX(-${100 - percent}%);`"
     />
   </ProgressRoot>
 </template>

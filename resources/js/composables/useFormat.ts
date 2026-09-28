@@ -4,6 +4,7 @@ import {
     formatDate,
     formatMoney,
     formatNumber,
+    formatRelative,
 } from '@/lib/format';
 import type { DateOptions, MoneyOptions, NumericInput } from '@/lib/format';
 
@@ -24,5 +25,7 @@ export function useFormat() {
             value: string | Date | null | undefined,
             options: DateOptions = {},
         ): string => formatDate(value, locale.value, options),
+        relative: (value: string | Date | null | undefined): string =>
+            formatRelative(value, locale.value),
     };
 }

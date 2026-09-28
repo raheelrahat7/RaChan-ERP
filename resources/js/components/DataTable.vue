@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="Row">
 import { ArrowDown, ArrowUp, ArrowUpDown, TriangleAlert } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { useLocale } from '@/composables/useLocale';
 import {
     ariaSort,
     nextSort,
+    pruneSelection,
     selectionState,
     toggleAll,
     toggleOne,
@@ -27,9 +28,12 @@ import { cn } from '@/lib/utils';
 
 const props = withDefaults(
     defineProps<{
-        columns: DataTableColumn[];
+        columns: DataTableColumn<Row>[];
         rows: Row[];
         rowKey: (row: Row) => RowKey;
+        rowLabel?: (row: Row) => string;
+        /** Scroll area limit so the header can stay in view; '' to disable. */
+        maxHeight?: string;
         loading?: boolean;
         error?: string | null;
         emptyTitle?: string;
@@ -38,6 +42,8 @@ const props = withDefaults(
         caption?: string;
     }>(),
     {
+        rowLabel: undefined,
+        maxHeight: 'max-h-[70vh]',
         loading: false,
         error: null,
         emptyTitle: 'Nothing here yet',
@@ -50,18 +56,44 @@ const props = withDefaults(
 const sort = defineModel<SortState>('sort', { default: null });
 const selected = defineModel<RowKey[]>('selected', { default: () => [] });
 const emit = defineEmits<{ retry: [] }>();
+defineSlots<
+    {
+        toolbar?: () => unknown;
+        bulk?: (props: { selected: RowKey[] }) => unknown;
+        'empty-action'?: () => unknown;
+        footer?: () => unknown;
+    } & {
+        [Key in `cell-${Extract<keyof Row, string>}`]?: (props: {
+            row: Row;
+            value: unknown;
+        }) => unknown;
+    }
+>();
 const { t } = useLocale();
 
 const visibleKeys = computed(() => props.rows.map((row) => props.rowKey(row)));
 const headerState = computed(() =>
     selectionState(selected.value, visibleKeys.value),
 );
+// Selection only ever covers rows the user can see, so bulk actions never
+// act on rows hidden by a filter or another page.
+watch(visibleKeys, (keys) => {
+    const pruned = pruneSelection(selected.value, keys);
+    if (pruned !== selected.value) {
+        selected.value = pruned;
+    }
+});
+
 const columnCount = computed(
     () => props.columns.length + (props.selectable ? 1 : 0),
 );
 
-function cellValue(row: Row, key: string): unknown {
-    return (row as Record<string, unknown>)[key];
+function cellValue(row: Row, key: Extract<keyof Row, string>): unknown {
+    return row[key];
+}
+
+function rowName(row: Row): string {
+    return props.rowLabel ? props.rowLabel(row) : String(props.rowKey(row));
 }
 
 function display(value: unknown): string {
@@ -70,7 +102,7 @@ function display(value: unknown): string {
         : String(value);
 }
 
-function alignClass(column: DataTableColumn): string | undefined {
+function alignClass(column: DataTableColumn<Row>): string | undefined {
     return column.align === 'end' ? 'text-end' : undefined;
 }
 </script>
@@ -87,7 +119,7 @@ function alignClass(column: DataTableColumn): string | undefined {
             }}</span>
             <slot name="bulk" :selected="selected" />
         </div>
-        <Table>
+        <Table :container-class="maxHeight">
             <caption v-if="caption" class="sr-only">
                 {{
                     caption
@@ -212,7 +244,9 @@ function alignClass(column: DataTableColumn): string | undefined {
                         <TableCell v-if="selectable">
                             <Checkbox
                                 :model-value="selected.includes(rowKey(row))"
-                                :aria-label="t('Select row')"
+                                :aria-label="
+                                    t('Select :row', { row: rowName(row) })
+                                "
                                 @update:model-value="
                                     selected = toggleOne(selected, rowKey(row))
                                 "

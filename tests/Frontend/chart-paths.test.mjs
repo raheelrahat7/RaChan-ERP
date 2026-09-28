@@ -35,3 +35,20 @@ await test('line paths are smooth curves and areas close to the baseline', () =>
     assert.equal((line.match(/C/g) ?? []).length, 2);
     assert.ok(areaPath([1, 2, 3], 100, 50).endsWith('L100,50 L0,50 Z'));
 });
+
+await test('missing values leave a gap instead of shifting later points', () => {
+    const points = chartPoints([1, Number.NaN, 3], 100, 24);
+    assert.deepEqual(
+        points.map(([x]) => x),
+        [0, 100],
+    );
+    const line = linePath([1, 2, null, 3, 4], 100, 24);
+    assert.equal((line.match(/M/g) ?? []).length, 2);
+    assert.ok(!line.includes('NaN'));
+});
+
+await test('decimal strings from Laravel casts are charted, not dropped', () => {
+    const line = linePath(['1200.00', '1350.50', '1300.25'], 100, 24);
+    assert.match(line, /^M0,/);
+    assert.ok(!line.includes('NaN'));
+});

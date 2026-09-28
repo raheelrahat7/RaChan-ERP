@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
     STATUS_TONES,
     STRUCK_TEXT_CLASS,
+    displayStatusLabel,
     isStruck,
     statusLabel,
     statusTone,
@@ -52,4 +53,10 @@ await test('every mapped status has an Arabic label', () => {
 
 await test('struck statuses stay readable: muted text, never the decorative faint colour', () => {
     assert.equal(STRUCK_TEXT_CLASS, 'text-muted-foreground line-through');
+});
+
+await test('a missing status still shows readable text', () => {
+    assert.equal(displayStatusLabel(null), '—');
+    assert.equal(displayStatusLabel(''), '—');
+    assert.equal(displayStatusLabel('in_progress'), 'In progress');
 });

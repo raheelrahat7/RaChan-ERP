@@ -206,10 +206,9 @@
         line-height: 1.65;
     }
 
-    /* Letter-spacing breaks Arabic joining, so no tracking utility may apply in RTL. */
-    [dir='rtl'] *,
-    [dir='rtl'] ::before,
-    [dir='rtl'] ::after {
+    /* Letter-spacing breaks Arabic joining, so no tracking utility may apply in
+       RTL text. Explicit dir="ltr" islands (codes, charts) keep their tracking. */
+    [dir='rtl'] :not([dir='ltr'], [dir='ltr'] *) {
         letter-spacing: normal !important;
     }
 
@@ -233,7 +232,6 @@
     [dir='rtl'] .text-eyebrow,
     [dir='rtl'] .text-label {
         font-size: 0.75rem;
-        letter-spacing: 0;
         text-transform: none;
     }
 }

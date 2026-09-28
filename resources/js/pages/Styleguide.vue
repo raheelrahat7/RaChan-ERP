@@ -106,7 +106,7 @@ const invoices: Invoice[] = [
     },
 ];
 
-const columns: DataTableColumn[] = [
+const columns: DataTableColumn<Invoice>[] = [
     { key: 'reference', label: 'Invoice', sortable: true },
     { key: 'tenant', label: 'Tenant', sortable: true },
     { key: 'unit', label: 'Unit' },
@@ -246,6 +246,7 @@ const months = [
                 :columns="columns"
                 :rows="tableState === 'empty' ? [] : rows"
                 :row-key="(row) => row.id"
+                :row-label="(row) => row.reference"
                 :loading="tableState === 'loading'"
                 :error="
                     tableState === 'error'

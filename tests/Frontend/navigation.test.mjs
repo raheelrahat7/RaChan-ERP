@@ -70,3 +70,9 @@ await test('the active link is the longest matching path, ignoring query strings
     assert.equal(activeGroupId('/settings/profile'), 'administration');
     assert.equal(activeGroupId('/unknown'), null);
 });
+
+await test('settings stays highlighted on every settings page', () => {
+    assert.equal(activeHref('/settings/security'), '/settings/profile');
+    assert.equal(activeHref('/settings/appearance'), '/settings/profile');
+    assert.equal(activeGroupId('/settings/appearance'), 'administration');
+});

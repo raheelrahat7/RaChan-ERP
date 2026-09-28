@@ -5,6 +5,8 @@ import {
     formatDate,
     formatMoney,
     formatNumber,
+    formatRelative,
+    statFigure,
     toNumber,
 } from '../../resources/js/lib/format.ts';
 
@@ -118,4 +120,64 @@ await test('negative Arabic amounts isolate the number so the minus stays in fro
     );
     assert.equal(formatMoney(1500, 'AED', 'ar'), '1,500.00 د.إ');
     assert.equal(formatMoney(-1500, 'AED', 'en'), 'AED -1,500.00');
+});
+
+await test('compact figures cover trillions and round up into the next unit', () => {
+    assert.equal(formatCompact(999_999_999_999), '1T');
+    assert.equal(formatCompact(1_500_000_000_000, 'ar'), '1.5 تريليون');
+    assert.equal(formatCompact(999.999), '1K');
+    assert.equal(formatCompact(999.99), '999.99');
+});
+
+await test('stat figures hide the currency when there is no value', () => {
+    assert.deepEqual(statFigure({ value: null, currency: 'AED' }, 'en'), {
+        prefix: null,
+        figure: '—',
+        suffix: null,
+    });
+    assert.deepEqual(statFigure({ value: '', unit: '%' }, 'ar'), {
+        prefix: null,
+        figure: '—',
+        suffix: null,
+    });
+    assert.deepEqual(statFigure({ value: 2418500, currency: 'AED' }, 'en'), {
+        prefix: 'AED',
+        figure: '2.42M',
+        suffix: null,
+    });
+    assert.deepEqual(statFigure({ value: 2418500, currency: 'AED' }, 'ar'), {
+        prefix: null,
+        figure: '2.42 مليون',
+        suffix: 'د.إ',
+    });
+    assert.deepEqual(
+        statFigure(
+            { value: 94.2, unit: '%', compact: false, decimals: 1 },
+            'en',
+        ),
+        { prefix: null, figure: '94.2', suffix: '%' },
+    );
+});
+
+await test('relative times read naturally in both languages with Western digits', () => {
+    const now = new Date('2026-09-28T09:40:00Z');
+    assert.equal(
+        formatRelative('2026-09-28T06:40:00Z', 'en', now),
+        '3 hours ago',
+    );
+    assert.equal(
+        formatRelative('2026-09-28T06:40:00Z', 'ar', now),
+        'قبل 3 ساعات',
+    );
+    assert.equal(
+        formatRelative('2026-09-27T09:40:00Z', 'en', now),
+        'yesterday',
+    );
+    assert.equal(
+        formatRelative('2026-09-30T09:40:00Z', 'en', now),
+        'in 2 days',
+    );
+    assert.equal(formatRelative('2026-09-28T09:39:50Z', 'en', now), 'now');
+    assert.equal(formatRelative(null, 'en', now), '—');
+    assert.equal(formatRelative('nonsense', 'en', now), '—');
 });

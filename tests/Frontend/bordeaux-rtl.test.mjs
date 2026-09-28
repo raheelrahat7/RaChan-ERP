@@ -24,9 +24,10 @@ await test('Arabic fonts download their Arabic subset, not only Latin', () => {
     }
 });
 
-await test('right-to-left text is never letter-spaced, so Arabic letters stay joined', () => {
+await test('right-to-left text is never letter-spaced, but left-to-right islands keep their tracking', () => {
     assert.match(
         css,
-        /\[dir='rtl'\] \*, \[dir='rtl'\] ::before, \[dir='rtl'\] ::after \{ letter-spacing: normal !important; \}/,
+        /\[dir='rtl'\] :not\(\[dir='ltr'\], \[dir='ltr'\] \*\) \{ letter-spacing: normal !important; \}/,
     );
+    assert.doesNotMatch(css, /\[dir='rtl'\] \*, /);
 });

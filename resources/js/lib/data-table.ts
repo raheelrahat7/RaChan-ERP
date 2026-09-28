@@ -4,8 +4,8 @@ export type SortDirection = 'asc' | 'desc';
 
 export type SortState = { key: string; direction: SortDirection } | null;
 
-export type DataTableColumn = {
-    key: string;
+export type DataTableColumn<Row = Record<string, unknown>> = {
+    key: Extract<keyof Row, string>;
     label: string;
     align?: 'start' | 'end';
     sortable?: boolean;
@@ -57,4 +57,13 @@ export function selectionState(
     }
 
     return count === visible.length ? true : 'indeterminate';
+}
+
+export function pruneSelection(
+    selected: RowKey[],
+    visible: RowKey[],
+): RowKey[] {
+    const kept = selected.filter((key) => visible.includes(key));
+
+    return kept.length === selected.length ? selected : kept;
 }

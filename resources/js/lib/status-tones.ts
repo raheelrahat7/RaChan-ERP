@@ -96,3 +96,7 @@ export function statusLabel(value: string | null | undefined): string {
 export function isStruck(value: string | null | undefined): boolean {
     return value ? STRUCK.has(normalizeStatus(value)) : false;
 }
+
+export function displayStatusLabel(value: string | null | undefined): string {
+    return statusLabel(value) || '—';
+}

@@ -4,8 +4,8 @@ import { useLocale } from '@/composables/useLocale';
 import {
     STATUS_TONE_CLASSES,
     STRUCK_TEXT_CLASS,
+    displayStatusLabel,
     isStruck,
-    statusLabel,
     statusTone,
 } from '@/lib/status-tones';
 import type { StatusTone } from '@/lib/status-tones';
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const { t } = useLocale();
 const resolvedTone = computed(() => props.tone ?? statusTone(props.status));
-const text = computed(() => props.label ?? t(statusLabel(props.status)));
+const text = computed(() => props.label ?? t(displayStatusLabel(props.status)));
 </script>
 
 <template>

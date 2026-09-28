@@ -2,6 +2,7 @@
 import type { DialogRootEmits, DialogRootProps } from "reka-ui"
 import { useForwardPropsEmits } from "reka-ui"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useLocale } from "@/composables/useLocale"
 import Command from "./Command.vue"
 
 const props = withDefaults(defineProps<DialogRootProps & {
@@ -14,14 +15,15 @@ const props = withDefaults(defineProps<DialogRootProps & {
 const emits = defineEmits<DialogRootEmits>()
 
 const forwarded = useForwardPropsEmits(props, emits)
+const { t } = useLocale()
 </script>
 
 <template>
   <Dialog v-slot="slotProps" v-bind="forwarded">
     <DialogContent class="overflow-hidden p-0 ">
       <DialogHeader class="sr-only">
-        <DialogTitle>{{ title }}</DialogTitle>
-        <DialogDescription>{{ description }}</DialogDescription>
+        <DialogTitle>{{ t(title) }}</DialogTitle>
+        <DialogDescription>{{ t(description) }}</DialogDescription>
       </DialogHeader>
       <Command>
         <slot v-bind="slotProps" />
