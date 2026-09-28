@@ -31,6 +31,8 @@ const COMPACT_UNITS: Record<AppLocale, [number, string][]> = {
 };
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+// Laravel serialises `date` casts as UTC midnight, e.g. 2026-09-14T00:00:00.000000Z.
+const DATE_CAST = /^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.0+)?Z$/;
 const SQL_DATETIME = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}(?::\d{2})?)$/;
 
 export function toNumber(value: NumericInput): number | null {
@@ -56,6 +58,13 @@ export function formatNumber(value: NumericInput, decimals = 0): string {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
     }).format(rounded);
+}
+
+// Keeps a leading minus next to its digits inside right-to-left text.
+function isolateNegative(text: string, locale: AppLocale): string {
+    return locale === 'ar' && text.startsWith('-')
+        ? `\u2066${text}\u2069`
+        : text;
 }
 
 function trimZeros(text: string): string {
@@ -86,7 +95,10 @@ export function formatCompact(
         }
     }
     if (index === -1) {
-        return formatNumber(number, Number.isInteger(number) ? 0 : 2);
+        return isolateNegative(
+            formatNumber(number, Number.isInteger(number) ? 0 : 2),
+            locale,
+        );
     }
     let text = compactDigits(number / units[index][0]);
     if (Math.abs(Number(text)) >= 1000 && index < units.length - 1) {
@@ -94,7 +106,7 @@ export function formatCompact(
         text = compactDigits(number / units[index][0]);
     }
 
-    return `${text}${units[index][1]}`;
+    return `${isolateNegative(text, locale)}${units[index][1]}`;
 }
 
 export function currencySymbol(currency: string, locale: AppLocale): string {
@@ -115,7 +127,7 @@ export function formatMoney(
     }
     const amount = options.compact
         ? formatCompact(number, locale)
-        : formatNumber(number, options.decimals ?? 2);
+        : isolateNegative(formatNumber(number, options.decimals ?? 2), locale);
     const symbol = currencySymbol(currency, locale);
 
     return locale === 'ar' ? `${amount} ${symbol}` : `${symbol} ${amount}`;
@@ -140,6 +152,11 @@ export function formatDate(
 ): string {
     if (value === null || value === undefined || value === '') {
         return EMPTY_VALUE;
+    }
+    const castDate =
+        typeof value === 'string' ? DATE_CAST.exec(value)?.[1] : undefined;
+    if (castDate) {
+        value = castDate;
     }
     const dateOnly = typeof value === 'string' && DATE_ONLY.test(value);
     let date: Date;

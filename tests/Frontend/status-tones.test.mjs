@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
     STATUS_TONES,
+    STRUCK_TEXT_CLASS,
     isStruck,
     statusLabel,
     statusTone,
@@ -47,4 +48,8 @@ await test('every mapped status has an Arabic label', () => {
         .map((status) => statusLabel(status))
         .filter((label) => !arabic[label]);
     assert.deepEqual(missing, []);
+});
+
+await test('struck statuses stay readable: muted text, never the decorative faint colour', () => {
+    assert.equal(STRUCK_TEXT_CLASS, 'text-muted-foreground line-through');
 });

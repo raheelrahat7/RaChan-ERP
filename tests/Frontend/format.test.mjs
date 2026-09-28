@@ -91,3 +91,31 @@ await test('date-only values never shift a day in the viewer timezone', () => {
     assert.equal(formatDate('2026-09-01', 'en'), '1 Sep 2026');
     assert.equal(formatDate('2026-12-31', 'en'), '31 Dec 2026');
 });
+
+await test('Laravel date casts at UTC midnight keep their day west of UTC', () => {
+    const previous = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+        assert.equal(
+            formatDate('2026-09-14T00:00:00.000000Z', 'en'),
+            '14 Sep 2026',
+        );
+        assert.equal(
+            formatDate('2026-09-14T00:00:00Z', 'ar'),
+            '14 سبتمبر 2026',
+        );
+    } finally {
+        process.env.TZ = previous;
+    }
+});
+
+await test('negative Arabic amounts isolate the number so the minus stays in front', () => {
+    assert.equal(formatMoney(-1500, 'AED', 'ar'), '⁦-1,500.00⁩ د.إ');
+    assert.equal(formatCompact(-1500000, 'ar'), '⁦-1.5⁩ مليون');
+    assert.equal(
+        formatMoney(-1500000, 'AED', 'ar', { compact: true }),
+        '⁦-1.5⁩ مليون د.إ',
+    );
+    assert.equal(formatMoney(1500, 'AED', 'ar'), '1,500.00 د.إ');
+    assert.equal(formatMoney(-1500, 'AED', 'en'), 'AED -1,500.00');
+});

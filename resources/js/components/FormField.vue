@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Label } from '@/components/ui/label';
 import { useLocale } from '@/composables/useLocale';
+import { fieldDescription } from '@/lib/form-field';
 import { cn } from '@/lib/utils';
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         id: string;
         label: string;
@@ -17,6 +19,9 @@ withDefaults(
 );
 
 const { t } = useLocale();
+const description = computed(() =>
+    fieldDescription(props.id, { help: props.help, error: props.error }),
+);
 </script>
 
 <template>
@@ -27,7 +32,11 @@ const { t } = useLocale();
                 >({{ t('optional') }})</span
             >
         </Label>
-        <slot />
+        <slot
+            :id="id"
+            :described-by="description.describedBy"
+            :invalid="description.invalid"
+        />
         <p
             v-if="help && !error"
             :id="`${id}-help`"
@@ -35,6 +44,6 @@ const { t } = useLocale();
         >
             {{ t(help) }}
         </p>
-        <InputError :message="error" />
+        <InputError :id="`${id}-error`" :message="error" />
     </div>
 </template>

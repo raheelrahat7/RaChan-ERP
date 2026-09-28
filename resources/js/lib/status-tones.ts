@@ -65,6 +65,8 @@ export const STATUS_TONE_CLASSES: Record<StatusTone, string> = {
     neutral: 'bg-faint',
 };
 
+export const STRUCK_TEXT_CLASS = 'text-muted-foreground line-through';
+
 const STRUCK = new Set(['void', 'voided']);
 
 export function normalizeStatus(value: string): string {

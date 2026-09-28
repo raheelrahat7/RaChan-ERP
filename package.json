@@ -11,7 +11,8 @@
         "types:check": "vue-tsc --noEmit",
         "typecheck": "vue-tsc --noEmit",
         "lint": "vp check",
-        "format:check": "vp check"
+        "format:check": "vp check",
+        "test:frontend": "node --experimental-strip-types --test tests/Frontend/*.test.mjs"
     },
     "dependencies": {
         "@inertiajs/vite": "^3.0.0",

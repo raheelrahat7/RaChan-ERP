@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useLocale } from '@/composables/useLocale';
 import {
     STATUS_TONE_CLASSES,
+    STRUCK_TEXT_CLASS,
     isStruck,
     statusLabel,
     statusTone,
@@ -26,7 +27,7 @@ const text = computed(() => props.label ?? t(statusLabel(props.status)));
         :class="
             cn(
                 'inline-flex items-center gap-2 text-xs whitespace-nowrap',
-                isStruck(status) && 'text-faint line-through',
+                isStruck(status) && STRUCK_TEXT_CLASS,
             )
         "
     >

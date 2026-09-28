@@ -378,11 +378,12 @@ const months = [
                     label="Unit"
                     help="Only vacant or reserved units are listed."
                     full
+                    v-slot="{ describedBy }"
                 >
                     <Input
                         id="sg-unit"
                         model-value="Marina Heights · A-1204"
-                        aria-describedby="sg-unit-help"
+                        :aria-describedby="describedBy"
                     />
                 </FormField>
             </FormSection>
@@ -401,8 +402,14 @@ const months = [
                     label="Annual rent"
                     error="Annual rent must be greater than zero."
                     full
+                    v-slot="{ describedBy, invalid }"
                 >
-                    <Input id="sg-rent" model-value="0" aria-invalid="true" />
+                    <Input
+                        id="sg-rent"
+                        model-value="0"
+                        :aria-invalid="invalid"
+                        :aria-describedby="describedBy"
+                    />
                 </FormField>
                 <FormField id="sg-notes" label="Notes" optional full>
                     <Textarea
