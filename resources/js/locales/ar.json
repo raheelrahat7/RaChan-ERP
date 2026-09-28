@@ -787,5 +787,13 @@
     "Clear selection": "إزالة التحديد",
     "Searching…": "جارٍ البحث…",
     "Search isn't connected yet.": "البحث غير متاح بعد.",
-    "No matches.": "لا توجد نتائج مطابقة."
+    "No matches.": "لا توجد نتائج مطابقة.",
+    "Everything waiting for your decision, across every module.": "كل ما ينتظر قرارك، عبر جميع الوحدات.",
+    "Nothing is waiting for your approval.": "لا شيء ينتظر موافقتك.",
+    "Module": "الوحدة",
+    "Transaction": "العملية",
+    "Requested by": "طلبها",
+    "Reject this item": "رفض هذا العنصر",
+    "This reason is recorded and, where the workflow supports it, shown to the person who submitted it.": "يُسجَّل هذا السبب، وقد يظهر لمن قدّم الطلب حيثما يسمح سير العمل بذلك.",
+    "Leasing": "التأجير"
 }
