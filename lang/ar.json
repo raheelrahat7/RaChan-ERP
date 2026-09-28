@@ -593,5 +593,12 @@
     "Administration": "الإدارة",
     "Portal access": "الوصول إلى البوابة",
     "API tokens": "رموز الواجهة البرمجية",
-    "optional": "اختياري"
+    "optional": "اختياري",
+    ":count selected": "تم تحديد :count",
+    "Select all rows": "تحديد كل الصفوف",
+    "Select row": "تحديد الصف",
+    "Something went wrong": "حدث خطأ ما",
+    "Try again": "إعادة المحاولة",
+    "Nothing here yet": "لا يوجد شيء هنا بعد",
+    "Remove filter": "إزالة عامل التصفية"
 }
