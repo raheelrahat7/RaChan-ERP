@@ -24,18 +24,23 @@ export type HomeFilters = {
 };
 
 export type HomeKpis = {
-    revenue: { value: Money; previous: Money | null };
-    expenses: { value: Money; previous: Money | null };
-    net_profit: { value: Money; previous: Money | null };
-    cash_balance: { value: Money; change_7d_pct: number | null };
-    receivables: { value: Money };
-    payables: { value: Money };
-    vat_payable: { value: Money };
-    commission_payable: { value: Money; agents: number };
-    active_deals: { count: number };
-    expiring_contracts: { count: number };
-    pdc_due: { count: number; amount: Money };
-    bounced_cheques: { count: number; amount: Money };
+    // Every `value`/`count`/`amount` below can be `null` on its own — the
+    // backend sends it whenever the current user lacks the permission that
+    // field depends on (e.g. viewFinance, viewTransactions). Some *wrapper*
+    // objects can be `null` outright (commission_payable, pdc_due,
+    // bounced_cheques): always read those with `?.`, never `.field` directly.
+    revenue: { value: Money | null; previous: Money | null };
+    expenses: { value: Money | null; previous: Money | null };
+    net_profit: { value: Money | null; previous: Money | null };
+    cash_balance: { value: Money | null; change_7d_pct: number | null };
+    receivables: { value: Money | null };
+    payables: { value: Money | null };
+    vat_payable: { value: Money | null };
+    commission_payable: { value: Money; agents: number } | null;
+    active_deals: { count: number | null };
+    expiring_contracts: { count: number | null };
+    pdc_due: { count: number; amount: Money } | null;
+    bounced_cheques: { count: number; amount: Money } | null;
     pending_approvals: { count: number } | null;
     overdue_tasks: { count: number } | null;
 };
