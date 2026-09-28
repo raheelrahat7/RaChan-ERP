@@ -1,29 +1,36 @@
 export type NavIcon =
-    | 'dashboard'
+    | 'home'
     | 'search'
     | 'notifications'
     | 'leads'
     | 'contacts'
-    | 'pipelines'
-    | 'report'
-    | 'assignment'
-    | 'hierarchy'
-    | 'inventory'
+    | 'matchmaker'
     | 'listings'
-    | 'people'
-    | 'brokerage'
+    | 'inventory'
+    | 'owners'
+    | 'offPlan'
+    | 'secondary'
     | 'reservations'
-    | 'agreements'
+    | 'deals'
     | 'handovers'
-    | 'compliance'
-    | 'invoices'
-    | 'bills'
+    | 'leasing'
+    | 'commission'
+    | 'allocation'
+    | 'performance'
+    | 'marketing'
+    | 'portalListings'
+    | 'portalSubscriptions'
+    | 'portalInvoicing'
+    | 'costing'
+    | 'accounting'
+    | 'cheques'
+    | 'receivables'
+    | 'payables'
     | 'refunds'
     | 'bank'
-    | 'accounting'
-    | 'performance'
-    | 'statements'
-    | 'operations'
+    | 'propertyPerformance'
+    | 'ownerStatements'
+    | 'procurement'
     | 'maintenance'
     | 'preventive'
     | 'helpdesk'
@@ -31,129 +38,175 @@ export type NavIcon =
     | 'parts'
     | 'projects'
     | 'fleet'
+    | 'operations'
     | 'reports'
     | 'scheduled'
-    | 'documents'
+    | 'approvals'
+    | 'tasks'
+    | 'viewings'
     | 'signatures'
-    | 'procurement'
+    | 'complianceDocuments'
+    | 'hr'
+    | 'reportCentre'
+    | 'gaim'
+    | 'bulletins'
+    | 'leadGateway'
+    | 'followUp'
+    | 'pipelines'
+    | 'hierarchy'
     | 'organization'
-    | 'activity'
-    | 'portal'
-    | 'tokens'
     | 'settings';
+
+export type NavBadge = 'notifications_unread' | 'crm_open_leads';
 
 export type NavChild = { label: string; href: string };
 
 export type NavLink = {
     label: string;
-    href: string;
     icon: NavIcon;
+    /** Absent for items that are not built yet. */
+    href?: string;
+    soon?: boolean;
+    /** Key in the shared `abilities` prop; `false` hides the item. */
+    ability?: string;
+    badge?: NavBadge;
     /** Path prefix that marks this link active when it differs from href. */
     match?: string;
     children?: NavChild[];
 };
 
-export type NavGroup = {
-    id: string;
+export type NavGroup = { id: string; label: string; items: NavLink[] };
+
+export type CommandEntry = {
     label: string;
-    items: NavLink[];
-    placement?: 'bottom';
+    href: string;
+    section: string;
+    icon: NavIcon;
 };
+
+const soon = (label: string, icon: NavIcon): NavLink => ({
+    label,
+    icon,
+    soon: true,
+});
 
 export const NAVIGATION: NavGroup[] = [
     {
         id: 'overview',
         label: 'Overview',
         items: [
-            { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
+            { label: 'Home', href: '/dashboard', icon: 'home' },
             { label: 'Search', href: '/search', icon: 'search' },
             {
                 label: 'Notifications',
                 href: '/notifications',
                 icon: 'notifications',
+                badge: 'notifications_unread',
             },
         ],
     },
     {
-        id: 'crm',
-        label: 'CRM',
+        id: 'sales',
+        label: 'Sales & CRM',
         items: [
-            { label: 'Leads', href: '/crm/leads', icon: 'leads' },
-            { label: 'Contacts', href: '/crm/contacts', icon: 'contacts' },
-            { label: 'Pipelines', href: '/crm/pipelines', icon: 'pipelines' },
             {
-                label: 'Pipeline report',
-                href: '/crm/pipeline-report',
-                icon: 'report',
+                label: 'CRM & Leads',
+                href: '/crm/leads',
+                icon: 'leads',
+                ability: 'crm',
+                badge: 'crm_open_leads',
             },
             {
-                label: 'Assignment',
-                href: '/crm/assignment',
-                icon: 'assignment',
+                label: 'Contacts',
+                href: '/crm/contacts',
+                icon: 'contacts',
+                ability: 'crm',
             },
-            { label: 'Hierarchy', href: '/crm/hierarchy', icon: 'hierarchy' },
-        ],
-    },
-    {
-        id: 'portfolio',
-        label: 'Portfolio',
-        items: [
-            { label: 'Inventory', href: '/inventory', icon: 'inventory' },
+            soon('AI Matchmaker', 'matchmaker'),
             {
-                label: 'Listings',
+                label: 'Property & Listings',
                 href: '/real-estate/listings',
                 icon: 'listings',
+                ability: 'listings',
             },
             {
-                label: 'Owners, tenants & brokers',
+                label: 'Property Inventory',
+                href: '/inventory',
+                icon: 'inventory',
+                ability: 'listings',
+            },
+            {
+                label: 'Owners & Developers',
                 href: '/real-estate/people',
-                icon: 'people',
+                icon: 'owners',
+                ability: 'listings',
             },
-            {
-                label: 'Brokerage',
-                href: '/real-estate/brokerage',
-                icon: 'brokerage',
-            },
-        ],
-    },
-    {
-        id: 'leasing',
-        label: 'Leasing & sales',
-        items: [
+            soon('Off-Plan Projects', 'offPlan'),
+            soon('Secondary Market', 'secondary'),
             {
                 label: 'Reservations',
                 href: '/reservations',
                 icon: 'reservations',
+                ability: 'deals',
             },
-            { label: 'Agreements', href: '/agreements', icon: 'agreements' },
-            { label: 'Handovers', href: '/handovers', icon: 'handovers' },
             {
-                label: 'Lease compliance',
-                href: '/lease-compliance',
-                icon: 'compliance',
+                label: 'Deal Management',
+                href: '/agreements',
+                icon: 'deals',
+                ability: 'deals',
             },
+            {
+                label: 'Handovers',
+                href: '/handovers',
+                icon: 'handovers',
+                ability: 'deals',
+            },
+            {
+                label: 'Leasing & Rental',
+                href: '/lease-compliance',
+                icon: 'leasing',
+                ability: 'leasing',
+            },
+            {
+                label: 'Agents & Commission',
+                href: '/real-estate/brokerage',
+                icon: 'commission',
+                ability: 'commission',
+            },
+            {
+                label: 'Broker Allocation',
+                href: '/crm/assignment',
+                icon: 'allocation',
+                ability: 'crm',
+            },
+            {
+                label: 'Broker Performance',
+                href: '/crm/pipeline-report',
+                icon: 'performance',
+                ability: 'crm',
+            },
+        ],
+    },
+    {
+        id: 'marketing',
+        label: 'Marketing',
+        items: [
+            soon('Marketing & Portals', 'marketing'),
+            soon('Portal Listings', 'portalListings'),
+            soon('Portal Subscriptions', 'portalSubscriptions'),
+            soon('Portal Invoicing', 'portalInvoicing'),
+            soon('Listing Costing', 'costing'),
         ],
     },
     {
         id: 'finance',
         label: 'Finance',
         items: [
-            { label: 'Invoices', href: '/invoices', icon: 'invoices' },
-            { label: 'Vendor bills', href: '/vendor-bills', icon: 'bills' },
             {
-                label: 'Vendor refunds',
-                href: '/finance/vendor-cash-refunds',
-                icon: 'refunds',
-            },
-            {
-                label: 'Bank reconciliation',
-                href: '/bank-reconciliation',
-                icon: 'bank',
-            },
-            {
-                label: 'Accounting',
+                label: 'Accounting & Tax',
                 href: '/accounting',
                 icon: 'accounting',
+                ability: 'accounting',
                 children: [
                     { label: 'Accounting overview', href: '/accounting' },
                     {
@@ -183,107 +236,169 @@ export const NAVIGATION: NavGroup[] = [
                     },
                 ],
             },
+            soon('Cheques (PDC)', 'cheques'),
             {
-                label: 'Property performance',
-                href: '/reports/property-profitability',
-                icon: 'performance',
+                label: 'Receivables',
+                href: '/invoices',
+                icon: 'receivables',
+                ability: 'accounting',
             },
             {
-                label: 'Owner statements',
+                label: 'Payables',
+                href: '/vendor-bills',
+                icon: 'payables',
+                ability: 'accounting',
+            },
+            {
+                label: 'Vendor Refunds',
+                href: '/finance/vendor-cash-refunds',
+                icon: 'refunds',
+                ability: 'accounting',
+            },
+            {
+                label: 'Bank Reconciliation',
+                href: '/bank-reconciliation',
+                icon: 'bank',
+                ability: 'accounting',
+            },
+            {
+                label: 'Property Performance',
+                href: '/reports/property-profitability',
+                icon: 'propertyPerformance',
+                ability: 'accounting',
+            },
+            {
+                label: 'Owner Statements',
                 href: '/reports/owner-statements',
-                icon: 'statements',
+                icon: 'ownerStatements',
+                ability: 'accounting',
+            },
+            {
+                label: 'Procurement & Inventory',
+                href: '/procurement',
+                icon: 'procurement',
+                ability: 'procurement',
             },
         ],
     },
     {
-        id: 'operations',
-        label: 'Operations',
+        id: 'facility',
+        label: 'Facility Management',
         items: [
             {
-                label: 'Operations overview',
-                href: '/operations',
-                icon: 'operations',
+                label: 'Maintenance',
+                href: '/maintenance',
+                icon: 'maintenance',
+                ability: 'operations',
             },
-            { label: 'Maintenance', href: '/maintenance', icon: 'maintenance' },
             {
-                label: 'Preventive maintenance',
+                label: 'Preventive Maintenance',
                 href: '/preventive-maintenance',
                 icon: 'preventive',
+                ability: 'operations',
             },
             {
                 label: 'Helpdesk',
                 href: '/operations/helpdesk',
                 icon: 'helpdesk',
+                ability: 'operations',
             },
-            { label: 'AMC contracts', href: '/operations/amc', icon: 'amc' },
             {
-                label: 'Spare parts',
+                label: 'AMC Contracts',
+                href: '/operations/amc',
+                icon: 'amc',
+                ability: 'operations',
+            },
+            {
+                label: 'Spare Parts',
                 href: '/operations/spare-parts',
                 icon: 'parts',
+                ability: 'operations',
             },
             {
                 label: 'Projects',
                 href: '/operations/projects',
                 icon: 'projects',
+                ability: 'projects',
             },
-            { label: 'Fleet', href: '/operations/fleet', icon: 'fleet' },
             {
-                label: 'Operations reports',
+                label: 'Fleet',
+                href: '/operations/fleet',
+                icon: 'fleet',
+                ability: 'fleet',
+            },
+            {
+                label: 'Operations Overview',
+                href: '/operations',
+                icon: 'operations',
+                ability: 'operations',
+            },
+            {
+                label: 'Operations Reports',
                 href: '/operations/reports',
                 icon: 'reports',
+                ability: 'operations',
             },
             {
-                label: 'Scheduled reports',
+                label: 'Scheduled Reports',
                 href: '/operations/scheduled-reports',
                 icon: 'scheduled',
+                ability: 'operations',
             },
+        ],
+    },
+    {
+        id: 'workflow',
+        label: 'Workflow',
+        items: [
+            soon('Approvals', 'approvals'),
+            soon('Tasks', 'tasks'),
+            soon('Meetings & Viewings', 'viewings'),
             {
-                label: 'Compliance documents',
-                href: '/compliance-documents',
-                icon: 'documents',
-            },
-            {
-                label: 'Signatures',
+                label: 'Contracts & Signatures',
                 href: '/documents/signatures',
                 icon: 'signatures',
             },
-        ],
-    },
-    {
-        id: 'procurement',
-        label: 'Procurement',
-        items: [
             {
-                label: 'Procurement',
-                href: '/procurement',
-                icon: 'procurement',
+                label: 'Compliance Documents',
+                href: '/compliance-documents',
+                icon: 'complianceDocuments',
             },
         ],
     },
     {
-        id: 'administration',
-        label: 'Administration',
-        placement: 'bottom',
+        id: 'corporate',
+        label: 'Corporate',
         items: [
+            soon('HR & Staff Services', 'hr'),
+            soon('Report Centre', 'reportCentre'),
+            soon('GAIM Compliance', 'gaim'),
+            soon('Bulletins', 'bulletins'),
+            soon('Lead Gateway', 'leadGateway'),
             {
-                label: 'Organization',
+                label: 'Follow-up Automation',
+                href: '/crm/assignment#follow-up',
+                icon: 'followUp',
+                ability: 'crm',
+            },
+            {
+                label: 'CRM Pipelines',
+                href: '/crm/pipelines',
+                icon: 'pipelines',
+                ability: 'crm',
+            },
+            {
+                label: 'Departments & Teams',
+                href: '/crm/hierarchy',
+                icon: 'hierarchy',
+                ability: 'crm',
+            },
+            {
+                label: 'Organization & Access',
                 href: '/organization',
                 icon: 'organization',
-            },
-            {
-                label: 'Organization activity',
-                href: '/organization/activity',
-                icon: 'activity',
-            },
-            {
-                label: 'Portal access',
-                href: '/organization/portal-access',
-                icon: 'portal',
-            },
-            {
-                label: 'API tokens',
-                href: '/organization/api-tokens',
-                icon: 'tokens',
+                ability: 'organization_admin',
+                match: '/organization',
             },
             {
                 label: 'Settings',
@@ -295,14 +410,24 @@ export const NAVIGATION: NavGroup[] = [
     },
 ];
 
-export function navHrefs(): string[] {
-    return NAVIGATION.flatMap((group) =>
-        group.items.flatMap((item) =>
-            item.children
-                ? item.children.map((child) => child.href)
-                : [item.href],
-        ),
+export function isEnabled(item: NavLink): item is NavLink & { href: string } {
+    return !item.soon && typeof item.href === 'string';
+}
+
+export function navHrefs(groups: NavGroup[] = NAVIGATION): string[] {
+    return groups.flatMap((group) =>
+        group.items.flatMap((item) => {
+            if (item.children) {
+                return item.children.map((child) => child.href);
+            }
+
+            return isEnabled(item) ? [item.href] : [];
+        }),
     );
+}
+
+function withoutHash(href: string): string {
+    return href.split('#')[0];
 }
 
 function pathOf(url: string): string {
@@ -311,20 +436,29 @@ function pathOf(url: string): string {
     return path === '' ? '/' : path;
 }
 
-function matches(href: string, path: string): boolean {
-    return path === href || path.startsWith(`${href}/`);
+function matches(prefix: string, path: string): boolean {
+    return path === prefix || path.startsWith(`${prefix}/`);
 }
 
 function candidates(): { href: string; prefix: string }[] {
     return NAVIGATION.flatMap((group) =>
-        group.items.flatMap((item) =>
-            item.children
-                ? item.children.map((child) => ({
-                      href: child.href,
-                      prefix: child.href,
-                  }))
-                : [{ href: item.href, prefix: item.match ?? item.href }],
-        ),
+        group.items.flatMap((item) => {
+            if (item.children) {
+                return item.children.map((child) => ({
+                    href: child.href,
+                    prefix: child.href,
+                }));
+            }
+
+            return isEnabled(item)
+                ? [
+                      {
+                          href: item.href,
+                          prefix: withoutHash(item.match ?? item.href),
+                      },
+                  ]
+                : [];
+        }),
     );
 }
 
@@ -357,4 +491,48 @@ export function activeGroupId(url: string): string | null {
     );
 
     return group?.id ?? null;
+}
+
+export function visibleNavigation(
+    groups: NavGroup[],
+    abilities: Record<string, boolean> | null | undefined,
+): NavGroup[] {
+    if (!abilities) {
+        return groups;
+    }
+
+    return groups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter(
+                (item) => !item.ability || abilities[item.ability] !== false,
+            ),
+        }))
+        .filter((group) => group.items.length > 0);
+}
+
+export function commandEntries(groups: NavGroup[]): CommandEntry[] {
+    return groups.flatMap((group) =>
+        group.items.flatMap((item) => {
+            if (item.children) {
+                return item.children.map((child) => ({
+                    label: child.label,
+                    href: child.href,
+                    section: group.label,
+                    icon: item.icon,
+                }));
+            }
+
+            return isEnabled(item)
+                ? [
+                      {
+                          label: item.label,
+                          href: item.href,
+                          section: group.label,
+                          icon: item.icon,
+                      },
+                  ]
+                : [];
+        }),
+    );
 }

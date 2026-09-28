@@ -5,7 +5,9 @@ import {
     NAVIGATION,
     activeGroupId,
     activeHref,
+    commandEntries,
     navHrefs,
+    visibleNavigation,
 } from '../../resources/js/lib/navigation.ts';
 
 const read = (path) =>
@@ -17,35 +19,42 @@ const getRoutes = new Set(
     ),
 );
 const arabic = JSON.parse(read('resources/js/locales/ar.json'));
+const items = NAVIGATION.flatMap((group) => group.items);
 
-await test('every navigation link points at an existing GET route', () => {
-    const missing = navHrefs().filter((href) => !getRoutes.has(href));
+await test('every enabled link points at an existing GET route', () => {
+    const missing = navHrefs().filter(
+        (href) => !getRoutes.has(href.split('#')[0]),
+    );
     assert.deepEqual(missing, []);
 });
 
-await test('no route appears twice in the navigation', () => {
+await test('no link appears twice', () => {
     const hrefs = navHrefs();
     assert.equal(new Set(hrefs).size, hrefs.length);
 });
 
-await test('groups are unique, non-empty, and parents open their first child', () => {
-    const ids = NAVIGATION.map((group) => group.id);
-    assert.equal(new Set(ids).size, ids.length);
-    for (const group of NAVIGATION) {
-        assert.ok(group.items.length > 0, `${group.id} is empty`);
-        for (const item of group.items) {
-            if (item.children) {
-                assert.equal(
-                    item.href,
-                    item.children[0].href,
-                    `${item.label} must open its first child`,
-                );
-            }
+await test('soon items have no link and every other item has one', () => {
+    for (const item of items) {
+        if (item.soon) {
+            assert.equal(item.href, undefined, `${item.label} is soon`);
+        } else {
+            assert.ok(item.href, `${item.label} needs a route`);
         }
     }
 });
 
-await test('every group, item and child label has an Arabic translation', () => {
+await test('groups are unique and non-empty, and parents open their first child', () => {
+    const ids = NAVIGATION.map((group) => group.id);
+    assert.equal(new Set(ids).size, ids.length);
+    for (const group of NAVIGATION) {
+        assert.ok(group.items.length > 0, `${group.id} is empty`);
+    }
+    for (const item of items.filter((entry) => entry.children)) {
+        assert.equal(item.href, item.children[0].href);
+    }
+});
+
+await test('every section, item and child label has Arabic', () => {
     const labels = NAVIGATION.flatMap((group) => [
         group.label,
         ...group.items.flatMap((item) => [
@@ -53,26 +62,69 @@ await test('every group, item and child label has an Arabic translation', () => 
             ...(item.children ?? []).map((child) => child.label),
         ]),
     ]);
-    const missing = [...new Set(labels)].filter((label) => !arabic[label]);
+    const missing = [...new Set([...labels, 'Soon'])].filter(
+        (label) => !arabic[label],
+    );
     assert.deepEqual(missing, []);
 });
 
-await test('the active link is the longest matching path, ignoring query strings', () => {
+await test('the active link is the longest matching path', () => {
     assert.equal(
         activeHref('/accounting/vat-return?period=2026-09'),
         '/accounting/vat-return',
     );
-    assert.equal(activeHref('/accounting'), '/accounting');
     assert.equal(activeHref('/operations/fleet/12'), '/operations/fleet');
+    assert.equal(activeHref('/settings/security'), '/settings/profile');
+    assert.equal(activeHref('/crm/assignment'), '/crm/assignment');
     assert.equal(activeHref('/crm/leads-archive'), null);
-    assert.equal(activeHref('/unknown'), null);
     assert.equal(activeGroupId('/accounting/vat-return'), 'finance');
-    assert.equal(activeGroupId('/settings/profile'), 'administration');
+    assert.equal(activeGroupId('/settings/appearance'), 'corporate');
+    assert.equal(activeGroupId('/maintenance/5'), 'facility');
     assert.equal(activeGroupId('/unknown'), null);
 });
 
-await test('settings stays highlighted on every settings page', () => {
-    assert.equal(activeHref('/settings/security'), '/settings/profile');
-    assert.equal(activeHref('/settings/appearance'), '/settings/profile');
-    assert.equal(activeGroupId('/settings/appearance'), 'administration');
+await test('abilities hide items, and a section with nothing left disappears', () => {
+    assert.equal(visibleNavigation(NAVIGATION, null), NAVIGATION);
+    const hidden = visibleNavigation(NAVIGATION, {
+        fleet: false,
+        crm: false,
+    });
+    const labels = hidden.flatMap((group) =>
+        group.items.map((item) => item.label),
+    );
+    assert.ok(!labels.includes('Fleet'));
+    assert.ok(!labels.includes('CRM & Leads'));
+    assert.ok(labels.includes('Maintenance'));
+    const onlyOverview = visibleNavigation(
+        [
+            NAVIGATION[0],
+            {
+                id: 'x',
+                label: 'X',
+                items: [
+                    {
+                        label: 'Fleet',
+                        icon: 'fleet',
+                        href: '/operations/fleet',
+                        ability: 'fleet',
+                    },
+                ],
+            },
+        ],
+        { fleet: false },
+    );
+    assert.deepEqual(
+        onlyOverview.map((group) => group.id),
+        ['overview'],
+    );
+});
+
+await test('the command palette lists enabled pages only, children included', () => {
+    const entries = commandEntries(NAVIGATION);
+    assert.ok(entries.every((entry) => entry.href));
+    assert.ok(!entries.some((entry) => entry.label === 'AI Matchmaker'));
+    const vat = entries.find(
+        (entry) => entry.href === '/accounting/vat-return',
+    );
+    assert.equal(vat.section, 'Finance');
 });
