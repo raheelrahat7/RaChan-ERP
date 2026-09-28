@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/vue3';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, usePage } from '@inertiajs/vue3';
+import { watch } from 'vue';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -36,8 +36,21 @@ initializeTheme();
 // This will listen for flash toast data from the server...
 initializeFlashToast();
 
-router.on('navigate', ({ detail }) => {
-    const locale = detail.page.props.locale === 'ar' ? 'ar' : 'en';
-    document.documentElement.lang = locale;
-    document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
-});
+// Keeps <html dir/lang> in sync with the active locale. This cannot be a
+// `router.on('navigate', …)` listener: Inertia intentionally skips firing
+// `navigate` for "replace" visits that land back on the same URL — which is
+// exactly what happens after switching locale (POST /locale -> back()) — so
+// dir/lang would only update through the browser tab's next full navigation.
+// Watching the reactive page prop instead fires for every visit kind.
+// No `immediate: true`: the Blade template already renders the correct
+// dir/lang for the first paint, and createInertiaApp() is not awaited above,
+// so an immediate call here could fire before the page store is populated
+// and briefly stomp the server-rendered value with the 'en' fallback.
+watch(
+    () => usePage().props.locale,
+    (value) => {
+        const locale = value === 'ar' ? 'ar' : 'en';
+        document.documentElement.lang = locale;
+        document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+    },
+);
