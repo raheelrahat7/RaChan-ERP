@@ -61,6 +61,7 @@ use App\Http\Controllers\RealEstatePartyController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SignatureRequestController;
 use App\Http\Controllers\SparePartsController;
+use App\Http\Controllers\StyleguideController;
 use App\Http\Controllers\VatReturnController;
 use App\Http\Controllers\VendorBillController;
 use App\Http\Controllers\VendorCashRefundController;
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('organization/portal-access/invoices/{link}/revoke', [CustomerPortalController::class, 'revokeInvoice'])->name('portal.revoke-invoice');
     Route::post('organization/portal-access/invoices', [CustomerPortalController::class, 'linkInvoice'])->name('portal.link-invoice');
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('styleguide', StyleguideController::class)->name('styleguide');
     Route::get('crm/assignment', [CrmAssignmentController::class, 'index'])->name('crm.assignment.index');
     Route::post('crm/assignment/check-in', [CrmAssignmentController::class, 'checkIn'])->name('crm.assignment.check-in');
     Route::put('crm/assignment/timezone', [CrmAssignmentController::class, 'setTimezone'])->name('crm.assignment.timezone');
