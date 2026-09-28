@@ -57,7 +57,7 @@ class AccountingLedger
         });
     }
 
-    /** @param list<array{ledger_account_id: int, debit: string|int|float, credit: string|int|float, description?: string|null}> $lines */
+    /** @param list<array{ledger_account_id: int, debit: string|int|float, credit: string|int|float, description?: string|null, company_id?:int|null, branch_id?:int|null, cost_centre_id?:int|null}> $lines */
     public function post(Organization $organization, User $actor, string $date, string $description, array $lines, string $event = 'manual.posted', ?string $sourceReference = null): JournalEntry
     {
         return DB::transaction(function () use ($organization, $actor, $date, $description, $lines, $event, $sourceReference): JournalEntry {
@@ -73,6 +73,7 @@ class AccountingLedger
             abort_unless($accounts->count() === count($accountIds), 404);
 
             foreach ($lines as $line) {
+                app(ManageAccountingDimensions::class)->validateLine($organization, $line);
                 abort_unless($accounts[$line['ledger_account_id']]->is_active, 422, 'Inactive accounts cannot receive new postings.');
                 abort_if((float) $line['debit'] < 0 || (float) $line['credit'] < 0, 422, 'Journal debit and credit amounts cannot be negative.');
                 $debit = (int) round((float) $line['debit'] * 100);
@@ -85,7 +86,7 @@ class AccountingLedger
 
             $entry = JournalEntry::create(['organization_id' => $organization->id, 'accounting_period_id' => $period->id, 'reference' => 'JRN-'.Str::upper(Str::random(10)), 'source_reference' => $sourceReference, 'event' => $event, 'posted_on' => $date, 'debit_total' => $debits / 100, 'credit_total' => $credits / 100, 'currency' => 'AED']);
             foreach ($lines as $line) {
-                $entry->lines()->create(['ledger_account_id' => $line['ledger_account_id'], 'description' => $line['description'] ?? $description, 'debit' => $line['debit'], 'credit' => $line['credit']]);
+                $entry->lines()->create(['ledger_account_id' => $line['ledger_account_id'], 'company_id' => $line['company_id'] ?? null, 'branch_id' => $line['branch_id'] ?? null, 'cost_centre_id' => $line['cost_centre_id'] ?? null, 'description' => $line['description'] ?? $description, 'debit' => $line['debit'], 'credit' => $line['credit']]);
             }
             $this->audit->handle($organization, $actor, 'accounting.journal.posted', $entry, ['description' => $description, 'source_reference' => $sourceReference]);
 
@@ -137,7 +138,7 @@ class AccountingLedger
             $reversal = JournalEntry::create(['organization_id' => $organization->id, 'accounting_period_id' => $period->id, 'reversal_of_id' => $entry->id, 'reference' => 'JRN-'.Str::upper(Str::random(10)), 'event' => 'journal.reversed', 'posted_on' => $date, 'debit_total' => $entry->credit_total, 'credit_total' => $entry->debit_total, 'currency' => 'AED']);
             /** @var JournalLine $line */
             foreach ($entry->lines as $line) {
-                $reversal->lines()->create(['ledger_account_id' => $line->ledger_account_id, 'description' => 'Reversal of '.$entry->reference, 'debit' => $line->credit, 'credit' => $line->debit]);
+                $reversal->lines()->create(['ledger_account_id' => $line->ledger_account_id, 'company_id' => $line->company_id, 'branch_id' => $line->branch_id, 'cost_centre_id' => $line->cost_centre_id, 'description' => 'Reversal of '.$entry->reference, 'debit' => $line->credit, 'credit' => $line->debit]);
             }
             $this->audit->handle($organization, $actor, 'accounting.journal.reversed', $reversal, ['original_id' => $entry->id]);
 

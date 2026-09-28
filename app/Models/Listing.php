@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['organization_id', 'unit_id', 'broker_id', 'reference', 'public_token', 'purpose', 'status', 'price', 'currency'])]
+#[Fillable(['organization_id', 'unit_id', 'broker_id', 'reference', 'public_token', 'purpose', 'market_segment', 'status', 'price', 'currency'])]
 class Listing extends Model
 {
     /** @return BelongsTo<Unit, $this> */

@@ -1,5 +1,7 @@
 # Backend handoff to Codex: Home dashboard, shared props and new modules
 
+> **Implementation update, 2026-09-28:** The owner approved Parts A, B, D and C1–C11. Backend routes, modules and focused tests are implemented on `codex/command-centre-data` in an isolated worktree. The Part A query class is `HomeDashboard`; the Inertia component and Part A prop names remain as specified below. See [the implementation scope and frontend route contract](CODEX_RED_MODULE_SCOPES_2026_09_28.md) for route names and data-source limits. Part E is reserved for a later facility-management or sales phase.
+
 - **Date:** 2026-09-28
 - **From:** the frontend team (Claude). The owner has decided that Codex does all backend work and Claude does all frontend work.
 - **Read first:** `AGENTS.md`, `docs/MASTER_DEVELOPMENT_PLAN.md`, `docs/PROVIDER_NEUTRAL_CONTRACTS.md`, and `docs/superpowers/specs/2026-09-28-bordeaux-frontend-redesign-design.md` §3.3 and §5.2.
