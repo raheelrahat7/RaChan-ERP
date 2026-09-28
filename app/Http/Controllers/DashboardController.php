@@ -6,7 +6,7 @@ use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Finance\Services\InvoiceBalance;
 use App\Domain\Identity\Actions\CreateOrganizationForUser;
 use App\Domain\Operations\Services\JobCardAccess;
-use App\Domain\Platform\Queries\CommandCentre;
+use App\Domain\Platform\Queries\HomeDashboard;
 use App\Models\CrmLead;
 use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
@@ -18,7 +18,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, CurrentOperationalAlerts $currentAlerts, LeadVisibility $visibility, CommandCentre $commandCentre): Response
+    public function __invoke(Request $request, CurrentOperationalAlerts $currentAlerts, LeadVisibility $visibility, HomeDashboard $homeDashboard): Response
     {
         $organization = $request->user()->currentOrganization
             ?? app(CreateOrganizationForUser::class)->handle($request->user());
@@ -38,7 +38,7 @@ class DashboardController extends Controller
                 'outstandingAed' => $invoices?->sum(fn (Invoice $invoice) => app(InvoiceBalance::class)->outstandingCents($invoice) / 100),
             ],
             'alerts' => collect($alerts)->filter(fn (array $alert) => $alert['count'] > 0)->values(),
-            ...$commandCentre->for($organization, $request->user(), $request->validate([
+            ...$homeDashboard->for($organization, $request->user(), $request->validate([
                 'period' => ['sometimes', 'in:month,quarter,year'],
                 'purpose' => ['sometimes', 'in:all,sale,rent'],
                 'company' => ['sometimes', 'integer', 'min:1'],

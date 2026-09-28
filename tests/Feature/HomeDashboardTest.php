@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-class CommandCentreTest extends TestCase
+class HomeDashboardTest extends TestCase
 {
     use RefreshDatabase;
 

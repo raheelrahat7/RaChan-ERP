@@ -1,4 +1,4 @@
-# Backend red-module scopes — 2026-09-28
+# Home dashboard and backend red-module scopes — 2026-09-28
 
 The owner explicitly requested completion of the orange and red phases on 2026-09-28. These scopes refine [the backend handoff](CODEX_BACKEND_HANDOFF_2026_09_28.md). Each module is a separate implementation increment with organization authorization, migrations, audit events and focused feature tests. Claude owns the Vue pages and reads the Inertia props recorded here.
 
@@ -50,7 +50,7 @@ All GET routes below render Inertia components. Claude owns the component files.
 
 | Area | GET route name | Component | Main props |
 | --- | --- | --- | --- |
-| Dashboard | `dashboard` | `Dashboard` | Existing `metrics`, `alerts`; new `filters`, `kpis`, `trend`, `commission_split`, `top_agents`, `lead_pipeline`, `lead_sources`, `deal_pipeline`, `cost_centres`, `insights` |
+| Home dashboard | `dashboard` | `Dashboard` | Existing `metrics`, `alerts`; new `filters`, `kpis`, `trend`, `commission_split`, `top_agents`, `lead_pipeline`, `lead_sources`, `deal_pipeline`, `cost_centres`, `insights` |
 | Accounting dimensions | `accounting.dimensions.index` | `finance/AccountingDimensions` | `companies`, `branches`, `costCentres`, `canManage` |
 | Approvals | `approvals.index` | `approvals/Index` | `items` (with owning workflow URL), `count` |
 | Tasks | `tasks.index` | `tasks/Index` | `tasks`, `members`, `canManage` |
@@ -68,6 +68,6 @@ All GET routes below render Inertia components. Claude owns the component files.
 | Lead gateway | `crm.lead-gateway` | `crm/LeadGateway` | `sources`, `metaPages`, `canConfigure` |
 | Follow-up settings | `crm.follow-up-settings` | `crm/FollowUpSettings` | `reminderDays`, `escalationEnabled`, `stageRules`, `canConfigure` |
 
-The dashboard's `commission_split` stays `null` because the current commission ledger cannot distinguish company, agent, co-broker and referral shares. `top_agents` stays empty because broker parties are not mapped to user accounts. Finance KPIs based on unassigned invoices, bills or commissions remain organization-wide even when a company/branch filter is selected; only journal-derived revenue, expense, profit and cost-centre values have reliable dimensions. The frontend should label that scope clearly. Marketing publications are local validated packets, not confirmed portal publications; subscription usage is still zero until a portal sends usage data. GAIM `approved` is an internally recorded authority outcome with a reference, not electronic verification. These are data-source limits, not zero activity.
+The Home dashboard's `commission_split` stays `null` because the current commission ledger cannot distinguish company, agent, co-broker and referral shares. `top_agents` stays empty because broker parties are not mapped to user accounts. Finance KPIs based on unassigned invoices, bills or commissions remain organization-wide even when a company/branch filter is selected; only journal-derived revenue, expense, profit and cost-centre values have reliable dimensions. The frontend should label that scope clearly. Marketing publications are local validated packets, not confirmed portal publications; subscription usage is still zero until a portal sends usage data. GAIM `approved` is an internally recorded authority outcome with a reference, not electronic verification. These are data-source limits, not zero activity.
 
 When the current user's organization role lacks `viewFinance`, financial KPI values, `commission_payable`, and `metrics.outstandingAed` are `null`; `cost_centres` is empty. When it lacks `viewTransactions`, deal and cheque KPIs, `trend`, and `deal_pipeline` are `null`. The current role matrix grants these view permissions to all organization roles; this check preserves the server boundary if that matrix is tightened later.

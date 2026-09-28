@@ -12,7 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class CommandCentre
+class HomeDashboard
 {
     public function __construct(private LeadVisibility $leads, private OutstandingBalances $balances) {}
 
