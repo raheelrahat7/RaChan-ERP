@@ -56,19 +56,21 @@ The tokens are defined in `resources/css/app.css` as CSS variables on `:root` an
 | `--input` | `rgba(60,16,24,.18)` | `rgba(245,225,228,.16)` | Control borders |
 | `--foreground` | `#1E1215` | `#F1E9E7` | Text |
 | `--muted-foreground` | `#6F6064` | `#A8989B` | Secondary text |
-| `--faint` (new) | `#A6989B` | `#6A5C5F` | Placeholder or tertiary text only, never essential information |
+| `--faint` (new) | `#A6989B` | `#6A5C5F` | Decoration only: disabled marks, neutral status dots. Never readable text (placeholders use `--muted-foreground`) |
 | `--primary` | `#6B1B2A` | `#9E2F45` | Primary buttons, brand |
+| `--primary-hover` (new) | `#58141F` | `#B03750` | Primary hover |
 | `--primary-foreground` | `#FBF6F3` | `#FFF4F1` | Text on primary |
 | `--champagne` (new) | `#C9A27A` | `#D2AE86` | Fine details |
 | `--accent-text` (new) | `#7A2233` | `#D9B892` | Eyebrows, links |
-| `--ring` | `#C9A27A` | `#D2AE86` | Focus rings |
+| `--ring` | `#9A7440` | `#D2AE86` | Focus rings (light mode uses a darker bronze to reach 3:1 against the background) |
 | `--success` (new) | `#3E6E52` | `#8DC3A1` | Paid, active |
 | `--info` (new) | `#2F5E86` | `#8DB5DC` | Partial, in progress |
-| `--warning` (new) | `#9C6B1E` | `#DDB46E` | Due soon, pending |
-| `--destructive` | `#C0421F` | `#F08A70` | Overdue, errors. Orange-red, so it is never confused with the brand burgundy |
+| `--warning` (new) | `#8C5F18` | `#DDB46E` | Due soon, pending |
+| `--destructive` | `#B23A1A` | `#F08A70` | Overdue, errors. Orange-red, so it is never confused with the brand burgundy |
+| `--destructive-foreground` | `#FFFFFF` | `#1E1215` | Text on destructive buttons (dark text in dark mode for contrast) |
 | `--sidebar` | `#4A1320` | `#140C0E` | Navigation rail |
 | `--sidebar-foreground` | `#F6ECE8` | `#F1E9E7` | |
-| `--sidebar-muted` (new) | `#C49CA3` | `#8F7C80` | Group labels |
+| `--sidebar-muted` (new) | `#C49CA3` | `#9A878B` | Group labels |
 | `--sidebar-accent` | `rgba(255,255,255,.09)` | `rgba(255,255,255,.05)` | Active item |
 | `--sidebar-border` | `rgba(255,255,255,.10)` | `rgba(255,255,255,.06)` | |
 | `--chart-1…5` | burgundy `#7A2233`, champagne `#B08D57`, slate `#5B6B7A`, sage `#6E8B74`, rose `#C27C8A` | `#C75A6E`, `#D2AE86`, `#9AA8B6`, `#9DBBA3`, `#E3A5B1` | Charts |
