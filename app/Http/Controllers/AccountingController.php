@@ -156,7 +156,7 @@ class AccountingController extends Controller
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageFinance', $organization);
-        $input = $request->validate(['posted_on' => ['required', 'date'], 'description' => ['required', 'string', 'max:255'], 'lines' => ['required', 'array', 'min:2', 'max:100'], 'lines.*.ledger_account_id' => ['required', 'integer'], 'lines.*.description' => ['nullable', 'string', 'max:255'], 'lines.*.debit' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'], 'lines.*.credit' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2']]);
+        $input = $request->validate(['posted_on' => ['required', 'date'], 'description' => ['required', 'string', 'max:255'], 'lines' => ['required', 'array', 'min:2', 'max:100'], 'lines.*.ledger_account_id' => ['required', 'integer'], 'lines.*.company_id' => ['nullable', 'integer'], 'lines.*.branch_id' => ['nullable', 'integer'], 'lines.*.cost_centre_id' => ['nullable', 'integer'], 'lines.*.description' => ['nullable', 'string', 'max:255'], 'lines.*.debit' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'], 'lines.*.credit' => ['required', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2']]);
         $ledger->post($organization, $request->user(), $input['posted_on'], $input['description'], $input['lines']);
 
         return back();
