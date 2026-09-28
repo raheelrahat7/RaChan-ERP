@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CircleAlert } from '@lucide/vue';
+
 defineProps<{
     message?: string;
 }>();
@@ -6,7 +8,8 @@ defineProps<{
 
 <template>
     <div v-show="message">
-        <p class="text-sm text-red-600 dark:text-red-500">
+        <p class="text-destructive flex items-center gap-1.5 text-xs">
+            <CircleAlert class="size-3.5 shrink-0" aria-hidden="true" />
             {{ message }}
         </p>
     </div>
