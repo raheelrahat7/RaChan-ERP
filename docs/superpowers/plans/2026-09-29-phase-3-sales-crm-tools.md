@@ -13,6 +13,7 @@
 ## Commands
 
 Same as phases 1–2:
+
 - `node-run`: `docker run --rm -v "$PWD":/workspace -w /workspace node:22 <cmd>`
 - `php-run`: `docker exec z1erp-web sh -lc 'cd /workspace && <cmd>'`
 - Frontend tests: `node-run npm run test:frontend`
@@ -25,7 +26,7 @@ Work on branch `bordeaux/phase-3-sales-crm-tools`.
 
 - Frontend only. Backend for these five pages is already merged and tested by Codex — do not edit `app/`, `routes/`, `database/`, `config/`.
 - Route calls to the app's own mutation endpoints use plain path strings with `router.post/put`, matching the codebase's existing convention (see `resources/js/pages/crm/Leads.vue`), **not** the generated Wayfinder helpers — this codebase only uses those for a handful of shell/auth links, not page business actions.
-- Approvals' `approve_url`/`reject_url`/`href` are full URLs already computed server-side (they point at *other* controllers' existing routes) — use them exactly as given, never rebuild them client-side.
+- Approvals' `approve_url`/`reject_url`/`href` are full URLs already computed server-side (they point at _other_ controllers' existing routes) — use them exactly as given, never rebuild them client-side.
 - No new npm dependencies.
 - Every user-visible string through `t()`; new keys added to `resources/js/locales/ar.json` then synced with `php scripts/sync-arabic-catalog.php`.
 - Logical direction utilities only (`ms-/me-/ps-/pe-/start-/end-`).
@@ -44,21 +45,23 @@ Work on branch `bordeaux/phase-3-sales-crm-tools`.
 ### Task 1: Pure helpers (`lib/sales-crm-tools.ts`)
 
 **Files:**
+
 - Create: `resources/js/lib/sales-crm-tools.ts`
 - Test: `tests/Frontend/sales-crm-tools.test.mjs`
 
 **Interfaces:**
+
 - **Produces:**
-  - `RelatedType = 'lead' | 'reservation' | 'lease' | 'sale' | 'unit' | 'job'`
-  - `RELATED_TYPES: { value: RelatedType; label: string }[]`
-  - `relatedRecordIcon(type: RelatedType | null): Component` (a neutral dash icon for `null`)
-  - `relatedRecordHref(type: RelatedType): string`
-  - `Priority = 'low' | 'normal' | 'high' | 'urgent'`
-  - `priorityTone(priority: Priority): string` (a Tailwind text-color class)
-  - `isTaskOverdue(task: { status: string; due_at: string | null }, now?: Date): boolean`
-  - `appointmentTimesValid(startsAt: string, endsAt: string): boolean`
-  - `priceRangeValid(min: string | null | undefined, max: string | null | undefined): boolean`
-  - `conversionRate(converted: number, leads: number): number | null`
+    - `RelatedType = 'lead' | 'reservation' | 'lease' | 'sale' | 'unit' | 'job'`
+    - `RELATED_TYPES: { value: RelatedType; label: string }[]`
+    - `relatedRecordIcon(type: RelatedType | null): Component` (a neutral dash icon for `null`)
+    - `relatedRecordHref(type: RelatedType): string`
+    - `Priority = 'low' | 'normal' | 'high' | 'urgent'`
+    - `priorityTone(priority: Priority): string` (a Tailwind text-color class)
+    - `isTaskOverdue(task: { status: string; due_at: string | null }, now?: Date): boolean`
+    - `appointmentTimesValid(startsAt: string, endsAt: string): boolean`
+    - `priceRangeValid(min: string | null | undefined, max: string | null | undefined): boolean`
+    - `conversionRate(converted: number, leads: number): number | null`
 
 - [ ] **Step 1: Write the failing tests** `tests/Frontend/sales-crm-tools.test.mjs`
 
@@ -81,7 +84,10 @@ await test('every related type has a label, an icon and an href', () => {
         assert.ok(relatedRecordIcon(value), value);
         assert.ok(relatedRecordHref(value).startsWith('/'), value);
     }
-    assert.equal(RELATED_TYPES.map((r) => r.value).length, new Set(RELATED_TYPES.map((r) => r.value)).size);
+    assert.equal(
+        RELATED_TYPES.map((r) => r.value).length,
+        new Set(RELATED_TYPES.map((r) => r.value)).size,
+    );
 });
 
 await test('a null related type still resolves to a neutral icon, never throws', () => {
@@ -96,17 +102,41 @@ await test('priority tone escalates from muted to destructive', () => {
 
 await test('a task is overdue only while open and past its due date', () => {
     const now = new Date('2026-09-29T12:00:00Z');
-    assert.equal(isTaskOverdue({ status: 'open', due_at: '2026-09-28T00:00:00Z' }, now), true);
-    assert.equal(isTaskOverdue({ status: 'open', due_at: '2026-09-30T00:00:00Z' }, now), false);
+    assert.equal(
+        isTaskOverdue({ status: 'open', due_at: '2026-09-28T00:00:00Z' }, now),
+        true,
+    );
+    assert.equal(
+        isTaskOverdue({ status: 'open', due_at: '2026-09-30T00:00:00Z' }, now),
+        false,
+    );
     assert.equal(isTaskOverdue({ status: 'open', due_at: null }, now), false);
-    assert.equal(isTaskOverdue({ status: 'completed', due_at: '2026-09-28T00:00:00Z' }, now), false);
+    assert.equal(
+        isTaskOverdue(
+            { status: 'completed', due_at: '2026-09-28T00:00:00Z' },
+            now,
+        ),
+        false,
+    );
 });
 
 await test('an appointment must end strictly after it starts', () => {
-    assert.equal(appointmentTimesValid('2026-09-29T09:00', '2026-09-29T10:00'), true);
-    assert.equal(appointmentTimesValid('2026-09-29T09:00', '2026-09-29T09:00'), false);
-    assert.equal(appointmentTimesValid('2026-09-29T09:00', '2026-09-29T08:00'), false);
-    assert.equal(appointmentTimesValid('not a date', '2026-09-29T10:00'), false);
+    assert.equal(
+        appointmentTimesValid('2026-09-29T09:00', '2026-09-29T10:00'),
+        true,
+    );
+    assert.equal(
+        appointmentTimesValid('2026-09-29T09:00', '2026-09-29T09:00'),
+        false,
+    );
+    assert.equal(
+        appointmentTimesValid('2026-09-29T09:00', '2026-09-29T08:00'),
+        false,
+    );
+    assert.equal(
+        appointmentTimesValid('not a date', '2026-09-29T10:00'),
+        false,
+    );
 });
 
 await test('a price range with either bound empty is always valid; max must be at least min', () => {
@@ -146,12 +176,7 @@ import {
 import type { Component } from 'vue';
 
 export type RelatedType =
-    | 'lead'
-    | 'reservation'
-    | 'lease'
-    | 'sale'
-    | 'unit'
-    | 'job';
+    'lead' | 'reservation' | 'lease' | 'sale' | 'unit' | 'job';
 
 export const RELATED_TYPES: { value: RelatedType; label: string }[] = [
     { value: 'lead', label: 'Lead' },
@@ -212,7 +237,10 @@ export function isTaskOverdue(
     );
 }
 
-export function appointmentTimesValid(startsAt: string, endsAt: string): boolean {
+export function appointmentTimesValid(
+    startsAt: string,
+    endsAt: string,
+): boolean {
     const start = new Date(startsAt).getTime();
     const end = new Date(endsAt).getTime();
 
@@ -253,17 +281,19 @@ Run: `node-run sh -c "npx vp fmt resources/js/lib tests/Frontend >/dev/null; npm
 ### Task 2: Record search (`lib/record-search.ts`) and `RecordPicker.vue`
 
 **Files:**
+
 - Create: `resources/js/lib/record-search.ts`, `resources/js/components/RecordPicker.vue`
 - Test: `tests/Frontend/record-search.test.mjs`
 
 **Interfaces:**
+
 - **Consumes:** `RelatedType`, `RECORD_TYPES` is not reused directly (RecordPicker takes a wider type union including `'listing'`, see below).
 - **Produces:**
-  - `SearchableType = RelatedType | 'listing'`
-  - `RecordSearchResult = { id: number; label: string; sublabel: string | null }`
-  - `RecordSearchOutcome = { status: 'ok'; results: RecordSearchResult[] } | { status: 'unavailable' }`
-  - `searchRecords(type: SearchableType, query: string, fetchImpl?: typeof fetch): Promise<RecordSearchOutcome>`
-  - Component `<RecordPicker :type modelValue @update:modelValue />`, emitting the selected `id` (or `null` when cleared)
+    - `SearchableType = RelatedType | 'listing'`
+    - `RecordSearchResult = { id: number; label: string; sublabel: string | null }`
+    - `RecordSearchOutcome = { status: 'ok'; results: RecordSearchResult[] } | { status: 'unavailable' }`
+    - `searchRecords(type: SearchableType, query: string, fetchImpl?: typeof fetch): Promise<RecordSearchOutcome>`
+    - Component `<RecordPicker :type modelValue @update:modelValue />`, emitting the selected `id` (or `null` when cleared)
 
 - [ ] **Step 1: Write the failing tests** `tests/Frontend/record-search.test.mjs`
 
@@ -294,7 +324,12 @@ await test('a 200 with a JSON array returns the results, url-encoded correctly',
             assert.ok(url.includes('type=lead'));
             assert.ok(url.includes('q=Al%20Noor') || url.includes('q=Al+Noor'));
 
-            return { ok: true, json: async () => [{ id: 1, label: 'Al Noor Trading', sublabel: null }] };
+            return {
+                ok: true,
+                json: async () => [
+                    { id: 1, label: 'Al Noor Trading', sublabel: null },
+                ],
+            };
         }),
     );
     assert.deepEqual(outcome, {
@@ -304,7 +339,11 @@ await test('a 200 with a JSON array returns the results, url-encoded correctly',
 });
 
 await test('a non-2xx response is treated as unavailable, not an error', async () => {
-    const outcome = await searchRecords('listing', 'ab', fakeFetch(async () => ({ ok: false, json: async () => [] })));
+    const outcome = await searchRecords(
+        'listing',
+        'ab',
+        fakeFetch(async () => ({ ok: false, json: async () => [] })),
+    );
     assert.deepEqual(outcome, { status: 'unavailable' });
 });
 
@@ -319,7 +358,10 @@ await test('a non-array JSON body is treated as unavailable, never surfaced as r
     const outcome = await searchRecords(
         'job',
         'ab',
-        fakeFetch(async () => ({ ok: true, json: async () => ({ error: 'nope' }) })),
+        fakeFetch(async () => ({
+            ok: true,
+            json: async () => ({ error: 'nope' }),
+        })),
     );
     assert.deepEqual(outcome, { status: 'unavailable' });
 });
@@ -341,8 +383,7 @@ export type RecordSearchResult = {
 };
 
 export type RecordSearchOutcome =
-    | { status: 'ok'; results: RecordSearchResult[] }
-    | { status: 'unavailable' };
+    { status: 'ok'; results: RecordSearchResult[] } | { status: 'unavailable' };
 
 export async function searchRecords(
     type: SearchableType,
@@ -396,7 +437,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: number | null] }>();
 const { t } = useLocale();
 const query = ref('');
 const results = ref<RecordSearchResult[]>([]);
-const status = ref<'idle' | 'searching' | 'ok' | 'empty' | 'unavailable'>('idle');
+const status = ref<'idle' | 'searching' | 'ok' | 'empty' | 'unavailable'>(
+    'idle',
+);
 const picked = ref<RecordSearchResult | null>(null);
 let requestId = 0;
 
@@ -441,27 +484,57 @@ function clear(): void {
 }
 
 const showList = computed(
-    () => props.modelValue === null && ['searching', 'ok', 'empty', 'unavailable'].includes(status.value),
+    () =>
+        props.modelValue === null &&
+        ['searching', 'ok', 'empty', 'unavailable'].includes(status.value),
 );
 </script>
 
 <template>
     <div class="flex flex-col gap-1.5">
-        <div v-if="modelValue !== null && picked" class="border-input bg-card flex items-center gap-2 rounded-sm border px-3 py-2 text-sm">
+        <div
+            v-if="modelValue !== null && picked"
+            class="border-input bg-card flex items-center gap-2 rounded-sm border px-3 py-2 text-sm"
+        >
             <span class="min-w-0 flex-1 truncate">
                 {{ picked.label }}
-                <span v-if="picked.sublabel" class="text-muted-foreground">· {{ picked.sublabel }}</span>
+                <span v-if="picked.sublabel" class="text-muted-foreground"
+                    >· {{ picked.sublabel }}</span
+                >
             </span>
-            <button type="button" class="text-muted-foreground hover:text-foreground" :aria-label="t('Clear selection')" @click="clear">
+            <button
+                type="button"
+                class="text-muted-foreground hover:text-foreground"
+                :aria-label="t('Clear selection')"
+                @click="clear"
+            >
                 <X class="size-4" />
             </button>
         </div>
         <template v-else>
             <Input v-model="query" :placeholder="t(label)" />
-            <div v-if="showList" class="border-input bg-card max-h-48 overflow-y-auto rounded-sm border text-sm">
-                <p v-if="status === 'searching'" class="text-muted-foreground p-2.5">{{ t('Searching…') }}</p>
-                <p v-else-if="status === 'unavailable'" class="text-muted-foreground p-2.5">{{ t("Search isn't connected yet.") }}</p>
-                <p v-else-if="status === 'empty'" class="text-muted-foreground p-2.5">{{ t('No matches.') }}</p>
+            <div
+                v-if="showList"
+                class="border-input bg-card max-h-48 overflow-y-auto rounded-sm border text-sm"
+            >
+                <p
+                    v-if="status === 'searching'"
+                    class="text-muted-foreground p-2.5"
+                >
+                    {{ t('Searching…') }}
+                </p>
+                <p
+                    v-else-if="status === 'unavailable'"
+                    class="text-muted-foreground p-2.5"
+                >
+                    {{ t("Search isn't connected yet.") }}
+                </p>
+                <p
+                    v-else-if="status === 'empty'"
+                    class="text-muted-foreground p-2.5"
+                >
+                    {{ t('No matches.') }}
+                </p>
                 <button
                     v-for="result in results"
                     :key="result.id"
@@ -470,7 +543,11 @@ const showList = computed(
                     @click="pick(result)"
                 >
                     <span>{{ result.label }}</span>
-                    <span v-if="result.sublabel" class="text-muted-foreground text-xs">{{ result.sublabel }}</span>
+                    <span
+                        v-if="result.sublabel"
+                        class="text-muted-foreground text-xs"
+                        >{{ result.sublabel }}</span
+                    >
                 </button>
             </div>
         </template>
@@ -481,7 +558,12 @@ const showList = computed(
 - [ ] **Step 6: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"Clear selection":"إزالة التحديد","Searching…":"جارٍ البحث…","Search isn't connected yet.":"البحث غير متاح بعد.","No matches.":"لا توجد نتائج مطابقة."}
+{
+    "Clear selection": "إزالة التحديد",
+    "Searching…": "جارٍ البحث…",
+    "Search isn't connected yet.": "البحث غير متاح بعد.",
+    "No matches.": "لا توجد نتائج مطابقة."
+}
 ```
 
 - [ ] **Step 7: Format, typecheck, lint. Commit** `feat(sales-crm): record search helper and picker, graceful without the backend endpoint`
@@ -552,15 +634,24 @@ function confirm(): void {
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>{{ t(title) }}</DialogTitle>
-                <DialogDescription v-if="description">{{ t(description) }}</DialogDescription>
+                <DialogDescription v-if="description">{{
+                    t(description)
+                }}</DialogDescription>
             </DialogHeader>
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-medium">{{ t(label) }}</label>
                 <Textarea v-model="reason" :placeholder="t(label)" />
             </div>
             <DialogFooter>
-                <Button variant="outline" @click="emit('update:open', false)">{{ t('Cancel') }}</Button>
-                <Button variant="destructive" :disabled="!canConfirm" @click="confirm">{{ t(confirmLabel) }}</Button>
+                <Button variant="outline" @click="emit('update:open', false)">{{
+                    t('Cancel')
+                }}</Button>
+                <Button
+                    variant="destructive"
+                    :disabled="!canConfirm"
+                    @click="confirm"
+                    >{{ t(confirmLabel) }}</Button
+                >
             </DialogFooter>
         </DialogContent>
     </Dialog>
@@ -639,34 +730,74 @@ function confirmReject(reason: string): void {
             description="Everything waiting for your decision, across every module."
         />
         <div class="bg-card shadow-panel overflow-hidden rounded-lg border">
-            <div v-if="items.length === 0" class="text-muted-foreground p-8 text-center text-sm">
+            <div
+                v-if="items.length === 0"
+                class="text-muted-foreground p-8 text-center text-sm"
+            >
                 {{ t('Nothing is waiting for your approval.') }}
             </div>
             <table v-else class="w-full text-[13px]">
                 <thead>
                     <tr class="text-label border-b">
-                        <th class="py-2.5 ps-5 pe-3 text-start font-medium">{{ t('Module') }}</th>
-                        <th class="px-3 text-start font-medium">{{ t('Transaction') }}</th>
-                        <th class="px-3 text-start font-medium">{{ t('Requested by') }}</th>
-                        <th class="px-3 text-start font-medium">{{ t('Submitted') }}</th>
-                        <th class="px-3 text-end font-medium">{{ t('Amount') }}</th>
+                        <th class="py-2.5 ps-5 pe-3 text-start font-medium">
+                            {{ t('Module') }}
+                        </th>
+                        <th class="px-3 text-start font-medium">
+                            {{ t('Transaction') }}
+                        </th>
+                        <th class="px-3 text-start font-medium">
+                            {{ t('Requested by') }}
+                        </th>
+                        <th class="px-3 text-start font-medium">
+                            {{ t('Submitted') }}
+                        </th>
+                        <th class="px-3 text-end font-medium">
+                            {{ t('Amount') }}
+                        </th>
                         <th class="pe-5 ps-3"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="item in items" :key="item.key" class="border-b last:border-b-0">
-                        <td class="py-3 ps-5 pe-3"><Badge variant="outline">{{ t(item.module) }}</Badge></td>
-                        <td class="px-3"><Link :href="item.href" class="text-accent-text font-medium hover:underline">{{ item.transaction }}</Link></td>
+                    <tr
+                        v-for="item in items"
+                        :key="item.key"
+                        class="border-b last:border-b-0"
+                    >
+                        <td class="py-3 ps-5 pe-3">
+                            <Badge variant="outline">{{
+                                t(item.module)
+                            }}</Badge>
+                        </td>
+                        <td class="px-3">
+                            <Link
+                                :href="item.href"
+                                class="text-accent-text font-medium hover:underline"
+                                >{{ item.transaction }}</Link
+                            >
+                        </td>
                         <td class="px-3">{{ item.requested_by }}</td>
-                        <td class="px-3"><DateText :value="item.submitted_at" /></td>
+                        <td class="px-3">
+                            <DateText :value="item.submitted_at" />
+                        </td>
                         <td class="px-3 text-end tabular-nums">
-                            <Money v-if="item.amount !== null" :value="item.amount" />
+                            <Money
+                                v-if="item.amount !== null"
+                                :value="item.amount"
+                            />
                             <span v-else class="text-faint">—</span>
                         </td>
                         <td class="pe-5 ps-3">
                             <div class="flex justify-end gap-2">
-                                <Button size="sm" @click="approve(item)">{{ t('Approve') }}</Button>
-                                <Button v-if="item.reject_url" size="sm" variant="destructive-outline" @click="rejecting = item">{{ t('Reject') }}</Button>
+                                <Button size="sm" @click="approve(item)">{{
+                                    t('Approve')
+                                }}</Button>
+                                <Button
+                                    v-if="item.reject_url"
+                                    size="sm"
+                                    variant="destructive-outline"
+                                    @click="rejecting = item"
+                                    >{{ t('Reject') }}</Button
+                                >
                             </div>
                         </td>
                     </tr>
@@ -689,7 +820,24 @@ function confirmReject(reason: string): void {
 - [ ] **Step 2: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"Approvals":"الموافقات","Everything waiting for your decision, across every module.":"كل ما ينتظر قرارك، عبر جميع الوحدات.","Nothing is waiting for your approval.":"لا شيء ينتظر موافقتك.","Module":"الوحدة","Transaction":"العملية","Requested by":"طلبها","Submitted":"تاريخ الإرسال","Amount":"المبلغ","Approve":"موافقة","Reject":"رفض","Reject this item":"رفض هذا العنصر","This reason is recorded and, where the workflow supports it, shown to the person who submitted it.":"يُسجَّل هذا السبب، وقد يظهر لمن قدّم الطلب حيثما يسمح سير العمل بذلك.","Reason":"السبب","Finance":"المالية","Leasing":"التأجير","Procurement":"المشتريات"}
+{
+    "Approvals": "الموافقات",
+    "Everything waiting for your decision, across every module.": "كل ما ينتظر قرارك، عبر جميع الوحدات.",
+    "Nothing is waiting for your approval.": "لا شيء ينتظر موافقتك.",
+    "Module": "الوحدة",
+    "Transaction": "العملية",
+    "Requested by": "طلبها",
+    "Submitted": "تاريخ الإرسال",
+    "Amount": "المبلغ",
+    "Approve": "موافقة",
+    "Reject": "رفض",
+    "Reject this item": "رفض هذا العنصر",
+    "This reason is recorded and, where the workflow supports it, shown to the person who submitted it.": "يُسجَّل هذا السبب، وقد يظهر لمن قدّم الطلب حيثما يسمح سير العمل بذلك.",
+    "Reason": "السبب",
+    "Finance": "المالية",
+    "Leasing": "التأجير",
+    "Procurement": "المشتريات"
+}
 ```
 
 - [ ] **Step 3: Verify.** Format, typecheck, lint, then `php-run php artisan wayfinder:generate --with-form` + build. `php-run php artisan test --filter=ApprovalsInboxTest` must still pass unchanged (it's Codex's test, not touched, but a build error here would still break its Inertia render — confirm it's green).
@@ -760,7 +908,10 @@ type Task = {
 };
 
 const props = defineProps<{
-    tasks: { data: Task[]; links: { label: string; url: string | null; active: boolean }[] };
+    tasks: {
+        data: Task[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
     members: { id: number; name: string }[];
     canManage: boolean;
 }>();
@@ -772,11 +923,17 @@ const { t } = useLocale();
 const page = usePage();
 const filter = ref<'open' | 'completed' | 'all'>('open');
 const visible = computed(() =>
-    props.tasks.data.filter((task) => filter.value === 'all' || task.status === filter.value),
+    props.tasks.data.filter(
+        (task) => filter.value === 'all' || task.status === filter.value,
+    ),
 );
 const columns = computed<DataTableColumn<Task>[]>(() => [
     { key: 'title', label: 'Title' },
-    ...(props.canManage ? ([{ key: 'assignee_name', label: 'Assignee' }] as DataTableColumn<Task>[]) : []),
+    ...(props.canManage
+        ? ([
+              { key: 'assignee_name', label: 'Assignee' },
+          ] as DataTableColumn<Task>[])
+        : []),
     { key: 'priority', label: 'Priority' },
     { key: 'due_at', label: 'Due' },
     { key: 'related_type', label: 'Related' },
@@ -784,7 +941,10 @@ const columns = computed<DataTableColumn<Task>[]>(() => [
 ]);
 
 function canComplete(task: Task): boolean {
-    return task.status === 'open' && (props.canManage || task.assigned_to === page.props.auth.user.id);
+    return (
+        task.status === 'open' &&
+        (props.canManage || task.assigned_to === page.props.auth.user.id)
+    );
 }
 
 const dialogOpen = ref(false);
@@ -830,14 +990,20 @@ function submit(): void {
         dialogOpen.value = false;
     };
     if (editing.value) {
-        form.transform((data) => data).put(`/tasks/${editing.value.id}`, { preserveScroll: true, onSuccess });
+        form.transform((data) => data).put(`/tasks/${editing.value.id}`, {
+            preserveScroll: true,
+            onSuccess,
+        });
     } else {
         form.post('/tasks', { preserveScroll: true, onSuccess });
     }
 }
 
 function complete(task: Task): void {
-    form.post(`/tasks/${task.id}/complete`, { preserveScroll: true, only: ['tasks'] });
+    form.post(`/tasks/${task.id}/complete`, {
+        preserveScroll: true,
+        only: ['tasks'],
+    });
 }
 </script>
 
@@ -847,7 +1013,11 @@ function complete(task: Task): void {
         <PageHeader
             eyebrow="Workflow"
             title="Tasks"
-            :description="canManage ? 'Assigned work with a due date.' : 'Your assigned tasks.'"
+            :description="
+                canManage
+                    ? 'Assigned work with a due date.'
+                    : 'Your assigned tasks.'
+            "
         >
             <template #actions>
                 <Button @click="openCreate">{{ t('New task') }}</Button>
@@ -855,8 +1025,22 @@ function complete(task: Task): void {
         </PageHeader>
 
         <div class="flex gap-2">
-            <Button v-for="option in (['open', 'completed', 'all'] as const)" :key="option" size="sm" :variant="filter === option ? 'default' : 'outline'" @click="filter = option">
-                {{ t(option === 'open' ? 'Open' : option === 'completed' ? 'Completed' : 'All') }}
+            <Button
+                v-for="option in ['open', 'completed', 'all'] as const"
+                :key="option"
+                size="sm"
+                :variant="filter === option ? 'default' : 'outline'"
+                @click="filter = option"
+            >
+                {{
+                    t(
+                        option === 'open'
+                            ? 'Open'
+                            : option === 'completed'
+                              ? 'Completed'
+                              : 'All',
+                    )
+                }}
             </Button>
         </div>
 
@@ -865,36 +1049,75 @@ function complete(task: Task): void {
             :rows="visible"
             :row-key="(row) => row.id"
             :row-label="(row) => row.title"
-            :empty-title="filter === 'open' ? 'No open tasks.' : 'No tasks yet.'"
+            :empty-title="
+                filter === 'open' ? 'No open tasks.' : 'No tasks yet.'
+            "
         >
             <template #cell-title="{ row }">
-                <button type="button" class="font-medium hover:underline" @click="openEdit(row)">{{ row.title }}</button>
+                <button
+                    type="button"
+                    class="font-medium hover:underline"
+                    @click="openEdit(row)"
+                >
+                    {{ row.title }}
+                </button>
             </template>
             <template #cell-priority="{ row }">
-                <span :class="priorityTone(row.priority)">{{ t(row.priority) }}</span>
+                <span :class="priorityTone(row.priority)">{{
+                    t(row.priority)
+                }}</span>
             </template>
             <template #cell-due_at="{ row }">
-                <span v-if="row.due_at" :class="isTaskOverdue(row) ? 'text-destructive' : ''">
-                    <CalendarClock v-if="isTaskOverdue(row)" class="me-1 inline size-3.5" />
+                <span
+                    v-if="row.due_at"
+                    :class="isTaskOverdue(row) ? 'text-destructive' : ''"
+                >
+                    <CalendarClock
+                        v-if="isTaskOverdue(row)"
+                        class="me-1 inline size-3.5"
+                    />
                     <DateText :value="row.due_at" />
                 </span>
                 <span v-else class="text-faint">—</span>
             </template>
             <template #cell-related_type="{ row }">
-                <Link v-if="row.related_type" :href="relatedRecordHref(row.related_type)" class="text-accent-text inline-flex items-center gap-1.5 hover:underline">
-                    <component :is="relatedRecordIcon(row.related_type)" class="size-3.5" />{{ t(RELATED_TYPES.find((r) => r.value === row.related_type)?.label ?? '') }}
+                <Link
+                    v-if="row.related_type"
+                    :href="relatedRecordHref(row.related_type)"
+                    class="text-accent-text inline-flex items-center gap-1.5 hover:underline"
+                >
+                    <component
+                        :is="relatedRecordIcon(row.related_type)"
+                        class="size-3.5"
+                    />{{
+                        t(
+                            RELATED_TYPES.find(
+                                (r) => r.value === row.related_type,
+                            )?.label ?? '',
+                        )
+                    }}
                 </Link>
                 <span v-else class="text-faint">—</span>
             </template>
             <template #cell-id="{ row }">
-                <Button v-if="canComplete(row)" size="sm" variant="outline" @click="complete(row)">{{ t('Complete') }}</Button>
+                <Button
+                    v-if="canComplete(row)"
+                    size="sm"
+                    variant="outline"
+                    @click="complete(row)"
+                    >{{ t('Complete') }}</Button
+                >
             </template>
         </DataTable>
         <Pagination :links="tasks.links" />
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t(editing ? 'Edit task' : 'New task') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t(editing ? 'Edit task' : 'New task')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submit">
                     <div class="flex flex-col gap-1.5">
                         <Label for="task-title">{{ t('Title') }}</Label>
@@ -902,38 +1125,102 @@ function complete(task: Task): void {
                         <InputError :message="form.errors.title" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label for="task-description">{{ t('Description') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <Textarea id="task-description" v-model="form.description" />
+                        <Label for="task-description"
+                            >{{ t('Description') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <Textarea
+                            id="task-description"
+                            v-model="form.description"
+                        />
                     </div>
                     <div v-if="canManage" class="flex flex-col gap-1.5">
                         <Label>{{ t('Assignee') }}</Label>
-                        <Select :model-value="String(form.assigned_to)" @update:model-value="form.assigned_to = Number($event)">
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                        <Select
+                            :model-value="String(form.assigned_to)"
+                            @update:model-value="
+                                form.assigned_to = Number($event)
+                            "
+                        >
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="member in members" :key="member.id" :value="String(member.id)">{{ member.name }}</SelectItem>
+                                <SelectItem
+                                    v-for="member in members"
+                                    :key="member.id"
+                                    :value="String(member.id)"
+                                    >{{ member.name }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.assigned_to" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label for="task-due">{{ t('Due date') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <Input id="task-due" v-model="form.due_at" type="date" />
+                        <Label for="task-due"
+                            >{{ t('Due date') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <Input
+                            id="task-due"
+                            v-model="form.due_at"
+                            type="date"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label>{{ t('Related record') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <Select :model-value="relatedType ?? ''" @update:model-value="(value) => { relatedType = (value || null) as RelatedType | null; relatedId = null; }">
-                            <SelectTrigger class="w-full"><SelectValue :placeholder="t('None')" /></SelectTrigger>
+                        <Label
+                            >{{ t('Related record') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <Select
+                            :model-value="relatedType ?? ''"
+                            @update:model-value="
+                                (value) => {
+                                    relatedType = (value ||
+                                        null) as RelatedType | null;
+                                    relatedId = null;
+                                }
+                            "
+                        >
+                            <SelectTrigger class="w-full"
+                                ><SelectValue :placeholder="t('None')"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{{ t('None') }}</SelectItem>
-                                <SelectItem v-for="option in RELATED_TYPES" :key="option.value" :value="option.value">{{ t(option.label) }}</SelectItem>
+                                <SelectItem value="">{{
+                                    t('None')
+                                }}</SelectItem>
+                                <SelectItem
+                                    v-for="option in RELATED_TYPES"
+                                    :key="option.value"
+                                    :value="option.value"
+                                    >{{ t(option.label) }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
-                        <RecordPicker v-if="relatedType" :type="relatedType" v-model="relatedId" label="Search…" />
+                        <RecordPicker
+                            v-if="relatedType"
+                            :type="relatedType"
+                            v-model="relatedId"
+                            label="Search…"
+                        />
                         <InputError :message="form.errors.related_id" />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="form.processing">{{ t(editing ? 'Save' : 'Create task') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="form.processing">{{
+                            t(editing ? 'Save' : 'Create task')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -945,7 +1232,41 @@ function complete(task: Task): void {
 - [ ] **Step 2: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"Tasks":"المهام","Assigned work with a due date.":"مهام موكّلة بموعد استحقاق.","Your assigned tasks.":"مهامك الموكّلة إليك.","New task":"مهمة جديدة","Open":"مفتوحة","Completed":"مكتملة","All":"الكل","No open tasks.":"لا توجد مهام مفتوحة.","No tasks yet.":"لا توجد مهام بعد.","Title":"العنوان","Assignee":"المكلَّف","Priority":"الأولوية","Due":"الاستحقاق","Related":"مرتبط بـ","low":"منخفضة","normal":"عادية","high":"مرتفعة","urgent":"عاجلة","Complete":"إنجاز","Lead":"عميل محتمل","Reservation":"حجز","Lease":"عقد إيجار","Sale":"بيع","Unit":"وحدة","Job card":"بطاقة عمل","Edit task":"تعديل المهمة","Description":"الوصف","Due date":"تاريخ الاستحقاق","Related record":"سجل مرتبط","None":"بلا","Save":"حفظ","Cancel":"إلغاء","Search…":"ابحث…"}
+{
+    "Tasks": "المهام",
+    "Assigned work with a due date.": "مهام موكّلة بموعد استحقاق.",
+    "Your assigned tasks.": "مهامك الموكّلة إليك.",
+    "New task": "مهمة جديدة",
+    "Open": "مفتوحة",
+    "Completed": "مكتملة",
+    "All": "الكل",
+    "No open tasks.": "لا توجد مهام مفتوحة.",
+    "No tasks yet.": "لا توجد مهام بعد.",
+    "Title": "العنوان",
+    "Assignee": "المكلَّف",
+    "Priority": "الأولوية",
+    "Due": "الاستحقاق",
+    "Related": "مرتبط بـ",
+    "low": "منخفضة",
+    "normal": "عادية",
+    "high": "مرتفعة",
+    "urgent": "عاجلة",
+    "Complete": "إنجاز",
+    "Lead": "عميل محتمل",
+    "Reservation": "حجز",
+    "Lease": "عقد إيجار",
+    "Sale": "بيع",
+    "Unit": "وحدة",
+    "Job card": "بطاقة عمل",
+    "Edit task": "تعديل المهمة",
+    "Description": "الوصف",
+    "Due date": "تاريخ الاستحقاق",
+    "Related record": "سجل مرتبط",
+    "None": "بلا",
+    "Save": "حفظ",
+    "Cancel": "إلغاء",
+    "Search…": "ابحث…"
+}
 ```
 
 - [ ] **Step 3: Verify.** Format, typecheck, lint, build. Confirm `php-run php artisan test --filter=WorkTaskTest` still passes.
@@ -1011,12 +1332,17 @@ type Appointment = {
 };
 
 const props = defineProps<{
-    appointments: { data: Appointment[]; links: { label: string; url: string | null; active: boolean }[] };
+    appointments: {
+        data: Appointment[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
     members: { id: number; name: string }[];
     canManage: boolean;
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'Meetings & Viewings', href: '/meetings' }] },
+    layout: {
+        breadcrumbs: [{ title: 'Meetings & Viewings', href: '/meetings' }],
+    },
 });
 
 const { t } = useLocale();
@@ -1056,7 +1382,10 @@ function submit(): void {
     timeError.value = null;
     form.lead_id = leadId.value;
     form.listing_id = listingId.value;
-    form.post('/meetings', { preserveScroll: true, onSuccess: () => (dialogOpen.value = false) });
+    form.post('/meetings', {
+        preserveScroll: true,
+        onSuccess: () => (dialogOpen.value = false),
+    });
 }
 
 const outcoming = ref<Appointment | null>(null);
@@ -1076,7 +1405,10 @@ function submitOutcome(): void {
 }
 
 function canRecordOutcome(appointment: Appointment): boolean {
-    return appointment.status === 'scheduled' && (props.canManage || appointment.assigned_to === page.props.auth.user.id);
+    return (
+        appointment.status === 'scheduled' &&
+        (props.canManage || appointment.assigned_to === page.props.auth.user.id)
+    );
 }
 
 function timeRange(appointment: Appointment): string {
@@ -1092,7 +1424,11 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
     { key: 'title', label: 'Title' },
     { key: 'starts_at', label: 'When' },
     { key: 'location', label: 'Location' },
-    ...(props.canManage ? ([{ key: 'assigned_to', label: 'Assignee' }] as DataTableColumn<Appointment>[]) : []),
+    ...(props.canManage
+        ? ([
+              { key: 'assigned_to', label: 'Assignee' },
+          ] as DataTableColumn<Appointment>[])
+        : []),
     { key: 'status', label: 'Status' },
     { key: 'id', label: '', align: 'end' },
 ]);
@@ -1102,7 +1438,11 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
     <Head :title="t('Meetings & Viewings')" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <PageHeader eyebrow="Workflow" title="Meetings & Viewings">
-            <template #actions><Button @click="openCreate">{{ t('New meeting') }}</Button></template>
+            <template #actions
+                ><Button @click="openCreate">{{
+                    t('New meeting')
+                }}</Button></template
+            >
         </PageHeader>
 
         <DataTable
@@ -1113,7 +1453,9 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
             empty-title="No meetings or viewings scheduled."
         >
             <template #cell-type="{ row }">
-                <Badge variant="outline">{{ t(row.type === 'meeting' ? 'Meeting' : 'Viewing') }}</Badge>
+                <Badge variant="outline">{{
+                    t(row.type === 'meeting' ? 'Meeting' : 'Viewing')
+                }}</Badge>
             </template>
             <template #cell-title="{ row }">
                 <span class="font-medium">{{ row.title }}</span>
@@ -1121,26 +1463,48 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
             <template #cell-starts_at="{ row }">
                 <DateText :value="row.starts_at" /> · {{ timeRange(row) }}
             </template>
-            <template #cell-location="{ row }">{{ row.location ?? '—' }}</template>
-            <template #cell-assigned_to="{ row }">{{ members.find((m) => m.id === row.assigned_to)?.name ?? '—' }}</template>
-            <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+            <template #cell-location="{ row }">{{
+                row.location ?? '—'
+            }}</template>
+            <template #cell-assigned_to="{ row }">{{
+                members.find((m) => m.id === row.assigned_to)?.name ?? '—'
+            }}</template>
+            <template #cell-status="{ row }"
+                ><StatusDot :status="row.status"
+            /></template>
             <template #cell-id="{ row }">
-                <Button v-if="canRecordOutcome(row)" size="sm" variant="outline" @click="outcoming = row">{{ t('Record outcome') }}</Button>
+                <Button
+                    v-if="canRecordOutcome(row)"
+                    size="sm"
+                    variant="outline"
+                    @click="outcoming = row"
+                    >{{ t('Record outcome') }}</Button
+                >
             </template>
         </DataTable>
         <Pagination :links="appointments.links" />
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('New meeting') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('New meeting')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submit">
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Type') }}</Label>
                         <Select v-model="form.type">
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="meeting">{{ t('Meeting') }}</SelectItem>
-                                <SelectItem value="viewing">{{ t('Viewing') }}</SelectItem>
+                                <SelectItem value="meeting">{{
+                                    t('Meeting')
+                                }}</SelectItem>
+                                <SelectItem value="viewing">{{
+                                    t('Viewing')
+                                }}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -1151,58 +1515,140 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
                     </div>
                     <div v-if="canManage" class="flex flex-col gap-1.5">
                         <Label>{{ t('Assignee') }}</Label>
-                        <Select :model-value="String(form.assigned_to)" @update:model-value="form.assigned_to = Number($event)">
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                        <Select
+                            :model-value="String(form.assigned_to)"
+                            @update:model-value="
+                                form.assigned_to = Number($event)
+                            "
+                        >
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="member in members" :key="member.id" :value="String(member.id)">{{ member.name }}</SelectItem>
+                                <SelectItem
+                                    v-for="member in members"
+                                    :key="member.id"
+                                    :value="String(member.id)"
+                                    >{{ member.name }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="meeting-start">{{ t('Starts') }}</Label>
-                            <Input id="meeting-start" v-model="form.starts_at" type="datetime-local" />
+                            <Input
+                                id="meeting-start"
+                                v-model="form.starts_at"
+                                type="datetime-local"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="meeting-end">{{ t('Ends') }}</Label>
-                            <Input id="meeting-end" v-model="form.ends_at" type="datetime-local" />
+                            <Input
+                                id="meeting-end"
+                                v-model="form.ends_at"
+                                type="datetime-local"
+                            />
                         </div>
                     </div>
-                    <p v-if="timeError" class="text-destructive text-xs">{{ timeError }}</p>
+                    <p v-if="timeError" class="text-destructive text-xs">
+                        {{ timeError }}
+                    </p>
                     <InputError :message="form.errors.ends_at" />
                     <div class="flex flex-col gap-1.5">
-                        <Label for="meeting-location">{{ t('Location') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
+                        <Label for="meeting-location"
+                            >{{ t('Location') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
                         <Input id="meeting-location" v-model="form.location" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label>{{ t('Lead') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <RecordPicker type="lead" v-model="leadId" label="Search leads…" />
+                        <Label
+                            >{{ t('Lead') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <RecordPicker
+                            type="lead"
+                            v-model="leadId"
+                            label="Search leads…"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label>{{ t('Listing') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <RecordPicker type="listing" v-model="listingId" label="Search listings…" />
+                        <Label
+                            >{{ t('Listing') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <RecordPicker
+                            type="listing"
+                            v-model="listingId"
+                            label="Search listings…"
+                        />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="form.processing">{{ t('Create') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="form.processing">{{
+                            t('Create')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="outcoming !== null" @update:open="(value) => !value && (outcoming = null)">
+        <Dialog
+            :open="outcoming !== null"
+            @update:open="(value) => !value && (outcoming = null)"
+        >
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Record outcome') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitOutcome">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Record outcome')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitOutcome"
+                >
                     <div class="flex flex-col gap-1.5">
-                        <Label for="outcome-text">{{ t('What happened?') }}</Label>
-                        <Textarea id="outcome-text" v-model="outcomeForm.outcome" />
+                        <Label for="outcome-text">{{
+                            t('What happened?')
+                        }}</Label>
+                        <Textarea
+                            id="outcome-text"
+                            v-model="outcomeForm.outcome"
+                        />
                         <InputError :message="outcomeForm.errors.outcome" />
                     </div>
-                    <p class="text-muted-foreground text-xs">{{ t("To move this lead's stage, use CRM & Leads afterward.") }}</p>
+                    <p class="text-muted-foreground text-xs">
+                        {{
+                            t(
+                                "To move this lead's stage, use CRM & Leads afterward.",
+                            )
+                        }}
+                    </p>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="outcoming = null">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="outcomeForm.processing">{{ t('Save outcome') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="outcoming = null"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="outcomeForm.processing"
+                            >{{ t('Save outcome') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1214,7 +1660,31 @@ const columns = computed<DataTableColumn<Appointment>[]>(() => [
 - [ ] **Step 2: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"Meetings & Viewings":"الاجتماعات والمعاينات","New meeting":"اجتماع جديد","No meetings or viewings scheduled.":"لا توجد اجتماعات أو معاينات مجدولة.","Type":"النوع","When":"الموعد","Location":"الموقع","Status":"الحالة","Meeting":"اجتماع","Viewing":"معاينة","Record outcome":"تسجيل النتيجة","Starts":"البداية","Ends":"النهاية","The end time must be after the start time.":"يجب أن يكون وقت الانتهاء بعد وقت البدء.","Lead":"عميل محتمل","Listing":"عرض عقاري","Search leads…":"ابحث عن عملاء محتملين…","Search listings…":"ابحث عن عروض…","Create":"إنشاء","What happened?":"ماذا حدث؟","To move this lead's stage, use CRM & Leads afterward.":"لنقل مرحلة هذا العميل المحتمل، استخدم صفحة إدارة العملاء لاحقًا.","Save outcome":"حفظ النتيجة","scheduled":"مجدول","completed":"مكتمل"}
+{
+    "Meetings & Viewings": "الاجتماعات والمعاينات",
+    "New meeting": "اجتماع جديد",
+    "No meetings or viewings scheduled.": "لا توجد اجتماعات أو معاينات مجدولة.",
+    "Type": "النوع",
+    "When": "الموعد",
+    "Location": "الموقع",
+    "Status": "الحالة",
+    "Meeting": "اجتماع",
+    "Viewing": "معاينة",
+    "Record outcome": "تسجيل النتيجة",
+    "Starts": "البداية",
+    "Ends": "النهاية",
+    "The end time must be after the start time.": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+    "Lead": "عميل محتمل",
+    "Listing": "عرض عقاري",
+    "Search leads…": "ابحث عن عملاء محتملين…",
+    "Search listings…": "ابحث عن عروض…",
+    "Create": "إنشاء",
+    "What happened?": "ماذا حدث؟",
+    "To move this lead's stage, use CRM & Leads afterward.": "لنقل مرحلة هذا العميل المحتمل، استخدم صفحة إدارة العملاء لاحقًا.",
+    "Save outcome": "حفظ النتيجة",
+    "scheduled": "مجدول",
+    "completed": "مكتمل"
+}
 ```
 
 Check `StatusDot`'s status map (`resources/js/lib/status-tones.ts`) already maps `scheduled`/`completed` — it does (`scheduled: 'info'`, `completed: 'success'`), so no lib change is needed here, only the Arabic label if missing.
@@ -1248,7 +1718,9 @@ defineProps<{
     canManage: boolean;
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'AI Matchmaker', href: '/crm/matchmaker' }] },
+    layout: {
+        breadcrumbs: [{ title: 'AI Matchmaker', href: '/crm/matchmaker' }],
+    },
 });
 
 const { t } = useLocale();
@@ -1258,7 +1730,13 @@ const filtered = computed(() => {
 
     return term.length === 0
         ? []
-        : leads.filter((lead) => `${lead.first_name} ${lead.last_name}`.toLowerCase().includes(term)).slice(0, 20);
+        : leads
+              .filter((lead) =>
+                  `${lead.first_name} ${lead.last_name}`
+                      .toLowerCase()
+                      .includes(term),
+              )
+              .slice(0, 20);
 });
 </script>
 
@@ -1272,18 +1750,37 @@ const filtered = computed(() => {
         />
         <div class="bg-card shadow-panel rounded-lg border p-5">
             <label class="relative block">
-                <Search class="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2" />
-                <Input v-model="query" class="ps-9" :placeholder="t('Search leads by name…')" />
+                <Search
+                    class="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2"
+                />
+                <Input
+                    v-model="query"
+                    class="ps-9"
+                    :placeholder="t('Search leads by name…')"
+                />
             </label>
             <ul v-if="filtered.length" class="mt-3 flex flex-col gap-1">
                 <li v-for="lead in filtered" :key="lead.id">
-                    <Link :href="`/crm/matchmaker/leads/${lead.id}`" class="hover:bg-accent flex items-center gap-2 rounded-sm px-2.5 py-2 text-sm">
-                        <Sparkles class="text-accent-text size-4" />{{ lead.first_name }} {{ lead.last_name }}
+                    <Link
+                        :href="`/crm/matchmaker/leads/${lead.id}`"
+                        class="hover:bg-accent flex items-center gap-2 rounded-sm px-2.5 py-2 text-sm"
+                    >
+                        <Sparkles class="text-accent-text size-4" />{{
+                            lead.first_name
+                        }}
+                        {{ lead.last_name }}
                     </Link>
                 </li>
             </ul>
-            <p v-else-if="query.trim().length > 0" class="text-muted-foreground mt-3 text-sm">{{ t('No leads match that name.') }}</p>
-            <p v-else class="text-muted-foreground mt-3 text-sm">{{ t('Start typing a lead name to find matches for them.') }}</p>
+            <p
+                v-else-if="query.trim().length > 0"
+                class="text-muted-foreground mt-3 text-sm"
+            >
+                {{ t('No leads match that name.') }}
+            </p>
+            <p v-else class="text-muted-foreground mt-3 text-sm">
+                {{ t('Start typing a lead name to find matches for them.') }}
+            </p>
         </div>
     </div>
 </template>
@@ -1336,7 +1833,12 @@ const props = defineProps<{
     mode: 'local_rules';
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'AI Matchmaker', href: '/crm/matchmaker' }, { title: 'Lead', href: '#' }] },
+    layout: {
+        breadcrumbs: [
+            { title: 'AI Matchmaker', href: '/crm/matchmaker' },
+            { title: 'Lead', href: '#' },
+        ],
+    },
 });
 
 const { t } = useLocale();
@@ -1351,12 +1853,16 @@ const rangeError = ref<string | null>(null);
 
 function submit(): void {
     if (!priceRangeValid(form.min_price_aed, form.max_price_aed)) {
-        rangeError.value = t('The maximum price must be at least the minimum price.');
+        rangeError.value = t(
+            'The maximum price must be at least the minimum price.',
+        );
 
         return;
     }
     rangeError.value = null;
-    form.put(`/crm/matchmaker/leads/${props.leadId}/preference`, { preserveScroll: true });
+    form.put(`/crm/matchmaker/leads/${props.leadId}/preference`, {
+        preserveScroll: true,
+    });
 }
 </script>
 
@@ -1370,50 +1876,119 @@ function submit(): void {
                 <div class="flex flex-col gap-1.5">
                     <Label>{{ t('Purpose') }}</Label>
                     <Select v-model="form.purpose">
-                        <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                        <SelectTrigger class="w-full"
+                            ><SelectValue
+                        /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="sale">{{ t('Sale') }}</SelectItem>
-                            <SelectItem value="rent">{{ t('Rent') }}</SelectItem>
+                            <SelectItem value="sale">{{
+                                t('Sale')
+                            }}</SelectItem>
+                            <SelectItem value="rent">{{
+                                t('Rent')
+                            }}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <Label for="pref-city">{{ t('City') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
+                    <Label for="pref-city"
+                        >{{ t('City') }}
+                        <span class="text-muted-foreground font-normal"
+                            >({{ t('optional') }})</span
+                        ></Label
+                    >
                     <Input id="pref-city" v-model="form.city" />
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <Label for="pref-type">{{ t('Property type') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
+                    <Label for="pref-type"
+                        >{{ t('Property type') }}
+                        <span class="text-muted-foreground font-normal"
+                            >({{ t('optional') }})</span
+                        ></Label
+                    >
                     <Input id="pref-type" v-model="form.property_type" />
                 </div>
                 <div class="col-span-2 grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1.5">
-                        <Label for="pref-min">{{ t('Minimum price (AED)') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <Input id="pref-min" v-model="form.min_price_aed" type="number" min="0" />
+                        <Label for="pref-min"
+                            >{{ t('Minimum price (AED)') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <Input
+                            id="pref-min"
+                            v-model="form.min_price_aed"
+                            type="number"
+                            min="0"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label for="pref-max">{{ t('Maximum price (AED)') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
-                        <Input id="pref-max" v-model="form.max_price_aed" type="number" min="0" />
+                        <Label for="pref-max"
+                            >{{ t('Maximum price (AED)') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
+                        <Input
+                            id="pref-max"
+                            v-model="form.max_price_aed"
+                            type="number"
+                            min="0"
+                        />
                     </div>
                 </div>
-                <p v-if="rangeError" class="col-span-2 text-destructive text-xs">{{ rangeError }}</p>
-                <InputError class="col-span-2" :message="form.errors.max_price_aed" />
+                <p
+                    v-if="rangeError"
+                    class="col-span-2 text-destructive text-xs"
+                >
+                    {{ rangeError }}
+                </p>
+                <InputError
+                    class="col-span-2"
+                    :message="form.errors.max_price_aed"
+                />
                 <div class="col-span-2 flex justify-end">
-                    <Button type="submit" :disabled="form.processing">{{ t('Save preference') }}</Button>
+                    <Button type="submit" :disabled="form.processing">{{
+                        t('Save preference')
+                    }}</Button>
                 </div>
             </form>
         </div>
 
         <div>
-            <h2 class="font-display mb-3 text-2xl font-medium">{{ t('Matches') }}</h2>
-            <p v-if="!preference" class="text-muted-foreground text-sm">{{ t('Set a search preference to see matches.') }}</p>
-            <p v-else-if="matches.length === 0" class="text-muted-foreground text-sm">{{ t('No active listings match this preference yet.') }}</p>
+            <h2 class="font-display mb-3 text-2xl font-medium">
+                {{ t('Matches') }}
+            </h2>
+            <p v-if="!preference" class="text-muted-foreground text-sm">
+                {{ t('Set a search preference to see matches.') }}
+            </p>
+            <p
+                v-else-if="matches.length === 0"
+                class="text-muted-foreground text-sm"
+            >
+                {{ t('No active listings match this preference yet.') }}
+            </p>
             <div v-else class="grid gap-3 md:grid-cols-2">
-                <div v-for="match in matches" :key="match.listing_id" class="bg-card shadow-panel rounded-lg border p-4">
+                <div
+                    v-for="match in matches"
+                    :key="match.listing_id"
+                    class="bg-card shadow-panel rounded-lg border p-4"
+                >
                     <p class="font-medium">{{ match.reference }}</p>
-                    <p class="text-muted-foreground text-sm">{{ match.property }} · {{ match.city }} · {{ match.unit }}</p>
-                    <p class="font-display mt-1.5 text-lg"><Money :value="match.price_aed" /></p>
+                    <p class="text-muted-foreground text-sm">
+                        {{ match.property }} · {{ match.city }} ·
+                        {{ match.unit }}
+                    </p>
+                    <p class="font-display mt-1.5 text-lg">
+                        <Money :value="match.price_aed" />
+                    </p>
                     <div class="mt-2 flex flex-wrap gap-1.5">
-                        <span v-for="reason in match.reasons" :key="reason" class="bg-success/10 text-success rounded-full px-2 py-0.5 text-[11px]">{{ t(reason) }}</span>
+                        <span
+                            v-for="reason in match.reasons"
+                            :key="reason"
+                            class="bg-success/10 text-success rounded-full px-2 py-0.5 text-[11px]"
+                            >{{ t(reason) }}</span
+                        >
                     </div>
                 </div>
             </div>
@@ -1425,7 +2000,30 @@ function submit(): void {
 - [ ] **Step 3: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"AI Matchmaker":"المطابقة الذكية","Deterministic, explainable matching — not a black-box AI call.":"مطابقة حتمية وواضحة السبب — وليست استدعاء ذكاء اصطناعي غامضًا.","Search leads by name…":"ابحث عن عميل محتمل بالاسم…","No leads match that name.":"لا يوجد عملاء محتملون بهذا الاسم.","Start typing a lead name to find matches for them.":"ابدأ بكتابة اسم عميل محتمل لعرض المطابقات له.","Search preference & matches":"تفضيلات البحث والمطابقات","Purpose":"الغرض","Sale":"بيع","Rent":"إيجار","City":"المدينة","Property type":"نوع العقار","Minimum price (AED)":"الحد الأدنى للسعر (د.إ)","Maximum price (AED)":"الحد الأقصى للسعر (د.إ)","The maximum price must be at least the minimum price.":"يجب ألا يقل الحد الأقصى للسعر عن الحد الأدنى.","Save preference":"حفظ التفضيل","Matches":"المطابقات","Set a search preference to see matches.":"حدد تفضيل بحث لعرض المطابقات.","No active listings match this preference yet.":"لا توجد عروض نشطة تطابق هذا التفضيل بعد.","Matching purpose":"مطابقة الغرض","Matching city":"مطابقة المدينة","Matching property type":"مطابقة نوع العقار","Within budget":"ضمن الميزانية"}
+{
+    "AI Matchmaker": "المطابقة الذكية",
+    "Deterministic, explainable matching — not a black-box AI call.": "مطابقة حتمية وواضحة السبب — وليست استدعاء ذكاء اصطناعي غامضًا.",
+    "Search leads by name…": "ابحث عن عميل محتمل بالاسم…",
+    "No leads match that name.": "لا يوجد عملاء محتملون بهذا الاسم.",
+    "Start typing a lead name to find matches for them.": "ابدأ بكتابة اسم عميل محتمل لعرض المطابقات له.",
+    "Search preference & matches": "تفضيلات البحث والمطابقات",
+    "Purpose": "الغرض",
+    "Sale": "بيع",
+    "Rent": "إيجار",
+    "City": "المدينة",
+    "Property type": "نوع العقار",
+    "Minimum price (AED)": "الحد الأدنى للسعر (د.إ)",
+    "Maximum price (AED)": "الحد الأقصى للسعر (د.إ)",
+    "The maximum price must be at least the minimum price.": "يجب ألا يقل الحد الأقصى للسعر عن الحد الأدنى.",
+    "Save preference": "حفظ التفضيل",
+    "Matches": "المطابقات",
+    "Set a search preference to see matches.": "حدد تفضيل بحث لعرض المطابقات.",
+    "No active listings match this preference yet.": "لا توجد عروض نشطة تطابق هذا التفضيل بعد.",
+    "Matching purpose": "مطابقة الغرض",
+    "Matching city": "مطابقة المدينة",
+    "Matching property type": "مطابقة نوع العقار",
+    "Within budget": "ضمن الميزانية"
+}
 ```
 
 - [ ] **Step 4: Verify.** Format, typecheck, lint, build. Confirm `php-run php artisan test --filter=LocalMatchmakerTest` still passes.
@@ -1465,7 +2063,11 @@ type BrokerRow = {
 
 const props = defineProps<{ brokers: BrokerRow[] }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'Broker Performance', href: '/crm/broker-performance' }] },
+    layout: {
+        breadcrumbs: [
+            { title: 'Broker Performance', href: '/crm/broker-performance' },
+        ],
+    },
 });
 
 const { t } = useLocale();
@@ -1474,10 +2076,19 @@ const columns: DataTableColumn<BrokerRow>[] = [
     { key: 'leads', label: 'Leads', align: 'end', sortable: true },
     { key: 'converted', label: 'Converted', align: 'end', sortable: true },
     { key: 'deals', label: 'Deals', align: 'end', sortable: true },
-    { key: 'commission_aed', label: 'Commission', align: 'end', sortable: true },
+    {
+        key: 'commission_aed',
+        label: 'Commission',
+        align: 'end',
+        sortable: true,
+    },
 ];
 const sort = ref<SortState>({ key: 'commission_aed', direction: 'desc' });
-const hasRestrictedRows = computed(() => props.brokers.some((row) => row.deals === null || row.commission_aed === null));
+const hasRestrictedRows = computed(() =>
+    props.brokers.some(
+        (row) => row.deals === null || row.commission_aed === null,
+    ),
+);
 
 const rows = computed(() => {
     if (!sort.value) {
@@ -1508,11 +2119,16 @@ const rows = computed(() => {
         >
             <template #cell-name="{ row }">
                 <span class="font-medium">{{ row.name }}</span>
-                <span v-if="row.team" class="text-muted-foreground"> · {{ row.team }}</span>
+                <span v-if="row.team" class="text-muted-foreground">
+                    · {{ row.team }}</span
+                >
             </template>
             <template #cell-converted="{ row }">
                 {{ row.converted }}
-                <span v-if="conversionRate(row.converted, row.leads) !== null" class="text-muted-foreground">
+                <span
+                    v-if="conversionRate(row.converted, row.leads) !== null"
+                    class="text-muted-foreground"
+                >
                     ({{ conversionRate(row.converted, row.leads) }}%)
                 </span>
             </template>
@@ -1521,12 +2137,18 @@ const rows = computed(() => {
                 <span v-else>{{ row.deals }}</span>
             </template>
             <template #cell-commission_aed="{ row }">
-                <span v-if="row.commission_aed === null" class="text-faint">—</span>
+                <span v-if="row.commission_aed === null" class="text-faint"
+                    >—</span
+                >
                 <Money v-else :value="row.commission_aed" />
             </template>
         </DataTable>
         <p v-if="hasRestrictedRows" class="text-muted-foreground text-xs">
-            {{ t('Deals and commission show only to owners without a restricted view.') }}
+            {{
+                t(
+                    'Deals and commission show only to owners without a restricted view.',
+                )
+            }}
         </p>
     </div>
 </template>
@@ -1535,7 +2157,16 @@ const rows = computed(() => {
 - [ ] **Step 2: Add Arabic**, only missing keys, then sync:
 
 ```json
-{"Broker Performance":"أداء الوسطاء","Broker":"الوسيط","Leads":"العملاء المحتملون","Converted":"محوَّل","Deals":"الصفقات","Commission":"العمولة","No brokers yet":"لا يوجد وسطاء بعد","Deals and commission show only to owners without a restricted view.":"تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم."}
+{
+    "Broker Performance": "أداء الوسطاء",
+    "Broker": "الوسيط",
+    "Leads": "العملاء المحتملون",
+    "Converted": "محوَّل",
+    "Deals": "الصفقات",
+    "Commission": "العمولة",
+    "No brokers yet": "لا يوجد وسطاء بعد",
+    "Deals and commission show only to owners without a restricted view.": "تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم."
+}
 ```
 
 - [ ] **Step 3: Verify.** Format, typecheck, lint, build.
@@ -1547,21 +2178,26 @@ const rows = computed(() => {
 ### Task 9: Navigation wiring and phase verification
 
 **Files:**
+
 - Modify: `resources/js/lib/navigation.ts` (turn 4 `soon` items into real links)
 - Modify: `tests/Frontend/navigation.test.mjs` if any assertion about these items being soon needs removing
 
 - [ ] **Step 1: Update `navigation.ts`**
 
 Replace:
+
 ```ts
 soon('AI Matchmaker', 'matchmaker', 'crm'),
 ```
+
 with:
+
 ```ts
 { label: 'AI Matchmaker', href: '/crm/matchmaker', icon: 'matchmaker', ability: 'crm' },
 ```
 
 Replace the Workflow group's three `soon(...)` entries (`Approvals`, `Tasks`, `Meetings & Viewings`) with:
+
 ```ts
 { label: 'Approvals', href: '/approvals', icon: 'approvals' },
 { label: 'Tasks', href: '/tasks', icon: 'tasks' },

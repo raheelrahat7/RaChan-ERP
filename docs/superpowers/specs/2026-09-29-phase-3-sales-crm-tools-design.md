@@ -9,19 +9,20 @@
 
 Five pages, replacing their "Soon" sidebar entries with real routes:
 
-| Page | Route | Sidebar item it replaces |
-|---|---|---|
-| Approvals | `GET /approvals` (`approvals.index`) | Workflow ▸ Approvals |
-| Tasks | `GET/POST /tasks`, `PUT /tasks/{task}`, `POST /tasks/{task}/complete` | Workflow ▸ Tasks |
-| Meetings & Viewings | `GET/POST /meetings`, `POST /meetings/{appointment}/outcome` | Workflow ▸ Meetings & Viewings |
-| AI Matchmaker | `GET /crm/matchmaker`, `GET /crm/matchmaker/leads/{lead}`, `PUT .../preference` | Sales & CRM ▸ AI Matchmaker |
-| Broker Performance | `GET /crm/broker-performance` | Sales & CRM ▸ Broker Performance (already a real link; this builds its page) |
+| Page                | Route                                                                           | Sidebar item it replaces                                                     |
+| ------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Approvals           | `GET /approvals` (`approvals.index`)                                            | Workflow ▸ Approvals                                                         |
+| Tasks               | `GET/POST /tasks`, `PUT /tasks/{task}`, `POST /tasks/{task}/complete`           | Workflow ▸ Tasks                                                             |
+| Meetings & Viewings | `GET/POST /meetings`, `POST /meetings/{appointment}/outcome`                    | Workflow ▸ Meetings & Viewings                                               |
+| AI Matchmaker       | `GET /crm/matchmaker`, `GET /crm/matchmaker/leads/{lead}`, `PUT .../preference` | Sales & CRM ▸ AI Matchmaker                                                  |
+| Broker Performance  | `GET /crm/broker-performance`                                                   | Sales & CRM ▸ Broker Performance (already a real link; this builds its page) |
 
 A sixth small piece, not a page: the **record picker** component used by Tasks and Meetings to link a lead/listing/unit/reservation/lease/sale/job. It calls the endpoint requested from Codex and degrades to "search isn't connected yet" without it — everything else on both pages works regardless.
 
 ## 2. Navigation changes
 
 In `resources/js/lib/navigation.ts`:
+
 - `AI Matchmaker`, `Approvals`, `Tasks`, `Meetings & Viewings` lose `soon: true` and gain real `href`s.
 - Each gets an `ability` matching what its controller authorizes: Matchmaker → `crm`, Approvals → none (every organization role can have pending approvals; the page itself is empty when there are none), Tasks → none (everyone can see their own tasks), Meetings → `crm`.
 - `counts.approvals_pending` (already shared, already wired to the sidebar badge) now reflects real pending approvals once this phase's `PendingApprovals` query is live — no frontend change needed, it already reads that count.
@@ -34,10 +35,18 @@ Props: `items: ApprovalItem[]`, `count: number`.
 
 ```ts
 type ApprovalItem = {
-  key: string; module: string; transaction: string; amount: number | null;
-  cost_centre: string | null; requested_by: string; status: 'submitted';
-  submitted_at: string; href: string; approve_url: string;
-  reject_url: string | null; reject_requires_reason: boolean;
+    key: string;
+    module: string;
+    transaction: string;
+    amount: number | null;
+    cost_centre: string | null;
+    requested_by: string;
+    status: 'submitted';
+    submitted_at: string;
+    href: string;
+    approve_url: string;
+    reject_url: string | null;
+    reject_requires_reason: boolean;
 };
 ```
 
@@ -54,11 +63,18 @@ Props: `tasks: Paginated<Task>`, `members: { id: number; name: string }[]`, `can
 
 ```ts
 type Task = {
-  id: number; title: string; description: string | null;
-  priority: 'low' | 'normal' | 'high' | 'urgent'; status: 'open' | 'completed';
-  assigned_to: number; assignee_name: string; due_at: string | null;
-  related_type: 'lead' | 'reservation' | 'lease' | 'sale' | 'unit' | 'job' | null;
-  related_id: number | null; completed_at: string | null;
+    id: number;
+    title: string;
+    description: string | null;
+    priority: 'low' | 'normal' | 'high' | 'urgent';
+    status: 'open' | 'completed';
+    assigned_to: number;
+    assignee_name: string;
+    due_at: string | null;
+    related_type:
+        'lead' | 'reservation' | 'lease' | 'sale' | 'unit' | 'job' | null;
+    related_id: number | null;
+    completed_at: string | null;
 };
 ```
 
@@ -77,10 +93,17 @@ Props: `appointments: Paginated<Appointment>`, `members: {...}[]`, `canManage: b
 
 ```ts
 type Appointment = {
-  id: number; type: 'meeting' | 'viewing'; title: string;
-  assigned_to: number; lead_id: number | null; listing_id: number | null;
-  starts_at: string; ends_at: string; location: string | null;
-  status: 'scheduled' | 'completed'; outcome: string | null;
+    id: number;
+    type: 'meeting' | 'viewing';
+    title: string;
+    assigned_to: number;
+    lead_id: number | null;
+    listing_id: number | null;
+    starts_at: string;
+    ends_at: string;
+    location: string | null;
+    status: 'scheduled' | 'completed';
+    outcome: string | null;
 };
 ```
 
@@ -100,12 +123,21 @@ type Appointment = {
 
 ```ts
 type SearchPreference = {
-  purpose: 'sale' | 'rent'; city: string | null; property_type: string | null;
-  min_price_aed: string | null; max_price_aed: string | null;
+    purpose: 'sale' | 'rent';
+    city: string | null;
+    property_type: string | null;
+    min_price_aed: string | null;
+    max_price_aed: string | null;
 } | null;
 type Match = {
-  listing_id: number; reference: string; property: string; city: string | null;
-  unit: string; purpose: string; price_aed: number; reasons: string[];
+    listing_id: number;
+    reference: string;
+    property: string;
+    city: string | null;
+    unit: string;
+    purpose: string;
+    price_aed: number;
+    reasons: string[];
 };
 ```
 
@@ -119,8 +151,13 @@ Props: `brokers: BrokerRow[]`.
 
 ```ts
 type BrokerRow = {
-  broker_id: number; name: string; team: string | null; leads: number;
-  converted: number; deals: number | null; commission_aed: number | null;
+    broker_id: number;
+    name: string;
+    team: string | null;
+    leads: number;
+    converted: number;
+    deals: number | null;
+    commission_aed: number | null;
 };
 ```
 

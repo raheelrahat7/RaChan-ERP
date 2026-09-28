@@ -20,6 +20,7 @@ GET /api/records/search?type={type}&q={term}
 ```
 
 `label`/`sublabel` per type, mirroring what `GlobalSearch` already shows for that type:
+
 - `lead` → label: full name, sublabel: company or email
 - `listing` → label: reference, sublabel: property name · city
 - `unit` → label: unit number, sublabel: property name
