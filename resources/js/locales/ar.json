@@ -783,5 +783,9 @@
     "Notifications (:count unread)": "الإشعارات (:count غير مقروءة)",
     "Period": "الفترة",
     "Sale or rent": "بيع أو إيجار",
-    "Styleguide": "دليل التصميم"
+    "Styleguide": "دليل التصميم",
+    "Clear selection": "إزالة التحديد",
+    "Searching…": "جارٍ البحث…",
+    "Search isn't connected yet.": "البحث غير متاح بعد.",
+    "No matches.": "لا توجد نتائج مطابقة."
 }
