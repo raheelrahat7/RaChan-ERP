@@ -12,9 +12,10 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
+                bunny('Geist', { weights: [300, 400, 500, 600] }),
+                bunny('Cormorant Garamond', { weights: [500, 600] }),
+                bunny('IBM Plex Sans Arabic', { weights: [400, 500, 600] }),
+                bunny('Noto Naskh Arabic', { weights: [500, 600] }),
             ],
         }),
         inertia(),
