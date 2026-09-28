@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Z1 ERP — Glasshouse</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Figtree:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --sky-top: #bcd6f0;
+                --sky: #d6e6f5;
+                --sky-low: #eef3f8;
+                --cobalt: #1c3f94;
+                --cobalt-soft: #3e63c4;
+                --mirror: #aeb9c7;
+                --brass: #c39a3e;
+                --ink: #13213a;
+                --ink-soft: #4a5a75;
+                --glass: rgba(255, 255, 255, 0.46);
+                --glass-strong: rgba(255, 255, 255, 0.7);
+                --glass-edge: rgba(255, 255, 255, 0.85);
+                --glass-shade: rgba(28, 63, 148, 0.12);
+                --available: #7fd3e6;
+                --radius-l: 28px;
+                --radius-m: 18px;
+                --radius-s: 10px;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+            }
+            body {
+                min-height: 100vh;
+                font:
+                    400 15px/1.55 'Figtree',
+                    system-ui,
+                    sans-serif;
+                color: var(--ink);
+                background: linear-gradient(
+                    180deg,
+                    var(--sky-top) 0%,
+                    var(--sky) 45%,
+                    var(--sky-low) 100%
+                );
+                background-attachment: fixed;
+                overflow-x: hidden;
+            }
+
+            /* ----- Sky: two slow glare discs and a skyline silhouette behind the glass ----- */
+            .sky {
+                position: fixed;
+                inset: 0;
+                z-index: 0;
+                pointer-events: none;
+                overflow: hidden;
+            }
+            .glare {
+                position: absolute;
+                border-radius: 50%;
+                filter: blur(40px);
+                opacity: 0.75;
+                animation: drift 26s ease-in-out infinite alternate;
+            }
+            .glare.one {
+                width: 520px;
+                height: 520px;
+                left: 58%;
+                top: -140px;
+                background: radial-gradient(
+                    circle,
+                    #fff6dc 0%,
+                    rgba(255, 246, 220, 0) 70%
+                );
+            }
+            .glare.two {
+                width: 640px;
+                height: 640px;
+                left: -160px;
+                top: 42%;
+                background: radial-gradient(
+                    circle,
+                    #cfe0ff 0%,
+                    rgba(207, 224, 255, 0) 70%
+                );
+                animation-duration: 34s;
+            }
+            @keyframes drift {
+                to {
+                    transform: translate(-60px, 40px) scale(1.08);
+                }
+            }
+            .skyline {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: 38vh;
+                opacity: 0.55;
+            }
+
+            /* ----- Shell ----- */
+            .shell {
+                position: relative;
+                z-index: 1;
+                display: grid;
+                grid-template-columns: 264px 1fr;
+                gap: 20px;
+                padding: 20px;
+                min-height: 100vh;
+            }
+
+            .pane {
+                background: var(--glass);
+                border: 1px solid var(--glass-edge);
+                border-radius: var(--radius-l);
+                backdrop-filter: blur(22px) saturate(160%);
+                -webkit-backdrop-filter: blur(22px) saturate(160%);
+                box-shadow:
+                    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+                    0 24px 48px -28px var(--glass-shade);
+                position: relative;
+            }
+
+            /* Sidebar */
+            .side {
+                padding: 22px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                position: sticky;
+                top: 20px;
+                height: calc(100vh - 40px);
+                overflow-y: auto;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 4px 10px 10px;
+            }
+            .brand-mark {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                background: linear-gradient(
+                    160deg,
+                    #5a82e0 0%,
+                    var(--cobalt) 60%,
+                    #0f2a6b 100%
+                );
+                box-shadow:
+                    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+                    0 8px 18px -8px var(--cobalt);
+                display: grid;
+                place-items: center;
+                color: #fff;
+                font: 800 17px 'Syne';
+            }
+            .brand b {
+                font: 700 18px/1.1 'Syne';
+                letter-spacing: -0.01em;
+                display: block;
+            }
+            .brand span {
+                font-size: 12.5px;
+                color: var(--ink-soft);
+            }
+            .nav-group h3 {
+                font: 600 12.5px 'Figtree';
+                color: var(--ink-soft);
+                margin: 0 10px 6px;
+            }
+            .nav-group ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .nav-group a {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 10px;
+                border-radius: 12px;
+                color: var(--ink);
+                text-decoration: none;
+                font-weight: 500;
+                font-size: 14.5px;
+                transition: background 0.2s;
+            }
+            .nav-group a:hover {
+                background: rgba(255, 255, 255, 0.55);
+            }
+            .nav-group a[aria-current='page'] {
+                background: linear-gradient(
+                    180deg,
+                    #fff 0%,
+                    rgba(255, 255, 255, 0.72) 100%
+                );
+                box-shadow:
+                    0 1px 0 #fff inset,
+                    0 6px 14px -8px var(--glass-shade);
+                color: var(--cobalt);
+            }
+            .nav-group svg {
+                width: 17px;
+                height: 17px;
+                flex: none;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.8;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                opacity: 0.8;
+            }
+
+            /* Main */
+            main {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 0;
+            }
+            .top {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 14px 16px 14px 26px;
+            }
+            .top h1 {
+                font: 700 clamp(22px, 2.4vw, 30px)/1.1 'Syne';
+                letter-spacing: -0.02em;
+                margin: 0;
+            }
+            .top p {
+                margin: 2px 0 0;
+                color: var(--ink-soft);
+                font-size: 14px;
+            }
+            .top .grow {
+                flex: 1;
+            }
+            .search {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0 14px;
+                height: 44px;
+                width: min(320px, 34vw);
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid #fff;
+                box-shadow: 0 2px 6px -4px var(--glass-shade) inset;
+            }
+            .search input {
+                border: 0;
+                background: none;
+                font: inherit;
+                color: var(--ink);
+                width: 100%;
+                outline: none;
+            }
+            .search svg,
+            .icon-btn svg {
+                width: 18px;
+                height: 18px;
+                stroke: var(--ink-soft);
+                fill: none;
+                stroke-width: 1.8;
+                stroke-linecap: round;
+            }
+            .icon-btn {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                border: 1px solid #fff;
+                background: rgba(255, 255, 255, 0.7);
+                cursor: pointer;
+                position: relative;
+            }
+            .icon-btn .dot {
+                position: absolute;
+                top: 10px;
+                right: 11px;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--brass);
+                box-shadow: 0 0 0 2px #fff;
+            }
+            .avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--brass), #8a6a22);
+                color: #fff;
+                display: grid;
+                place-items: center;
+                font-weight: 600;
+                box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: minmax(320px, 1.05fr) 1fr;
+                gap: 20px;
+            }
+
+            /* ----- The tower ----- */
+            .tower-pane {
+                padding: 26px 26px 22px;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+                overflow: hidden;
+            }
+            .pane-head {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .pane-head h2 {
+                font: 700 20px/1.2 'Syne';
+                margin: 0;
+                letter-spacing: -0.01em;
+            }
+            .pane-head a {
+                color: var(--cobalt);
+                font-weight: 600;
+                font-size: 14px;
+                text-decoration: none;
+            }
+            .pane-head a:hover {
+                text-decoration: underline;
+            }
+            .select {
+                font: 600 14px 'Figtree';
+                color: var(--ink);
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid #fff;
+                padding: 7px 12px;
+                border-radius: 999px;
+            }
+            .tower-wrap {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 26px;
+                align-items: end;
+            }
+            .tower {
+                position: relative;
+                padding: 12px 12px 0;
+                border-radius: 16px 16px 4px 4px;
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.6),
+                    rgba(255, 255, 255, 0.25)
+                );
+                border: 1px solid #fff;
+                box-shadow: 0 30px 40px -30px rgba(19, 33, 58, 0.45);
+                overflow: hidden;
+            }
+            .tower::before {
+                /* crown */
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 30%;
+                right: 30%;
+                height: 6px;
+                border-radius: 0 0 6px 6px;
+                background: var(--mirror);
+            }
+            .floors {
+                display: flex;
+                flex-direction: column-reverse;
+                gap: 4px;
+            }
+            .floor {
+                display: grid;
+                grid-template-columns: repeat(8, 22px);
+                gap: 4px;
+            }
+            .unit {
+                width: 22px;
+                height: 13px;
+                border-radius: 3px;
+                border: 0;
+                padding: 0;
+                cursor: pointer;
+                background: linear-gradient(180deg, #e8f7fb, var(--available));
+                box-shadow: 0 0 6px rgba(127, 211, 230, 0.8);
+                opacity: 0;
+                transform: scaleY(0.3);
+                transition:
+                    opacity 0.35s ease,
+                    transform 0.35s ease,
+                    outline-color 0.2s;
+                outline: 2px solid transparent;
+                outline-offset: 1px;
+            }
+            .unit.reserved {
+                background: linear-gradient(180deg, #f1dca8, var(--brass));
+                box-shadow: 0 0 6px rgba(195, 154, 62, 0.7);
+            }
+            .unit.sold {
+                background: linear-gradient(180deg, #5d7fd6, var(--cobalt));
+                box-shadow: none;
+            }
+            .unit.lit {
+                opacity: 1;
+                transform: none;
+            }
+            .unit:hover,
+            .unit:focus-visible {
+                outline-color: var(--ink);
+            }
+            .lobby {
+                height: 18px;
+                margin-top: 6px;
+                background: linear-gradient(180deg, var(--mirror), #8e9aab);
+                border-radius: 3px 3px 0 0;
+            }
+            .sheen {
+                /* the light sweep across the glass */
+                position: absolute;
+                inset: -20% -60%;
+                pointer-events: none;
+                background: linear-gradient(
+                    105deg,
+                    transparent 42%,
+                    rgba(255, 255, 255, 0.75) 50%,
+                    transparent 58%
+                );
+                transform: translateX(-70%);
+                animation: sweep 7s ease-in-out 2.4s infinite;
+            }
+            @keyframes sweep {
+                0% {
+                    transform: translateX(-70%);
+                }
+                35%,
+                100% {
+                    transform: translateX(70%);
+                }
+            }
+
+            .tower-facts {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                padding-bottom: 6px;
+            }
+            .fact {
+                display: grid;
+                grid-template-columns: 14px 1fr;
+                column-gap: 10px;
+                align-items: baseline;
+            }
+            .fact i {
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                display: block;
+                transform: translateY(1px);
+            }
+            .fact strong {
+                font: 700 30px/1 'Syne';
+                letter-spacing: -0.02em;
+                display: block;
+                font-variant-numeric: tabular-nums;
+            }
+            .fact span {
+                color: var(--ink-soft);
+                font-size: 14px;
+            }
+            .tooltip {
+                position: fixed;
+                z-index: 10;
+                pointer-events: none;
+                padding: 8px 12px;
+                border-radius: 12px;
+                font-size: 13px;
+                background: rgba(19, 33, 58, 0.9);
+                color: #fff;
+                backdrop-filter: blur(8px);
+                opacity: 0;
+                transition: opacity 0.15s;
+                white-space: nowrap;
+            }
+
+            /* ----- Right column ----- */
+            .stack {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 0;
+            }
+            .metrics {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                padding: 12px;
+            }
+            .metric {
+                padding: 16px 16px 14px;
+                border-radius: var(--radius-m);
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.85),
+                    rgba(255, 255, 255, 0.5)
+                );
+                border: 1px solid #fff;
+                text-decoration: none;
+                color: inherit;
+                display: block;
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+            }
+            .metric:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 14px 24px -18px var(--cobalt);
+            }
+            .metric strong {
+                display: block;
+                font: 700 26px/1.1 'Syne';
+                letter-spacing: -0.02em;
+                font-variant-numeric: tabular-nums;
+            }
+            .metric span {
+                font-size: 13.5px;
+                color: var(--ink-soft);
+            }
+            .metric.warn strong {
+                color: #b4432f;
+            }
+            .metric.money {
+                grid-column: span 3;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .metric.money strong {
+                font-size: 30px;
+            }
+            .metric.money small {
+                font: 600 16px 'Syne';
+                color: var(--ink-soft);
+                margin-right: 4px;
+            }
+            .bar {
+                flex: 1;
+                min-width: 180px;
+                max-width: 320px;
+            }
+            .bar-track {
+                height: 10px;
+                border-radius: 99px;
+                background: rgba(28, 63, 148, 0.1);
+                overflow: hidden;
+                display: flex;
+            }
+            .bar-track i {
+                display: block;
+                height: 100%;
+            }
+            .bar-legend {
+                display: flex;
+                justify-content: space-between;
+                font-size: 12.5px;
+                color: var(--ink-soft);
+                margin-top: 6px;
+            }
+
+            .alerts {
+                padding: 22px 22px 12px;
+            }
+            .alerts ul {
+                list-style: none;
+                margin: 14px 0 0;
+                padding: 0;
+            }
+            .alerts li a {
+                display: grid;
+                grid-template-columns: 34px 1fr auto;
+                align-items: center;
+                gap: 12px;
+                padding: 11px 8px;
+                border-top: 1px solid rgba(255, 255, 255, 0.9);
+                color: inherit;
+                text-decoration: none;
+                border-radius: 12px;
+            }
+            .alerts li:first-child a {
+                border-top: 0;
+            }
+            .alerts li a:hover {
+                background: rgba(255, 255, 255, 0.55);
+            }
+            .alerts .ico {
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                display: grid;
+                place-items: center;
+                background: rgba(255, 255, 255, 0.8);
+            }
+            .alerts .ico svg {
+                width: 17px;
+                height: 17px;
+                stroke: var(--cobalt);
+                fill: none;
+                stroke-width: 1.8;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .alerts .urgent .ico svg {
+                stroke: #b4432f;
+            }
+            .alerts .t {
+                font-weight: 600;
+            }
+            .alerts .s {
+                display: block;
+                font-size: 13px;
+                color: var(--ink-soft);
+                font-weight: 400;
+            }
+            .count {
+                min-width: 36px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                text-align: center;
+                font: 700 14px 'Syne';
+                background: linear-gradient(180deg, #fff, #e9eef6);
+                border: 1px solid #fff;
+                box-shadow: 0 4px 10px -6px var(--glass-shade);
+            }
+            .urgent .count {
+                color: #b4432f;
+            }
+
+            a:focus-visible,
+            button:focus-visible,
+            input:focus-visible,
+            select:focus-visible {
+                outline: 2px solid var(--cobalt);
+                outline-offset: 2px;
+            }
+            .search:focus-within {
+                outline: 2px solid var(--cobalt);
+                outline-offset: 2px;
+            }
+
+            /* ----- Responsive ----- */
+            .menu-btn {
+                display: none;
+            }
+            @media (max-width: 1180px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (max-width: 880px) {
+                .shell {
+                    grid-template-columns: 1fr;
+                    padding: 12px 16px;
+                    gap: 14px;
+                }
+                .side {
+                    position: fixed;
+                    inset: 12px auto 12px 12px;
+                    width: 270px;
+                    height: auto;
+                    z-index: 20;
+                    transform: translateX(-110%);
+                    transition: transform 0.3s;
+                    background: rgba(255, 255, 255, 0.85);
+                }
+                .side.open {
+                    transform: none;
+                }
+                .menu-btn {
+                    display: grid;
+                }
+                .search {
+                    display: none;
+                }
+                .top {
+                    padding: 12px 12px 12px 16px;
+                }
+                .metrics {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .metric.money {
+                    grid-column: span 2;
+                }
+                .tower-wrap {
+                    grid-template-columns: 1fr;
+                    justify-items: center;
+                }
+                .tower-facts {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 18px 24px;
+                }
+            }
+            @media (max-width: 420px) {
+                .floor {
+                    grid-template-columns: repeat(8, 12px);
+                }
+                .unit {
+                    width: 12px;
+                    height: 10px;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation: none !important;
+                    transition: none !important;
+                }
+                .unit {
+                    opacity: 1;
+                    transform: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sky" aria-hidden="true">
+            <div class="glare one"></div>
+            <div class="glare two"></div>
+            <svg
+                class="skyline"
+                viewBox="0 0 1440 360"
+                preserveAspectRatio="none"
+            >
+                <defs>
+                    <linearGradient id="sk" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#9fb8d6" />
+                        <stop offset="1" stop-color="#e6eef7" />
+                    </linearGradient>
+                </defs>
+                <path
+                    fill="url(#sk)"
+                    d="M0 360V250h60v-40h40v60h50V170h30v-30h20v30h30v130h40v-90h70V120l20-40 20 40v180h40v-60h60v-110h50v160h40V60h16l14-50 14 50h16v250h50v-140h80v190h40v-100h60v-60h30v160h50V150h20v-30h40v30h20v200h60v-120h70v90h40v-170h30l20-30 20 30v200h60v-80h50v130h60v-100h60v130z"
+                />
+            </svg>
+        </div>
+
+        <div class="shell">
+            <nav class="pane side" id="side" aria-label="Main">
+                <div class="brand">
+                    <div class="brand-mark" aria-hidden="true">Z1</div>
+                    <div><b>Z1 Estates</b><span>Creekside Holdings</span></div>
+                </div>
+
+                <div class="nav-group">
+                    <h3>Workspace</h3>
+                    <ul>
+                        <li>
+                            <a href="#" aria-current="page"
+                                ><svg viewBox="0 0 24 24">
+                                    <rect
+                                        x="3"
+                                        y="3"
+                                        width="7"
+                                        height="9"
+                                        rx="1.5"
+                                    />
+                                    <rect
+                                        x="14"
+                                        y="3"
+                                        width="7"
+                                        height="5"
+                                        rx="1.5"
+                                    />
+                                    <rect
+                                        x="14"
+                                        y="12"
+                                        width="7"
+                                        height="9"
+                                        rx="1.5"
+                                    />
+                                    <rect
+                                        x="3"
+                                        y="16"
+                                        width="7"
+                                        height="5"
+                                        rx="1.5"
+                                    /></svg
+                                >Dashboard</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="7" />
+                                    <path d="m20 20-3.5-3.5" /></svg
+                                >Search</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+                                    />
+                                    <path
+                                        d="M10.3 21a1.9 1.9 0 0 0 3.4 0"
+                                    /></svg
+                                >Notifications</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Sales</h3>
+                    <ul>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path d="M3 6h18l-7 8v6l-4-2v-4z" /></svg
+                                >CRM leads</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <circle cx="9" cy="8" r="4" />
+                                    <path d="M2 21a7 7 0 0 1 14 0" />
+                                    <path
+                                        d="M17 11a3 3 0 1 0 0-6M22 21a5 5 0 0 0-4-5"
+                                    /></svg
+                                >Contacts</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path d="m3 11 9-8 9 8v10H3z" />
+                                    <path d="M9 21v-7h6v7" /></svg
+                                >Listings</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="8" r="4" />
+                                    <path d="M4 21a8 8 0 0 1 16 0" /></svg
+                                >Owners, tenants &amp; brokers</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Property</h3>
+                    <ul>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <rect
+                                        x="5"
+                                        y="2"
+                                        width="14"
+                                        height="20"
+                                        rx="1.5"
+                                    />
+                                    <path
+                                        d="M9 6h2M13 6h2M9 10h2M13 10h2M9 14h2M13 14h2M10 22v-4h4v4"
+                                    /></svg
+                                >Inventory</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <rect
+                                        x="3"
+                                        y="5"
+                                        width="18"
+                                        height="16"
+                                        rx="2"
+                                    />
+                                    <path d="M3 10h18M8 3v4M16 3v4" />
+                                    <path d="m9 15 2 2 4-4" /></svg
+                                >Reservations</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"
+                                    />
+                                    <path d="M14 3v6h6M8 17c2-3 3 1 5-1" /></svg
+                                >Agreements</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <circle cx="8" cy="15" r="4" />
+                                    <path
+                                        d="m11 12 9-9M17 6l3 3M15 8l2 2"
+                                    /></svg
+                                >Handovers</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Finance</h3>
+                    <ul>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
+                                    <path d="M9 7h6M9 11h6M9 15h3" /></svg
+                                >Invoices</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M3 21h18M5 21V10M19 21V10M9 21v-7M15 21v-7M2 10l10-7 10 7z"
+                                    /></svg
+                                >Bank reconciliation</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path d="M3 3v18h18" />
+                                    <path d="m7 15 4-4 3 3 6-7" /></svg
+                                >Property performance</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Operations</h3>
+                    <ul>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"
+                                    /></svg
+                                >Maintenance</a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"
+                                    />
+                                    <path d="m9 12 2 2 4-4" /></svg
+                                >Document compliance</a
+                            >
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main>
+                <header class="pane top">
+                    <button
+                        class="icon-btn menu-btn"
+                        id="menuBtn"
+                        aria-label="Open navigation"
+                        aria-controls="side"
+                        aria-expanded="false"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 7h16M4 12h16M4 17h16" />
+                        </svg>
+                    </button>
+                    <div class="grow">
+                        <h1>Good morning, Layla</h1>
+                        <p>
+                            Wednesday 23 September. Five requests are past due.
+                        </p>
+                    </div>
+                    <label class="search"
+                        ><svg viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" /></svg
+                        ><input
+                            type="search"
+                            placeholder="Search units, leads, invoices"
+                            aria-label="Search"
+                    /></label>
+                    <button
+                        class="icon-btn"
+                        aria-label="Notifications, 3 unread"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+                            />
+                            <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></svg
+                        ><span class="dot"></span>
+                    </button>
+                    <div class="avatar" aria-hidden="true">LH</div>
+                </header>
+
+                <div class="grid">
+                    <section
+                        class="pane tower-pane"
+                        aria-labelledby="tower-title"
+                    >
+                        <div class="pane-head">
+                            <h2 id="tower-title">Unit availability</h2>
+                            <select class="select" aria-label="Choose building">
+                                <option>Creekside Residences, Tower B</option>
+                                <option>Al Barsha Heights</option>
+                                <option>Marina Point</option>
+                            </select>
+                        </div>
+                        <div class="tower-wrap">
+                            <div class="tower">
+                                <div
+                                    class="floors"
+                                    id="floors"
+                                    role="grid"
+                                    aria-label="Units by floor, ground floor at the bottom"
+                                ></div>
+                                <div class="lobby"></div>
+                                <div class="sheen" aria-hidden="true"></div>
+                            </div>
+                            <div class="tower-facts">
+                                <div class="fact">
+                                    <i style="background: var(--available)"></i>
+                                    <div>
+                                        <strong data-count="142">0</strong
+                                        ><span>Available</span>
+                                    </div>
+                                </div>
+                                <div class="fact">
+                                    <i style="background: var(--brass)"></i>
+                                    <div>
+                                        <strong data-count="38">0</strong
+                                        ><span>Reserved</span>
+                                    </div>
+                                </div>
+                                <div class="fact">
+                                    <i style="background: var(--cobalt)"></i>
+                                    <div>
+                                        <strong data-count="12">0</strong
+                                        ><span>Sold or leased</span>
+                                    </div>
+                                </div>
+                                <a
+                                    class="select"
+                                    href="#"
+                                    style="
+                                        text-decoration: none;
+                                        text-align: center;
+                                        color: var(--cobalt);
+                                    "
+                                    >Open inventory</a
+                                >
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="stack">
+                        <section class="pane metrics" aria-label="Key figures">
+                            <a class="metric" href="#"
+                                ><strong data-count="317">0</strong
+                                ><span>Active leads</span></a
+                            >
+                            <a class="metric" href="#"
+                                ><strong data-count="23">0</strong
+                                ><span>Open maintenance</span></a
+                            >
+                            <a class="metric warn" href="#"
+                                ><strong data-count="5">0</strong
+                                ><span>Overdue maintenance</span></a
+                            >
+                            <a class="metric money" href="#">
+                                <div>
+                                    <strong
+                                        ><small>AED</small
+                                        ><span
+                                            data-count="1284560"
+                                            data-money
+                                            style="
+                                                font: inherit;
+                                                color: inherit;
+                                            "
+                                            >0</span
+                                        ></strong
+                                    ><span>Outstanding receivables</span>
+                                </div>
+                                <div
+                                    class="bar"
+                                    aria-label="Receivables by age"
+                                >
+                                    <div class="bar-track">
+                                        <i
+                                            style="
+                                                width: 58%;
+                                                background: var(--cobalt-soft);
+                                            "
+                                        ></i
+                                        ><i
+                                            style="
+                                                width: 27%;
+                                                background: var(--brass);
+                                            "
+                                        ></i
+                                        ><i
+                                            style="
+                                                width: 15%;
+                                                background: #b4432f;
+                                            "
+                                        ></i>
+                                    </div>
+                                    <div class="bar-legend">
+                                        <span>Current 58%</span
+                                        ><span>31–60 days 27%</span
+                                        ><span>60+ 15%</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </section>
+
+                        <section
+                            class="pane alerts"
+                            aria-labelledby="alerts-title"
+                        >
+                            <div class="pane-head">
+                                <h2 id="alerts-title">Needs attention</h2>
+                                <a href="#">View all notifications</a>
+                            </div>
+                            <ul>
+                                <li class="urgent">
+                                    <a href="#"
+                                        ><span class="ico"
+                                            ><svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"
+                                                /></svg></span
+                                        ><span class="t"
+                                            >Overdue maintenance<span class="s"
+                                                >Oldest: chiller leak, Tower B
+                                                level 14</span
+                                            ></span
+                                        ><span class="count">5</span></a
+                                    >
+                                </li>
+                                <li class="urgent">
+                                    <a href="#"
+                                        ><span class="ico"
+                                            ><svg viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path
+                                                    d="M12 7v5l3 2"
+                                                /></svg></span
+                                        ><span class="t"
+                                            >Lead follow-ups past due<span
+                                                class="s"
+                                                >Across 4 assignees</span
+                                            ></span
+                                        ><span class="count">12</span></a
+                                    >
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        ><span class="ico"
+                                            ><svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"
+                                                /></svg></span
+                                        ><span class="t"
+                                            >Compliance documents expiring<span
+                                                class="s"
+                                                >Within the next 30 days</span
+                                            ></span
+                                        ><span class="count">7</span></a
+                                    >
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        ><span class="ico"
+                                            ><svg viewBox="0 0 24 24">
+                                                <rect
+                                                    x="3"
+                                                    y="5"
+                                                    width="18"
+                                                    height="16"
+                                                    rx="2"
+                                                />
+                                                <path
+                                                    d="M3 10h18"
+                                                /></svg></span
+                                        ><span class="t"
+                                            >Reservations awaiting deposit<span
+                                                class="s"
+                                                >Hold expires in 48 hours</span
+                                            ></span
+                                        ><span class="count">4</span></a
+                                    >
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        ><span class="ico"
+                                            ><svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M3 21h18M5 21V10M19 21V10M2 10l10-7 10 7z"
+                                                /></svg></span
+                                        ><span class="t"
+                                            >Unreconciled bank lines<span
+                                                class="s"
+                                                >Emirates NBD operating
+                                                account</span
+                                            ></span
+                                        ><span class="count">19</span></a
+                                    >
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <div class="tooltip" id="tip" role="status"></div>
+
+        <script>
+            (() => {
+                const reduce = matchMedia(
+                    '(prefers-reduced-motion: reduce)',
+                ).matches;
+
+                // Build the tower: 24 floors x 8 units. Status mix matches the facts panel (142 / 38 / 12).
+                const floorsEl = document.getElementById('floors');
+                const statuses = Array(142)
+                    .fill('available')
+                    .concat(Array(38).fill('reserved'), Array(12).fill('sold'));
+                let seed = 7;
+                const rand = () =>
+                    (seed = (seed * 16807) % 2147483647) / 2147483647;
+                for (let i = statuses.length - 1; i > 0; i--) {
+                    const j = Math.floor(rand() * (i + 1));
+                    [statuses[i], statuses[j]] = [statuses[j], statuses[i]];
+                }
+                const labels = {
+                    available: 'Available',
+                    reserved: 'Reserved',
+                    sold: 'Sold or leased',
+                };
+                const floors = [];
+                for (let f = 0; f < 24; f++) {
+                    const row = document.createElement('div');
+                    row.className = 'floor';
+                    row.setAttribute('role', 'row');
+                    for (let u = 0; u < 8; u++) {
+                        const status = statuses[f * 8 + u];
+                        const b = document.createElement('button');
+                        const name = `Unit ${f + 1}${String(u + 1).padStart(2, '0')}`;
+                        b.className = 'unit ' + status;
+                        b.setAttribute('role', 'gridcell');
+                        b.setAttribute(
+                            'aria-label',
+                            `${name}, level ${f + 1}, ${labels[status]}`,
+                        );
+                        b.dataset.tip = `${name}, level ${f + 1}: ${labels[status]}`;
+                        row.appendChild(b);
+                    }
+                    floorsEl.appendChild(row);
+                    floors.push(row);
+                }
+
+                // The one orchestrated moment: floors light up from the lobby to the crown.
+                floors.forEach((row, i) => {
+                    const units = row.querySelectorAll('.unit');
+                    const go = () =>
+                        units.forEach((u, k) =>
+                            setTimeout(
+                                () => u.classList.add('lit'),
+                                reduce ? 0 : k * 18,
+                            ),
+                        );
+                    reduce ? go() : setTimeout(go, 200 + i * 70);
+                });
+
+                // Count up figures in step with the tower.
+                document.querySelectorAll('[data-count]').forEach((el) => {
+                    const target = +el.dataset.count,
+                        money = 'money' in el.dataset;
+                    const fmt = (n) =>
+                        money
+                            ? n.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                              })
+                            : Math.round(n).toLocaleString('en-US');
+                    if (reduce) {
+                        el.textContent = fmt(target);
+                        return;
+                    }
+                    const t0 = performance.now(),
+                        dur = 1800;
+                    const tick = (t) => {
+                        const p = Math.min(1, (t - t0) / dur),
+                            e = 1 - Math.pow(1 - p, 3);
+                        el.textContent = fmt(target * e);
+                        if (p < 1) requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                });
+
+                // Tooltip for units.
+                const tip = document.getElementById('tip');
+                const show = (el, x, y) => {
+                    tip.textContent = el.dataset.tip;
+                    tip.style.left = x + 14 + 'px';
+                    tip.style.top = y - 36 + 'px';
+                    tip.style.opacity = 1;
+                };
+                floorsEl.addEventListener('mousemove', (e) => {
+                    if (e.target.dataset.tip)
+                        show(e.target, e.clientX, e.clientY);
+                });
+                floorsEl.addEventListener(
+                    'mouseleave',
+                    () => (tip.style.opacity = 0),
+                );
+                floorsEl.addEventListener('focusin', (e) => {
+                    const r = e.target.getBoundingClientRect();
+                    show(e.target, r.right, r.top);
+                });
+                floorsEl.addEventListener(
+                    'focusout',
+                    () => (tip.style.opacity = 0),
+                );
+
+                // Mobile navigation.
+                const side = document.getElementById('side'),
+                    btn = document.getElementById('menuBtn');
+                btn.addEventListener('click', () => {
+                    const open = side.classList.toggle('open');
+                    btn.setAttribute('aria-expanded', open);
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && side.classList.contains('open')) {
+                        side.classList.remove('open');
+                        btn.setAttribute('aria-expanded', false);
+                        btn.focus();
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>

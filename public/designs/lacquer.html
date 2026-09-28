@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Z1 ERP — Lacquer</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Albert+Sans:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --lacquer: #0d4a3a;
+                --lacquer-deep: #072e24;
+                --lacquer-hi: #1b6b55;
+                --jade: #3ba586;
+                --gold: #d6b35c;
+                --gold-deep: #9d7b2c;
+                --pearl: #f3f5ef;
+                --paper: #fbfcf8;
+                --ink: #0c1f19;
+                --ink-soft: #52665e;
+                --rose: #c2594a;
+                --rule: #dfe4d9;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+            }
+            body {
+                background: var(--pearl);
+                color: var(--ink);
+                font:
+                    400 15.5px/1.6 'Albert Sans',
+                    system-ui,
+                    sans-serif;
+                overflow-x: hidden;
+            }
+
+            /* ----- Top bar: a lacquered lid with a gold edge ----- */
+            .bar {
+                background: linear-gradient(
+                    180deg,
+                    var(--lacquer-hi) 0%,
+                    var(--lacquer) 38%,
+                    var(--lacquer-deep) 100%
+                );
+                color: var(--pearl);
+                position: relative;
+                box-shadow:
+                    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+                    0 -2px 0 var(--gold) inset;
+            }
+            .bar-inner {
+                max-width: 1360px;
+                margin: 0 auto;
+                padding: 0 24px;
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                height: 68px;
+            }
+            .mark {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: inherit;
+                text-decoration: none;
+                font: 400 20px 'Young Serif';
+            }
+            .mark i {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font: 400 14px 'Young Serif';
+                font-style: normal;
+                color: var(--lacquer-deep);
+                background: radial-gradient(
+                    circle at 35% 30%,
+                    #f7e6b4,
+                    var(--gold) 55%,
+                    var(--gold-deep)
+                );
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+            }
+            .tabs {
+                display: flex;
+                gap: 4px;
+                flex: 1;
+            }
+            .tabs button {
+                font: 500 15px 'Albert Sans';
+                color: rgba(243, 245, 239, 0.75);
+                background: none;
+                border: 0;
+                cursor: pointer;
+                padding: 8px 14px;
+                border-radius: 999px;
+                transition:
+                    color 0.2s,
+                    background 0.2s;
+            }
+            .tabs button:hover {
+                color: var(--pearl);
+                background: rgba(255, 255, 255, 0.07);
+            }
+            .tabs button[aria-selected='true'] {
+                color: var(--lacquer-deep);
+                background: var(--pearl);
+            }
+            .bar-search {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                height: 40px;
+                padding: 0 14px;
+                border-radius: 999px;
+                width: 260px;
+                background: rgba(0, 0, 0, 0.22);
+                box-shadow:
+                    0 1px 2px rgba(0, 0, 0, 0.35) inset,
+                    0 1px 0 rgba(255, 255, 255, 0.08);
+            }
+            .bar-search input {
+                flex: 1;
+                border: 0;
+                background: none;
+                color: var(--pearl);
+                font: inherit;
+                font-size: 14.5px;
+                outline: none;
+            }
+            .bar-search input::placeholder {
+                color: rgba(243, 245, 239, 0.6);
+            }
+            .bar-search svg,
+            .menu svg {
+                width: 17px;
+                height: 17px;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.8;
+                stroke-linecap: round;
+            }
+            .who {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font-weight: 600;
+                font-size: 14px;
+                background: var(--pearl);
+                color: var(--lacquer);
+            }
+            .menu {
+                display: none;
+                background: none;
+                border: 0;
+                color: inherit;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                cursor: pointer;
+                place-items: center;
+            }
+
+            .sub {
+                background: var(--paper);
+                border-bottom: 1px solid var(--rule);
+            }
+            .sub ul {
+                max-width: 1360px;
+                margin: 0 auto;
+                padding: 0 24px;
+                list-style: none;
+                display: flex;
+                gap: 22px;
+                overflow-x: auto;
+            }
+            .sub a {
+                display: block;
+                padding: 13px 0;
+                color: var(--ink-soft);
+                text-decoration: none;
+                font-size: 14.5px;
+                white-space: nowrap;
+                border-bottom: 2px solid transparent;
+            }
+            .sub a:hover {
+                color: var(--ink);
+            }
+            .sub a[aria-current='page'] {
+                color: var(--ink);
+                border-color: var(--gold);
+                font-weight: 600;
+            }
+
+            /* ----- Page ----- */
+            .page {
+                max-width: 1360px;
+                margin: 0 auto;
+                padding: 34px 24px 56px;
+            }
+            .hello {
+                margin-bottom: 26px;
+            }
+            .hello p {
+                margin: 0;
+                color: var(--ink-soft);
+            }
+            .hello h1 {
+                font: 400 clamp(32px, 4.2vw, 52px)/1.08 'Young Serif';
+                letter-spacing: -0.015em;
+                margin: 4px 0 0;
+                max-width: 30ch;
+            }
+
+            .layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr);
+                gap: 26px;
+                align-items: start;
+            }
+
+            /* ----- Signature: the lacquered site plan ----- */
+            .box {
+                border-radius: 22px;
+                padding: 22px;
+                color: var(--pearl);
+                position: relative;
+                background: linear-gradient(
+                    160deg,
+                    var(--lacquer-hi) 0%,
+                    var(--lacquer) 32%,
+                    var(--lacquer-deep) 100%
+                );
+                box-shadow:
+                    0 0 0 1px var(--gold-deep),
+                    0 0 0 4px var(--lacquer-deep),
+                    0 0 0 5px var(--gold),
+                    0 40px 60px -40px rgba(7, 46, 36, 0.8);
+            }
+            .box-head {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                gap: 16px;
+                flex-wrap: wrap;
+                margin-bottom: 14px;
+            }
+            .box-head h2 {
+                font: 400 24px/1.2 'Young Serif';
+                margin: 0;
+            }
+            .box-head p {
+                margin: 2px 0 0;
+                color: rgba(243, 245, 239, 0.7);
+                font-size: 14px;
+            }
+            .box-head select {
+                font: 500 14px 'Albert Sans';
+                color: var(--pearl);
+                background: rgba(0, 0, 0, 0.25);
+                border: 1px solid rgba(214, 179, 92, 0.5);
+                padding: 8px 12px;
+                border-radius: 10px;
+            }
+            .box-head select option {
+                color: var(--ink);
+            }
+            #plan {
+                display: block;
+                width: 100%;
+                height: auto;
+                border-radius: 14px;
+                background: #06271f;
+                touch-action: pan-y;
+            }
+            .plot {
+                cursor: pointer;
+                transition: filter 0.2s;
+            }
+            .plot:hover,
+            .plot:focus-visible {
+                filter: brightness(1.25);
+                outline: none;
+            }
+            .plot:focus-visible rect.base {
+                stroke: #fff;
+                stroke-width: 2;
+            }
+            .key {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+                font-size: 14px;
+                color: rgba(243, 245, 239, 0.85);
+            }
+            .key span {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .key i {
+                width: 14px;
+                height: 14px;
+                border-radius: 4px;
+                box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+            }
+            .detail {
+                margin-left: auto;
+                color: var(--gold);
+                min-height: 1.6em;
+            }
+
+            /* ----- Ledger ----- */
+            .ledger {
+                background: var(--paper);
+                border-radius: 22px;
+                padding: 26px 26px 12px;
+                box-shadow:
+                    0 1px 0 #fff inset,
+                    0 0 0 1px var(--rule),
+                    0 30px 50px -40px rgba(12, 31, 25, 0.4);
+            }
+            .owed p {
+                margin: 0;
+                color: var(--ink-soft);
+                font-size: 14.5px;
+            }
+            .owed strong {
+                display: block;
+                font: 400 clamp(34px, 3.4vw, 44px)/1.1 'Young Serif';
+                letter-spacing: -0.02em;
+                margin: 4px 0 12px;
+                font-variant-numeric: tabular-nums;
+            }
+            .owed strong small {
+                font-size: 0.45em;
+                color: var(--ink-soft);
+                margin-right: 6px;
+                vertical-align: 0.6em;
+            }
+            .ageing {
+                display: flex;
+                height: 8px;
+                border-radius: 99px;
+                overflow: hidden;
+                background: var(--rule);
+            }
+            .ageing i {
+                display: block;
+                height: 100%;
+            }
+            .ageing-key {
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+                color: var(--ink-soft);
+                margin-top: 6px;
+            }
+
+            .rows {
+                list-style: none;
+                padding: 0;
+                margin: 22px 0 0;
+                border-top: 1px solid var(--gold);
+            }
+            .rows a {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 12px;
+                padding: 12px 2px;
+                border-bottom: 1px solid var(--rule);
+                color: inherit;
+                text-decoration: none;
+            }
+            .rows a:hover span {
+                color: var(--lacquer);
+                text-decoration: underline;
+            }
+            .rows b {
+                font: 400 22px 'Young Serif';
+                font-variant-numeric: tabular-nums;
+            }
+            .rows .late b {
+                color: var(--rose);
+            }
+
+            .ledger h2 {
+                font: 400 20px 'Young Serif';
+                margin: 28px 0 6px;
+            }
+            .attn {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .attn a {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 2px 12px;
+                padding: 11px 0;
+                border-bottom: 1px solid var(--rule);
+                color: inherit;
+                text-decoration: none;
+            }
+            .attn li:last-child a {
+                border-bottom: 0;
+            }
+            .attn a:hover .t {
+                text-decoration: underline;
+            }
+            .attn .t {
+                font-weight: 600;
+            }
+            .attn .s {
+                grid-column: 1;
+                font-size: 13.5px;
+                color: var(--ink-soft);
+            }
+            .attn .n {
+                grid-row: 1 / span 2;
+                grid-column: 2;
+                align-self: center;
+                min-width: 38px;
+                text-align: center;
+                padding: 4px 10px;
+                border-radius: 999px;
+                font-weight: 700;
+                font-size: 14px;
+                color: var(--lacquer-deep);
+                background: radial-gradient(
+                    circle at 35% 25%,
+                    #f7e6b4,
+                    var(--gold) 60%,
+                    var(--gold-deep)
+                );
+                box-shadow:
+                    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+                    0 3px 8px -4px var(--gold-deep);
+            }
+            .attn .late .n {
+                color: #fff;
+                background: radial-gradient(
+                    circle at 35% 25%,
+                    #e89a8f,
+                    var(--rose) 60%,
+                    #8e3327
+                );
+            }
+
+            a:focus-visible,
+            button:focus-visible,
+            input:focus-visible,
+            select:focus-visible {
+                outline: 2px solid var(--gold);
+                outline-offset: 2px;
+            }
+            .bar-search:focus-within {
+                outline: 2px solid var(--gold);
+                outline-offset: 2px;
+            }
+
+            @media (max-width: 1060px) {
+                .layout {
+                    grid-template-columns: 1fr;
+                }
+                .bar-search {
+                    width: 200px;
+                }
+            }
+            @media (max-width: 820px) {
+                .tabs {
+                    position: absolute;
+                    top: 68px;
+                    left: 0;
+                    right: 0;
+                    z-index: 10;
+                    flex-direction: column;
+                    padding: 10px 16px 16px;
+                    background: var(--lacquer-deep);
+                    box-shadow: 0 -2px 0 var(--gold) inset;
+                    display: none;
+                }
+                .tabs.open {
+                    display: flex;
+                }
+                .tabs button {
+                    text-align: left;
+                }
+                .menu {
+                    display: grid;
+                }
+                .bar-inner {
+                    padding: 0 16px;
+                    gap: 12px;
+                }
+                .bar-search {
+                    display: none;
+                }
+                .mark {
+                    flex: 1;
+                }
+                .sub ul,
+                .page {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                }
+                .box {
+                    padding: 14px;
+                }
+                .ledger {
+                    padding: 22px 18px 8px;
+                }
+                .detail {
+                    margin-left: 0;
+                    width: 100%;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation: none !important;
+                    transition: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header class="bar">
+            <div class="bar-inner">
+                <a class="mark" href="#"><i>Z1</i>Z1 Estates</a>
+                <div
+                    class="tabs"
+                    id="tabs"
+                    role="tablist"
+                    aria-label="Module groups"
+                >
+                    <button role="tab" aria-selected="true" data-g="overview">
+                        Overview
+                    </button>
+                    <button role="tab" aria-selected="false" data-g="sales">
+                        Sales
+                    </button>
+                    <button role="tab" aria-selected="false" data-g="property">
+                        Property
+                    </button>
+                    <button role="tab" aria-selected="false" data-g="finance">
+                        Finance
+                    </button>
+                    <button
+                        role="tab"
+                        aria-selected="false"
+                        data-g="operations"
+                    >
+                        Operations
+                    </button>
+                </div>
+                <label class="bar-search"
+                    ><svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" /></svg
+                    ><input
+                        type="search"
+                        placeholder="Search plots, leads, invoices"
+                        aria-label="Search"
+                /></label>
+                <button
+                    class="menu"
+                    id="menu"
+                    aria-label="Show module groups"
+                    aria-controls="tabs"
+                    aria-expanded="false"
+                >
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 7h16M4 12h16M4 17h16" />
+                    </svg>
+                </button>
+                <div class="who" aria-label="Signed in as Layla Haddad">LH</div>
+            </div>
+        </header>
+        <nav class="sub" aria-label="Pages in this group">
+            <ul id="sub"></ul>
+        </nav>
+
+        <div class="page">
+            <div class="hello">
+                <p>Wednesday 23 September</p>
+                <h1>Good morning, Layla. Six plots were reserved this week.</h1>
+            </div>
+
+            <div class="layout">
+                <section class="box" aria-labelledby="plan-title">
+                    <div class="box-head">
+                        <div>
+                            <h2 id="plan-title">Al Qudra Gardens, phase 2</h2>
+                            <p>
+                                Each plot shows its sales status. Select one to
+                                see the details.
+                            </p>
+                        </div>
+                        <select aria-label="Choose community">
+                            <option>Al Qudra Gardens, phase 2</option>
+                            <option>Creekside Residences</option>
+                            <option>Al Barsha Heights</option>
+                        </select>
+                    </div>
+                    <svg
+                        id="plan"
+                        viewBox="0 0 880 520"
+                        role="group"
+                        aria-label="Site plan of villa plots"
+                    ></svg>
+                    <div class="key">
+                        <span
+                            ><i
+                                style="
+                                    background: linear-gradient(
+                                        180deg,
+                                        #6fd0b0,
+                                        #2b8c6f
+                                    );
+                                "
+                            ></i
+                            >Available <b id="kA"></b
+                        ></span>
+                        <span
+                            ><i
+                                style="
+                                    background: linear-gradient(
+                                        180deg,
+                                        #f2d890,
+                                        #b18a33
+                                    );
+                                "
+                            ></i
+                            >Reserved <b id="kR"></b
+                        ></span>
+                        <span
+                            ><i
+                                style="
+                                    background: linear-gradient(
+                                        180deg,
+                                        #e0e6e2,
+                                        #8b9a93
+                                    );
+                                "
+                            ></i
+                            >Sold <b id="kS"></b
+                        ></span>
+                        <span class="detail" id="detail" role="status"></span>
+                    </div>
+                </section>
+
+                <aside class="ledger" aria-label="Ledger">
+                    <div class="owed">
+                        <p>Outstanding receivables</p>
+                        <strong
+                            ><small>AED</small
+                            ><span id="owed">1,284,560.00</span></strong
+                        >
+                        <div
+                            class="ageing"
+                            aria-label="Receivables by age: 58% current, 27% 31 to 60 days, 15% over 60 days"
+                        >
+                            <i style="width: 58%; background: var(--jade)"></i
+                            ><i style="width: 27%; background: var(--gold)"></i
+                            ><i style="width: 15%; background: var(--rose)"></i>
+                        </div>
+                        <div class="ageing-key">
+                            <span>Current</span><span>31–60 days</span
+                            ><span>Over 60</span>
+                        </div>
+                    </div>
+
+                    <ul class="rows">
+                        <li>
+                            <a href="#"><span>Active leads</span><b>317</b></a>
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><span>Available units</span><b>142</b></a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"><span>Reserved units</span><b>38</b></a>
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><span>Open maintenance</span><b>23</b></a
+                            >
+                        </li>
+                        <li class="late">
+                            <a href="#"
+                                ><span>Maintenance past due</span><b>5</b></a
+                            >
+                        </li>
+                    </ul>
+
+                    <h2>Needs attention</h2>
+                    <ul class="attn">
+                        <li class="late">
+                            <a href="#"
+                                ><span class="t">Lead follow-ups past due</span
+                                ><span class="s">Oldest is 9 days late</span
+                                ><span class="n">12</span></a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><span class="t"
+                                    >Reservations awaiting deposit</span
+                                ><span class="s"
+                                    >Plots 2-14 and 2-31 expire Friday</span
+                                ><span class="n">4</span></a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><span class="t"
+                                    >Compliance documents expiring</span
+                                ><span class="s">Within the next 30 days</span
+                                ><span class="n">7</span></a
+                            >
+                        </li>
+                        <li>
+                            <a href="#"
+                                ><span class="t">Unreconciled bank lines</span
+                                ><span class="s"
+                                    >Emirates NBD operating account</span
+                                ><span class="n">19</span></a
+                            >
+                        </li>
+                    </ul>
+                </aside>
+            </div>
+        </div>
+
+        <script>
+            (() => {
+                const reduce = matchMedia(
+                    '(prefers-reduced-motion: reduce)',
+                ).matches;
+
+                // Sub-navigation per group, using the application's real pages.
+                const groups = {
+                    overview: [
+                        'Dashboard',
+                        'Search',
+                        'Notifications',
+                        'Organization',
+                    ],
+                    sales: [
+                        'CRM leads',
+                        'CRM contacts',
+                        'Owners, tenants & brokers',
+                        'Listings',
+                        'Brokerage',
+                    ],
+                    property: [
+                        'Inventory',
+                        'Reservations',
+                        'Agreements',
+                        'Handovers',
+                    ],
+                    finance: [
+                        'Invoices',
+                        'Vendor bills',
+                        'Accounting',
+                        'Bank reconciliation',
+                        'Procurement',
+                        'Property performance',
+                        'Owner statements',
+                    ],
+                    operations: [
+                        'Operations overview',
+                        'Maintenance',
+                        'Preventive maintenance',
+                        'Document compliance',
+                    ],
+                };
+                const sub = document.getElementById('sub');
+                const tabs = document.getElementById('tabs');
+                const showGroup = (g) => {
+                    sub.innerHTML = groups[g]
+                        .map(
+                            (t, i) =>
+                                `<li><a href="#"${g === 'overview' && i === 0 ? ' aria-current="page"' : ''}>${t.replace('&', '&amp;')}</a></li>`,
+                        )
+                        .join('');
+                    tabs.querySelectorAll('button').forEach((b) =>
+                        b.setAttribute('aria-selected', b.dataset.g === g),
+                    );
+                };
+                showGroup('overview');
+                tabs.addEventListener('click', (e) => {
+                    const b = e.target.closest('button');
+                    if (b) showGroup(b.dataset.g);
+                });
+                const menu = document.getElementById('menu');
+                menu.addEventListener('click', () => {
+                    const o = tabs.classList.toggle('open');
+                    menu.setAttribute('aria-expanded', o);
+                });
+
+                // ----- Site plan -----
+                const NS = 'http://www.w3.org/2000/svg';
+                const svg = document.getElementById('plan');
+                const el = (tag, attrs, parent = svg) => {
+                    const n = document.createElementNS(NS, tag);
+                    for (const k in attrs) n.setAttribute(k, attrs[k]);
+                    parent.appendChild(n);
+                    return n;
+                };
+
+                const defs = el('defs', {});
+                const grad = (id, top, bottom) => {
+                    const g = el(
+                        'linearGradient',
+                        { id, x1: 0, y1: 0, x2: 0, y2: 1 },
+                        defs,
+                    );
+                    el('stop', { offset: 0, 'stop-color': top }, g);
+                    el('stop', { offset: 1, 'stop-color': bottom }, g);
+                };
+                grad('available', '#6fd0b0', '#2b8c6f');
+                grad('reserved', '#f2d890', '#b18a33');
+                grad('sold', '#e0e6e2', '#8b9a93');
+                // The specular highlight follows the pointer across the whole plan.
+                const spec = el(
+                    'radialGradient',
+                    {
+                        id: 'spec',
+                        gradientUnits: 'userSpaceOnUse',
+                        cx: 300,
+                        cy: 120,
+                        r: 220,
+                    },
+                    defs,
+                );
+                el(
+                    'stop',
+                    { offset: 0, 'stop-color': '#fff', 'stop-opacity': 0.55 },
+                    spec,
+                );
+                el(
+                    'stop',
+                    {
+                        offset: 0.45,
+                        'stop-color': '#fff',
+                        'stop-opacity': 0.12,
+                    },
+                    spec,
+                );
+                el(
+                    'stop',
+                    { offset: 1, 'stop-color': '#fff', 'stop-opacity': 0 },
+                    spec,
+                );
+
+                // Roads and the central park.
+                el('rect', {
+                    x: 0,
+                    y: 246,
+                    width: 880,
+                    height: 28,
+                    fill: '#0b3a2e',
+                });
+                el('rect', {
+                    x: 426,
+                    y: 0,
+                    width: 28,
+                    height: 520,
+                    fill: '#0b3a2e',
+                });
+                el('circle', { cx: 440, cy: 260, r: 74, fill: '#0b3a2e' });
+                el('circle', { cx: 440, cy: 260, r: 58, fill: '#15543f' });
+                el('circle', {
+                    cx: 440,
+                    cy: 260,
+                    r: 58,
+                    fill: 'none',
+                    stroke: '#d6b35c',
+                    'stroke-opacity': 0.5,
+                    'stroke-dasharray': '2 5',
+                });
+                const park = el('text', {
+                    x: 440,
+                    y: 265,
+                    'text-anchor': 'middle',
+                    fill: '#d6b35c',
+                    'font-family': 'Young Serif',
+                    'font-size': 15,
+                });
+                park.textContent = 'Park';
+
+                // Plots: four quadrants of villas, skipping the ones the park cuts into.
+                let s = 11;
+                const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+                const plots = [];
+                const W = 46,
+                    H = 64,
+                    G = 8;
+                [
+                    [18, 22],
+                    [470, 22],
+                    [18, 290],
+                    [470, 290],
+                ].forEach(([ox, oy], q) => {
+                    for (let r = 0; r < 3; r++)
+                        for (let c = 0; c < 7; c++) {
+                            const x = ox + c * (W + G),
+                                y = oy + r * (H + G) + (r === 2 ? 0 : 0);
+                            const cx = x + W / 2,
+                                cy = y + H / 2;
+                            if (Math.hypot(cx - 440, cy - 260) < 118) continue;
+                            const v = rnd(),
+                                status =
+                                    v < 0.55
+                                        ? 'available'
+                                        : v < 0.78
+                                          ? 'reserved'
+                                          : 'sold';
+                            plots.push({
+                                x,
+                                y,
+                                status,
+                                id: `2-${String(plots.length + 1).padStart(2, '0')}`,
+                                beds: 3 + Math.floor(rnd() * 3),
+                                size: 3200 + Math.round(rnd() * 24) * 100,
+                            });
+                        }
+                });
+
+                const names = {
+                    available: 'Available',
+                    reserved: 'Reserved',
+                    sold: 'Sold',
+                };
+                const price = (p) =>
+                    (
+                        2.4 +
+                        (p.beds - 3) * 0.55 +
+                        (p.size - 3200) / 12000
+                    ).toFixed(2);
+                const detail = document.getElementById('detail');
+                const describe = (p) =>
+                    `Plot ${p.id}: ${p.beds}-bed villa, ${p.size.toLocaleString('en-US')} sq ft, AED ${price(p)}M, ${names[p.status].toLowerCase()}`;
+                const plotEls = plots.map((p, i) => {
+                    const g = el('g', {
+                        class: 'plot',
+                        tabindex: 0,
+                        role: 'button',
+                        'aria-label': describe(p),
+                    });
+                    el(
+                        'rect',
+                        {
+                            class: 'base',
+                            x: p.x,
+                            y: p.y,
+                            width: W,
+                            height: H,
+                            rx: 7,
+                            fill: `url(#${p.status})`,
+                        },
+                        g,
+                    );
+                    el(
+                        'rect',
+                        {
+                            x: p.x + 3,
+                            y: p.y + 3,
+                            width: W - 6,
+                            height: H * 0.38,
+                            rx: 5,
+                            fill: '#fff',
+                            'fill-opacity': 0.22,
+                        },
+                        g,
+                    ); // lacquer gloss band
+                    el(
+                        'rect',
+                        {
+                            x: p.x,
+                            y: p.y,
+                            width: W,
+                            height: H,
+                            rx: 7,
+                            fill: 'url(#spec)',
+                        },
+                        g,
+                    );
+                    el(
+                        'rect',
+                        {
+                            x: p.x + 0.5,
+                            y: p.y + 0.5,
+                            width: W - 1,
+                            height: H - 1,
+                            rx: 6.5,
+                            fill: 'none',
+                            stroke: 'rgba(255,255,255,.35)',
+                        },
+                        g,
+                    );
+                    const pick = () => (detail.textContent = describe(p));
+                    g.addEventListener('click', pick);
+                    g.addEventListener('focus', pick);
+                    g.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            pick();
+                        }
+                    });
+                    return g;
+                });
+                const count = (st) =>
+                    plots.filter((p) => p.status === st).length;
+                document.getElementById('kA').textContent = count('available');
+                document.getElementById('kR').textContent = count('reserved');
+                document.getElementById('kS').textContent = count('sold');
+
+                // The one orchestrated moment: lacquer is poured across the plan, top-left to bottom-right.
+                if (!reduce)
+                    plotEls.forEach((g, i) => {
+                        const p = plots[i];
+                        g.animate(
+                            [
+                                { opacity: 0, transform: 'translateY(-10px)' },
+                                { opacity: 1, transform: 'none' },
+                            ],
+                            {
+                                duration: 520,
+                                delay: 120 + (p.x + p.y) * 0.8,
+                                easing: 'cubic-bezier(.2,.8,.3,1)',
+                                fill: 'backwards',
+                            },
+                        );
+                    });
+
+                // Pointer-driven specular highlight; it idles in a slow arc until someone moves over the plan.
+                const pt = svg.createSVGPoint();
+                let touched = false;
+                const moveSpec = (x, y) => {
+                    spec.setAttribute('cx', x);
+                    spec.setAttribute('cy', y);
+                };
+                svg.addEventListener('pointermove', (e) => {
+                    touched = true;
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+                    moveSpec(q.x, q.y);
+                });
+                if (!reduce) {
+                    const t0 = performance.now();
+                    const idle = (t) => {
+                        if (!touched) {
+                            const a = (t - t0) / 5200;
+                            moveSpec(
+                                440 + Math.cos(a) * 360,
+                                260 + Math.sin(a * 1.3) * 200,
+                            );
+                            requestAnimationFrame(idle);
+                        }
+                    };
+                    requestAnimationFrame(idle);
+                }
+            })();
+        </script>
+    </body>
+</html>

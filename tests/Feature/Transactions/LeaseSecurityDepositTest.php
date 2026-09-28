@@ -1,0 +1,175 @@
+<?php
+
+namespace Tests\Feature\Transactions;
+
+use App\Domain\Accounting\Models\AccountingPeriod;
+use App\Domain\Accounting\Models\BankAccount;
+use App\Domain\Accounting\Models\BankStatementLine;
+use App\Domain\Accounting\Models\LedgerAccount;
+use App\Domain\Accounting\Queries\VatReturnPreparation;
+use App\Domain\Identity\Enums\OrganizationRole;
+use App\Domain\Leasing\Models\LeaseCheque;
+use App\Domain\Leasing\Models\LeaseDepositSettlement;
+use App\Domain\Leasing\Models\LeaseEjariRegistration;
+use App\Domain\Leasing\Models\LeaseSecurityDeposit;
+use App\Domain\Leasing\Models\LeaseServiceCharge;
+use App\Models\CrmContact;
+use App\Models\Invoice;
+use App\Models\JournalEntry;
+use App\Models\Lease;
+use App\Models\Organization;
+use App\Models\Property;
+use App\Models\Unit;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
+
+class LeaseSecurityDepositTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_manager_creates_one_linked_refundable_deposit_invoice(): void
+    {
+        $org = Organization::factory()->create(['vat_enabled' => true, 'tax_registration_number' => '100123456789012']);
+        $manager = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($manager, ['role' => OrganizationRole::Manager->value]);
+        $property = Property::create(['organization_id' => $org->id, 'name' => 'Tower', 'type' => 'residential']);
+        $unit = Unit::create(['organization_id' => $org->id, 'property_id' => $property->id, 'number' => '1', 'type' => 'apartment']);
+        $lease = Lease::create(['organization_id' => $org->id, 'unit_id' => $unit->id, 'reference' => 'LSE-DEP', 'status' => 'active', 'starts_on' => today(), 'ends_on' => today()->addYear(), 'rent_amount' => 100000, 'currency' => 'AED']);
+        $input = ['amount' => 5000, 'due_on' => today()->addWeek()->toDateString(), 'notes' => 'Refundable at exit review'];
+        $this->actingAs($manager)->post(route('lease-compliance.deposits.store', $lease), $input)->assertRedirect();
+        $deposit = LeaseSecurityDeposit::sole();
+        $invoice = Invoice::sole();
+        $this->assertSame($invoice->id, $deposit->invoice_id);
+        $this->assertSame('refundable_deposit', $invoice->accounting_treatment);
+        $this->assertSame('out_of_scope', $invoice->vat_treatment);
+        $this->assertSame('5000.00', $invoice->total);
+        $this->actingAs($manager)->post(route('lease-compliance.deposits.store', $lease), $input)->assertStatus(422);
+        $this->actingAs($manager)->get(route('lease-compliance.index'))->assertOk();
+        $cheque = ['cheque_number' => 'PDC-1001', 'bank_name' => 'Emirates Bank', 'payer_name' => 'Tenant', 'amount' => 10000, 'due_on' => today()->addMonth()->toDateString()];
+        $this->actingAs($manager)->post(route('lease-compliance.cheques.store', $lease), $cheque)->assertRedirect();
+        $first = LeaseCheque::sole();
+        $this->actingAs($manager)->post(route('lease-compliance.cheques.update', [$first, 'clear']), ['occurred_on' => today()->toDateString()])->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.cheques.update', [$first, 'deposit']), ['occurred_on' => today()->toDateString()])->assertRedirect();
+        $this->actingAs($manager)->post(route('lease-compliance.cheques.update', [$first, 'bounce']), ['occurred_on' => today()->toDateString(), 'reason' => 'Insufficient funds'])->assertRedirect();
+        $this->actingAs($manager)->post(route('lease-compliance.cheques.store', $lease), [...$cheque, 'cheque_number' => 'PDC-1002', 'replacement_of_id' => $first->id])->assertRedirect();
+        $this->assertSame('replaced', $first->fresh()->status);
+        $this->assertSame($first->id, LeaseCheque::where('cheque_number', 'PDC-1002')->sole()->replacement_of_id);
+        $charge = ['category' => 'service_charge', 'period_starts_on' => today()->toDateString(), 'period_ends_on' => today()->addMonth()->toDateString(), 'net_amount' => 1000, 'vat_treatment' => 'standard', 'due_on' => today()->addWeek()->toDateString(), 'notes' => 'Common-area services'];
+        $this->actingAs($manager)->post(route('lease-compliance.service-charges.store', $lease), $charge)->assertRedirect();
+        $serviceCharge = LeaseServiceCharge::sole();
+        $chargeInvoice = Invoice::findOrFail($serviceCharge->invoice_id);
+        $this->assertSame('revenue', $chargeInvoice->accounting_treatment);
+        $this->assertSame('50.00', $chargeInvoice->vat_amount);
+        $this->assertSame('1050.00', $chargeInvoice->total);
+        $ejariApplication = ['applied_on' => today()->toDateString(), 'notes' => 'Initial registration'];
+        $this->actingAs($manager)->post(route('lease-compliance.ejari.store', $lease), $ejariApplication)->assertRedirect();
+        $ejari = LeaseEjariRegistration::sole();
+        $this->assertSame('pending', $ejari->status);
+        $this->actingAs($manager)->post(route('lease-compliance.ejari.store', $lease), $ejariApplication)->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.ejari.register', $ejari), ['ejari_number' => 'EJARI-1001', 'registered_on' => today()->toDateString(), 'expires_on' => today()->addYear()->toDateString()])->assertRedirect();
+        $this->assertSame('registered', $ejari->fresh()->status);
+        $this->assertSame('EJARI-1001', $ejari->fresh()->ejari_number);
+        $this->actingAs($manager)->post(route('lease-compliance.ejari.renew', $ejari), ['applied_on' => today()->addMonths(11)->toDateString()])->assertRedirect();
+        $renewal = LeaseEjariRegistration::whereNot('id', $ejari->id)->sole();
+        $this->assertSame('renewed', $ejari->fresh()->status);
+        $this->assertSame('pending', $renewal->status);
+        $this->assertSame($ejari->id, $renewal->renewal_of_id);
+        $this->actingAs($manager)->post(route('invoices.post', $invoice))->assertRedirect();
+        $this->actingAs($manager)->post(route('invoices.pay', $invoice), ['amount' => 2000])->assertRedirect();
+        $this->actingAs($manager)->get(route('lease-compliance.index'))
+            ->assertInertia(fn (Assert $page) => $page->component('transactions/LeaseCompliance')->where('deposits.0.collected_amount', '2000.00'));
+        $this->actingAs($manager)->post(route('invoices.pay', $invoice), ['amount' => 3000])->assertRedirect();
+        $this->actingAs($manager)->get(route('lease-compliance.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('deposits.0.collected_amount', '5000.00'));
+        $owner = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($owner, ['role' => OrganizationRole::Owner->value]);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.store', $deposit), ['notes' => 'Move-out assessment'])->assertRedirect();
+        $settlement = LeaseDepositSettlement::sole();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.store', $deposit))->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'damage', 'description' => 'Wall repair', 'amount' => 750, 'evidence' => 'Move-out report photo 4'])->assertSessionHasErrors('vat_treatment');
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'damage', 'description' => 'Wall repair', 'amount' => 750, 'evidence' => 'Move-out report photo 4', 'vat_treatment' => 'standard'])->assertRedirect();
+        $contact = CrmContact::create(['organization_id' => $org->id, 'first_name' => 'Lease', 'last_name' => 'Tenant']);
+        $lease->update(['contact_id' => $contact->id]);
+        $rentInvoice = Invoice::create(['organization_id' => $org->id, 'contact_id' => $contact->id, 'reference' => 'INV-RENT-ARREARS', 'status' => 'draft', 'accounting_treatment' => 'revenue', 'vat_treatment' => 'out_of_scope', 'issued_on' => today(), 'due_on' => today(), 'subtotal' => 600, 'total' => 600, 'currency' => 'AED']);
+        $this->actingAs($manager)->post(route('invoices.post', $rentInvoice))->assertRedirect();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'rent_arrears', 'description' => 'Excess rent', 'amount' => 700, 'invoice_id' => $rentInvoice->id])->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'rent_arrears', 'description' => 'Outstanding rent', 'amount' => 500])->assertSessionHasErrors('invoice_id');
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'rent_arrears', 'description' => 'Outstanding rent', 'amount' => 500, 'invoice_id' => $rentInvoice->id])->assertRedirect();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'forfeiture', 'description' => 'Contractual forfeiture', 'amount' => 250, 'vat_treatment' => 'out_of_scope'])->assertSessionHasErrors('evidence');
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'forfeiture', 'description' => 'Contractual forfeiture', 'amount' => 250, 'vat_treatment' => 'out_of_scope', 'evidence' => 'Signed move-out settlement'])->assertRedirect();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.submit', $settlement))->assertRedirect();
+        $this->assertSame('3500.00', $settlement->fresh()->refund_amount);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.deductions.store', $settlement), ['category' => 'cleaning', 'description' => 'Late change', 'amount' => 100, 'vat_treatment' => 'standard'])->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.approve', $settlement))->assertForbidden();
+        $this->actingAs($owner)->post(route('lease-compliance.deposit-settlements.approve', $settlement))->assertRedirect();
+        $this->assertSame('approved', $settlement->fresh()->status);
+        $recoveryDeduction = $settlement->deductions()->where('category', 'damage')->sole();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-recovery', $recoveryDeduction), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $recoveryJournal = JournalEntry::where('event', 'deposit.recovery_approved')->sole();
+        $this->assertSame('35.71', $recoveryDeduction->fresh()->vat_amount);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $recoveryJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '2300')->sole()->id, 'debit' => '750.00']);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $recoveryJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '4100')->sole()->id, 'credit' => '714.29']);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $recoveryJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '2200')->sole()->id, 'credit' => '35.71']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-recovery', $recoveryDeduction), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $forfeiture = $settlement->deductions()->where('category', 'forfeiture')->sole();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-forfeiture', $forfeiture), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $forfeitureJournal = JournalEntry::where('event', 'deposit.forfeiture_approved')->sole();
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $forfeitureJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '2300')->sole()->id, 'debit' => '250.00']);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $forfeitureJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '4200')->sole()->id, 'credit' => '250.00']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-forfeiture', $forfeiture), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $rentDeduction = $settlement->deductions()->where('category', 'rent_arrears')->sole();
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-rent-offset', $rentDeduction), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $this->assertSame('partial', $rentInvoice->fresh()->status);
+        $this->assertDatabaseHas('payments', ['invoice_id' => $rentInvoice->id, 'amount' => '500.00', 'method' => 'security_deposit_offset']);
+        $offsetJournal = JournalEntry::where('event', 'deposit.rent_offset_approved')->sole();
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $offsetJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '2300')->sole()->id, 'debit' => '500.00']);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $offsetJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '1100')->sole()->id, 'credit' => '500.00']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.post-rent-offset', $rentDeduction), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.post-refund', $settlement), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $refundJournal = JournalEntry::where('event', 'deposit.refund_approved')->sole();
+        $this->assertSame($refundJournal->id, $settlement->fresh()->refund_journal_entry_id);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $refundJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '2300')->sole()->id, 'debit' => '3500.00']);
+        $this->assertDatabaseHas('journal_lines', ['journal_entry_id' => $refundJournal->id, 'ledger_account_id' => LedgerAccount::where('code', '1190')->sole()->id, 'credit' => '3500.00']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-settlements.post-refund', $settlement), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $period = AccountingPeriod::create(['organization_id' => $org->id, 'name' => 'Acceptance', 'starts_on' => today()->startOfMonth(), 'ends_on' => today()->endOfMonth(), 'status' => 'open']);
+        $vat = app(VatReturnPreparation::class)->for($org, today()->startOfMonth()->toDateString(), today()->endOfMonth()->toDateString());
+        $this->assertSame('35.71', $vat['totals']['output_vat']);
+        $this->assertSame('714.29', $vat['totals']['standard_sales_net']);
+        $this->actingAs($manager)->post(route('accounting.journals.reverse', $offsetJournal), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $period->update(['status' => 'closed']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.reverse-rent-offset', $rentDeduction), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $this->assertSame('500.00', number_format((float) $rentInvoice->payments()->sum('amount'), 2, '.', ''));
+        $period->update(['status' => 'open']);
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.reverse-rent-offset', $rentDeduction), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $this->assertSame('posted', $rentInvoice->fresh()->status);
+        $this->assertSame(0.0, (float) $rentInvoice->payments()->sum('amount'));
+        $this->actingAs($manager)->post(route('lease-compliance.deposit-deductions.reverse-rent-offset', $rentDeduction), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $this->actingAs($manager)->post(route('accounting.journals.reverse', $recoveryJournal), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $vat = app(VatReturnPreparation::class)->for($org, today()->startOfMonth()->toDateString(), today()->endOfMonth()->toDateString());
+        $this->assertSame('0.00', $vat['totals']['output_vat']);
+        $bankLedger = LedgerAccount::create(['organization_id' => $org->id, 'code' => '1010', 'name' => 'Acceptance Bank', 'type' => 'asset', 'is_active' => true]);
+        $bank = BankAccount::create(['organization_id' => $org->id, 'name' => 'Acceptance Bank', 'currency' => 'AED', 'ledger_account_id' => $bankLedger->id]);
+        $csv = "transaction_id,date,description,amount\nREFUND-ACCEPTANCE,".today()->toDateString().",Deposit refund,-3500.00\n";
+        $this->actingAs($manager)->post(route('bank-reconciliation.import'), [
+            'bank_account_id' => $bank->id,
+            'file' => UploadedFile::fake()->createWithContent('refund.csv', $csv),
+        ])->assertRedirect();
+        $bankLine = BankStatementLine::where('external_id', 'REFUND-ACCEPTANCE')->sole();
+        $clearing = $refundJournal->lines()->where('ledger_account_id', LedgerAccount::where('code', '1190')->sole()->id)->sole();
+        $this->actingAs($manager)->post(route('bank-reconciliation.lines.match', $bankLine), ['journal_line_id' => $clearing->id])->assertRedirect();
+        $this->actingAs($manager)->post(route('bank-reconciliation.lines.settle', $bankLine))->assertRedirect();
+        $this->actingAs($manager)->post(route('accounting.journals.reverse', $refundJournal), ['posted_on' => today()->toDateString()])->assertStatus(422);
+        $this->actingAs($manager)->post(route('bank-reconciliation.lines.reverse-settlement', $bankLine), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $this->actingAs($manager)->post(route('bank-reconciliation.lines.unmatch', $bankLine))->assertRedirect();
+        $this->actingAs($manager)->post(route('accounting.journals.reverse', $refundJournal), ['posted_on' => today()->toDateString()])->assertRedirect();
+        $this->actingAs($manager)->post(route('bank-reconciliation.lines.match', $bankLine), ['journal_line_id' => $clearing->id])->assertStatus(422);
+        $other = Organization::factory()->create();
+        $outsider = User::factory()->create(['current_organization_id' => $other->id]);
+        $other->users()->attach($outsider, ['role' => OrganizationRole::Manager->value]);
+        $this->actingAs($outsider)->post(route('lease-compliance.deposits.store', $lease), $input)->assertNotFound();
+        $this->actingAs($outsider)->post(route('lease-compliance.ejari.register', $renewal), ['ejari_number' => 'EJARI-X', 'registered_on' => today(), 'expires_on' => today()->addYear()])->assertNotFound();
+    }
+}

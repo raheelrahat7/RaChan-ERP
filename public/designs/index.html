@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Z1 ERP design concepts</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Young+Serif&family=Albert+Sans:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #eceee9;
+                color: #1a1f1d;
+                font:
+                    400 16px/1.6 'Albert Sans',
+                    system-ui,
+                    sans-serif;
+            }
+            main {
+                max-width: 1120px;
+                margin: 0 auto;
+                padding: 56px 16px 72px;
+            }
+            h1 {
+                font: 600 30px/1.2 'Albert Sans';
+                margin: 0 0 6px;
+                letter-spacing: -0.01em;
+            }
+            .lead {
+                color: #56605b;
+                margin: 0 0 36px;
+                max-width: 60ch;
+            }
+            .list {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+            a.card {
+                display: flex;
+                flex-direction: column;
+                text-decoration: none;
+                color: inherit;
+                border-radius: 20px;
+                overflow: hidden;
+                background: #fff;
+                box-shadow: 0 0 0 1px #dde1db;
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+            }
+            a.card:hover {
+                transform: translateY(-3px);
+                box-shadow:
+                    0 0 0 1px #c9cfc7,
+                    0 18px 30px -20px rgba(0, 0, 0, 0.35);
+            }
+            a.card:focus-visible {
+                outline: 3px solid #1c3f94;
+                outline-offset: 3px;
+            }
+            .swatch {
+                height: 190px;
+                display: grid;
+                place-items: center;
+                font-size: 34px;
+            }
+            .glass {
+                background: linear-gradient(180deg, #bcd6f0, #eef3f8);
+                color: #1c3f94;
+                font-family: 'Syne';
+                font-weight: 700;
+            }
+            .marina {
+                background: radial-gradient(
+                    circle at 70% 20%,
+                    #1f4a77,
+                    #0b1d33 70%
+                );
+                font-family: 'Bricolage Grotesque';
+                font-weight: 800;
+            }
+            .marina span {
+                background: linear-gradient(120deg, #f6d5e8, #bdebf2, #d7ccfa);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
+            .lacquer {
+                background: linear-gradient(
+                    160deg,
+                    #1b6b55,
+                    #0d4a3a 35%,
+                    #072e24
+                );
+                color: #d6b35c;
+                font-family: 'Young Serif';
+                box-shadow: inset 0 -4px 0 #d6b35c;
+            }
+            .body {
+                padding: 18px 20px 22px;
+            }
+            .body h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+                font-weight: 600;
+            }
+            .body p {
+                margin: 0;
+                color: #56605b;
+                font-size: 15px;
+            }
+            @media (max-width: 860px) {
+                .list {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                a.card {
+                    transition: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Operations dashboard, three directions</h1>
+            <p class="lead">
+                Each concept redesigns the signed-in shell and the dashboard
+                with the same modules, figures and alerts. They are static
+                previews, so links do not go anywhere.
+            </p>
+            <div class="list">
+                <a class="card" href="glasshouse.html">
+                    <div class="swatch glass" aria-hidden="true">
+                        Glasshouse
+                    </div>
+                    <div class="body">
+                        <h2>Glasshouse</h2>
+                        <p>
+                            Frosted glass over a daytime skyline. A tower's
+                            floors light up by unit status, and a band of light
+                            sweeps across the facade.
+                        </p>
+                    </div>
+                </a>
+                <a class="card" href="night-marina.html">
+                    <div class="swatch marina" aria-hidden="true">
+                        <span>Night Marina</span>
+                    </div>
+                    <div class="body">
+                        <h2>Night Marina</h2>
+                        <p>
+                            Deep harbour navy with pearl highlights. The CRM
+                            pipeline is drawn as a stream, with leads flowing
+                            between stage pools.
+                        </p>
+                    </div>
+                </a>
+                <a class="card" href="lacquer.html">
+                    <div class="swatch lacquer" aria-hidden="true">Lacquer</div>
+                    <div class="body">
+                        <h2>Lacquer</h2>
+                        <p>
+                            Emerald lacquer with a gold edge. A community site
+                            plan shows plot status, and its highlight follows
+                            your pointer.
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </main>
+    </body>
+</html>
