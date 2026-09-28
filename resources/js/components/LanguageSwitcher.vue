@@ -15,7 +15,7 @@ function change(event: Event): void {
         ><span>{{ t('Language') }}</span
         ><select
             :value="locale"
-            class="bg-background rounded border p-1"
+            class="bg-background text-foreground rounded border p-1"
             @change="change"
         >
             <option value="en" lang="en">English</option>

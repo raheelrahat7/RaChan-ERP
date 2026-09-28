@@ -14,8 +14,14 @@ export default defineConfig({
             fonts: [
                 bunny('Geist', { weights: [300, 400, 500, 600] }),
                 bunny('Cormorant Garamond', { weights: [500, 600] }),
-                bunny('IBM Plex Sans Arabic', { weights: [400, 500, 600] }),
-                bunny('Noto Naskh Arabic', { weights: [500, 600] }),
+                bunny('IBM Plex Sans Arabic', {
+                    weights: [400, 500, 600],
+                    subsets: ['latin', 'arabic'],
+                }),
+                bunny('Noto Naskh Arabic', {
+                    weights: [500, 600],
+                    subsets: ['latin', 'arabic'],
+                }),
             ],
         }),
         inertia(),

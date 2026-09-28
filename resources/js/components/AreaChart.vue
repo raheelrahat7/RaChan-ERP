@@ -16,26 +16,12 @@ const width = 620;
 const gradientId = useId();
 const line = computed(() => linePath(props.values, width, props.height, 22));
 const area = computed(() => areaPath(props.values, width, props.height, 22));
-
-function labelX(index: number): number {
-    return props.labels.length > 1
-        ? (index * width) / (props.labels.length - 1)
-        : 0;
-}
-
-function labelAnchor(index: number): 'start' | 'middle' | 'end' {
-    if (index === 0) {
-        return 'start';
-    }
-
-    return index === props.labels.length - 1 ? 'end' : 'middle';
-}
 </script>
 
 <template>
-    <figure class="text-chart-1">
+    <figure class="text-chart-1" dir="ltr">
         <svg
-            :viewBox="`0 -4 ${width} ${height + 26}`"
+            :viewBox="`0 -4 ${width} ${height + 8}`"
             class="block h-auto w-full"
             role="img"
             :aria-label="label"
@@ -71,16 +57,12 @@ function labelAnchor(index: number): 'start' | 'middle' | 'end' {
                 stroke="currentColor"
                 stroke-width="1.6"
             />
-            <text
-                v-for="(text, index) in labels"
-                :key="index"
-                :x="labelX(index)"
-                :y="height + 18"
-                :text-anchor="labelAnchor(index)"
-                class="fill-muted-foreground text-[10.5px]"
-            >
-                {{ text }}
-            </text>
         </svg>
+        <figcaption
+            v-if="labels.length"
+            class="text-muted-foreground mt-2 flex justify-between text-[11px]"
+        >
+            <span v-for="(text, index) in labels" :key="index">{{ text }}</span>
+        </figcaption>
     </figure>
 </template>

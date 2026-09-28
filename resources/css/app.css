@@ -206,6 +206,13 @@
         line-height: 1.65;
     }
 
+    /* Letter-spacing breaks Arabic joining, so no tracking utility may apply in RTL. */
+    [dir='rtl'] *,
+    [dir='rtl'] ::before,
+    [dir='rtl'] ::after {
+        letter-spacing: normal !important;
+    }
+
     ::selection {
         background-color: color-mix(in srgb, var(--champagne) 35%, transparent);
     }

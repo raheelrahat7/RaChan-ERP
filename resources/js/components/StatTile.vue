@@ -68,7 +68,7 @@ const trendClass = computed(
             >{{ figure
             }}<span
                 v-if="suffix"
-                class="text-muted-foreground ms-1 text-[0.5em]"
+                class="text-muted-foreground ms-1.5 text-[0.5em]"
                 >{{ suffix }}</span
             >
         </span>
