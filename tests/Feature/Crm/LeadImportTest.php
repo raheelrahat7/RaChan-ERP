@@ -108,4 +108,30 @@ class LeadImportTest extends TestCase
         $this->get(route('crm.leads.export.download', ['columns' => ['custom:other_org_field']]))->assertSessionHasErrors('columns');
         $this->assertDatabaseHas('crm_leads', ['id' => $lead->id, 'email' => 'private@example.test']);
     }
+
+    public function test_only_owner_can_delegate_lead_and_activity_exports_and_delegate_is_visibility_scoped(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $agent = $this->member($org, OrganizationRole::Member);
+        $other = $this->member($org, OrganizationRole::Member);
+        $pipeline = Pipeline::where('organization_id', $org->id)->firstOrFail();
+        $stage = $pipeline->stages()->firstOrFail();
+        $ownLead = CrmLead::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'current_stage_id' => $stage->id, 'first_name' => 'Visible', 'last_name' => 'Lead', 'assigned_to' => $agent->id]);
+        $foreignLead = CrmLead::create(['organization_id' => $org->id, 'pipeline_id' => $pipeline->id, 'current_stage_id' => $stage->id, 'first_name' => 'Hidden', 'last_name' => 'Lead', 'assigned_to' => $other->id]);
+        DB::table('crm_activities')->insert([
+            ['organization_id' => $org->id, 'subject_type' => CrmLead::class, 'subject_id' => $ownLead->id, 'type' => 'note', 'notes' => 'Own comment', 'created_at' => now(), 'updated_at' => now()],
+            ['organization_id' => $org->id, 'subject_type' => CrmLead::class, 'subject_id' => $foreignLead->id, 'type' => 'note', 'notes' => 'Private comment', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        $this->actingAs($agent)->get(route('crm.leads.export.download', ['columns' => ['first_name']]))->assertForbidden();
+        $this->get(route('crm.leads.export.activities'))->assertForbidden();
+        $this->put(route('crm.leads.export.grants'), ['user_id' => $agent->id, 'allowed' => true])->assertForbidden();
+        $this->actingAs($owner)->put(route('crm.leads.export.grants'), ['user_id' => $agent->id, 'allowed' => true])->assertRedirect();
+        $this->actingAs($agent)->get(route('crm.leads.export.download', ['columns' => ['first_name']]))->assertOk()->assertStreamedContent("\"First name\"\nVisible\n");
+        $activityCsv = $this->get(route('crm.leads.export.activities'))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Own comment', $activityCsv);
+        $this->assertStringNotContainsString('Private comment', $activityCsv);
+        $this->actingAs($owner)->put(route('crm.leads.export.grants'), ['user_id' => $agent->id, 'allowed' => false])->assertRedirect();
+        $this->actingAs($agent)->get(route('crm.leads.export.activities'))->assertForbidden();
+    }
 }

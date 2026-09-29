@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Column = { key: string; label: string; group: string };
-const props = defineProps<{ columns: Column[] }>();
+const props = defineProps<{
+    columns: Column[];
+    canGrant: boolean;
+    members: { id: number; name: string }[];
+    grantUserIds: number[];
+}>();
 const selected = ref<string[]>(['id', 'first_name', 'last_name']);
 const groups = computed(() => [
     ...new Set(props.columns.map((column) => column.group)),
@@ -21,6 +26,13 @@ function download(): void {
     const query = new URLSearchParams();
     for (const key of selected.value) query.append('columns[]', key);
     window.location.assign(`/crm/leads/export/download?${query.toString()}`);
+}
+function setGrant(userId: number, allowed: boolean): void {
+    router.put(
+        '/crm/leads/export/grants',
+        { user_id: userId, allowed },
+        { preserveScroll: true },
+    );
 }
 </script>
 <template>
@@ -67,8 +79,39 @@ function download(): void {
                     ><Button variant="outline" @click="selected = []"
                         >Clear</Button
                     >
+                    <a
+                        href="/crm/leads/export/activities"
+                        class="border-input inline-flex h-9 items-center rounded-md border px-4 text-sm"
+                        >Download all lead activities and comments</a
+                    >
                 </div>
             </CardContent></Card
+        >
+        <Card v-if="canGrant"
+            ><CardHeader
+                ><CardTitle>Owner export permissions</CardTitle></CardHeader
+            ><CardContent class="space-y-3"
+                ><p class="text-muted-foreground text-sm">
+                    Only the owner can grant this permission. Granted members
+                    can download leads and activities that they are allowed to
+                    view; other staff cannot download either.
+                </p>
+                <label
+                    v-for="member in members"
+                    :key="member.id"
+                    class="flex items-center gap-2 text-sm"
+                    ><input
+                        type="checkbox"
+                        :checked="grantUserIds.includes(member.id)"
+                        @change="
+                            setGrant(
+                                member.id,
+                                ($event.target as HTMLInputElement).checked,
+                            )
+                        "
+                    />{{ member.name }}</label
+                ></CardContent
+            ></Card
         >
     </div>
 </template>

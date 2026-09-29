@@ -26,6 +26,7 @@ class RemoveOrganizationMember
             DB::table('crm_team_memberships')->where('organization_id', $org->id)->where('user_id', $member->id)->delete();
             DB::table('crm_visibility_grants')->where('organization_id', $org->id)->where('user_id', $member->id)->delete();
             DB::table('crm_edit_grants')->where('organization_id', $org->id)->where('user_id', $member->id)->delete();
+            DB::table('crm_lead_export_grants')->where('organization_id', $org->id)->where('user_id', $member->id)->delete();
             $this->audit->handle($org, $actor, 'organization.member.removed', $member);
         });
     }

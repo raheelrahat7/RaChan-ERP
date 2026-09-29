@@ -99,6 +99,7 @@ const props = defineProps<{
     leads: Lead[];
     activities: Activity[];
     canManageCrm: boolean;
+    canExportLeads: boolean;
     members: { id: number; name: string }[];
     customFields: {
         id: number;
@@ -321,7 +322,7 @@ function switchLeadView(view: 'board' | 'list'): void {
             >Import leads</Link
         >
         <Link
-            v-if="canManageHierarchy"
+            v-if="canExportLeads"
             href="/crm/leads/export"
             class="text-sm underline"
             >Export leads</Link

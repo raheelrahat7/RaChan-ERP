@@ -6,6 +6,7 @@ use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Actions\ManageLeadFollowUp;
 use App\Domain\Crm\Actions\ManageLeadPipeline;
 use App\Domain\Crm\Models\CustomFieldValue;
+use App\Domain\Crm\Queries\ExportLeads;
 use App\Domain\Crm\Queries\LeadFilters;
 use App\Domain\Crm\Queries\LeadTimeline;
 use App\Domain\Crm\Queries\PipelineOverview;
@@ -21,7 +22,7 @@ use Inertia\Response;
 
 class CrmLeadController extends Controller
 {
-    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility, ManageCustomFields $fields, LeadFilters $leadFilters): Response
+    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility, ManageCustomFields $fields, LeadFilters $leadFilters, ExportLeads $exports): Response
     {
         $organization = $this->currentOrganization($request);
         $this->authorize('viewCrm', $organization);
@@ -38,6 +39,7 @@ class CrmLeadController extends Controller
             'members' => $visibility->restricted($organization, $request->user()) ? $organization->users()->whereIn('users.id', $visibility->assigneeIds($organization, $request->user()))->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']) : $organization->users()->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']),
             'followUps' => CrmActivity::where('organization_id', $organization->id)->whereNotNull('due_at')->whereNull('completed_at')->whereHasMorph('subject', [CrmLead::class], fn ($query) => $visibility->scope($query->where('organization_id', $organization->id)->whereNull('converted_at'), $organization, $request->user()))->with('subject:id,first_name,last_name')->orderBy('due_at')->get()->map(fn ($activity) => [...$activity->only('id', 'type', 'notes', 'due_at'), 'lead' => $activity->subject->only('id', 'first_name', 'last_name'), 'is_overdue' => $activity->due_at->isPast()]),
             'canManageCrm' => $request->user()->can('manageCrm', $organization),
+            'canExportLeads' => $exports->canExport($organization, $request->user()),
             'activities' => CrmActivity::query()->where('organization_id', $organization->id)->whereHasMorph('subject', [CrmLead::class], fn ($query) => $visibility->scope($query->where('organization_id', $organization->id), $organization, $request->user()))->with(['subject:id,first_name,last_name', 'creator:id,name'])->latest()->take(10)->get()->map(fn (CrmActivity $activity) => [
                 ...$activity->only('id', 'type', 'notes', 'due_at'),
                 'lead' => $activity->subject ? $activity->subject->only('id', 'first_name', 'last_name') : null,

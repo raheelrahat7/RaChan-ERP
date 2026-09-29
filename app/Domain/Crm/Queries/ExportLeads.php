@@ -4,8 +4,10 @@ namespace App\Domain\Crm\Queries;
 
 use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Models\CustomFieldValue;
+use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Identity\Enums\OrganizationRole;
+use App\Models\CrmActivity;
 use App\Models\CrmLead;
 use App\Models\Organization;
 use App\Models\User;
@@ -25,14 +27,20 @@ class ExportLeads
         'created_at' => 'Created on', 'updated_at' => 'Modified on',
     ];
 
-    public function __construct(private ManageCustomFields $fields, private RecordOrganizationAuditLog $audit) {}
+    public function __construct(private ManageCustomFields $fields, private RecordOrganizationAuditLog $audit, private LeadVisibility $visibility) {}
+
+    public function canExport(Organization $org, User $actor): bool
+    {
+        return $actor->belongsToOrganization($org) && (
+            $actor->hasOrganizationRole($org, OrganizationRole::Owner) ||
+            $actor->hasOrganizationRole($org, OrganizationRole::Administrator) ||
+            DB::table('crm_lead_export_grants')->where('organization_id', $org->id)->where('user_id', $actor->id)->exists()
+        );
+    }
 
     public function authorize(Organization $org, User $actor): void
     {
-        abort_unless($actor->belongsToOrganization($org) && (
-            $actor->hasOrganizationRole($org, OrganizationRole::Owner) ||
-            $actor->hasOrganizationRole($org, OrganizationRole::Administrator)
-        ), 403);
+        abort_unless($this->canExport($org, $actor), 403);
     }
 
     /** @return list<array{key:string,label:string,group:string}> */
@@ -60,13 +68,14 @@ class ExportLeads
         $custom = collect($this->fields->visible($org, $actor))->keyBy('key');
         $this->audit->handle($org, $actor, 'crm.leads.exported', $org, ['columns' => $selected]);
 
-        return response()->streamDownload(function () use ($org, $selected, $allowed, $custom): void {
+        return response()->streamDownload(function () use ($org, $actor, $selected, $allowed, $custom): void {
             $output = fopen('php://output', 'w');
             if ($output === false) {
                 throw new \RuntimeException('Could not open export stream.');
             }
             $this->writeRow($output, array_map(fn (string $key) => $allowed[$key], $selected));
-            CrmLead::where('organization_id', $org->id)->with(['stage:id,name', 'pipeline:id,name', 'assignee:id,name'])
+            $this->visibility->scope(CrmLead::where('organization_id', $org->id), $org, $actor)
+                ->with(['stage:id,name', 'pipeline:id,name', 'assignee:id,name'])
                 ->orderBy('id')->chunkById(200, function ($leads) use ($org, $selected, $custom, $output): void {
                     $ids = $leads->pluck('id');
                     $fieldIds = collect($selected)->filter(fn ($key) => str_starts_with($key, 'custom:'))
@@ -101,6 +110,35 @@ class ExportLeads
                 });
             fclose($output);
         }, 'crm-leads-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function downloadActivities(Organization $org, User $actor): StreamedResponse
+    {
+        $this->authorize($org, $actor);
+        $this->audit->handle($org, $actor, 'crm.lead_activities.exported', $org);
+
+        return response()->streamDownload(function () use ($org, $actor): void {
+            $output = fopen('php://output', 'w');
+            if ($output === false) {
+                throw new \RuntimeException('Could not open export stream.');
+            }
+            $this->writeRow($output, ['Lead ID', 'Lead name', 'Activity type', 'Comment', 'Created by', 'Created at', 'Due at', 'Completed at']);
+            $leads = $this->visibility->scope(CrmLead::where('organization_id', $org->id), $org, $actor)->select('id');
+            CrmActivity::where('organization_id', $org->id)->where('subject_type', CrmLead::class)
+                ->whereIn('subject_id', $leads)->with(['subject:id,first_name,last_name', 'creator:id,name'])
+                ->orderBy('id')->chunkById(200, function ($activities) use ($output): void {
+                    foreach ($activities as $activity) {
+                        $lead = $activity->subject;
+                        $this->writeRow($output, [
+                            $activity->subject_id,
+                            $lead instanceof CrmLead ? trim($lead->first_name.' '.$lead->last_name) : '',
+                            $activity->type, $activity->notes, $activity->creator?->name,
+                            $activity->created_at, $activity->due_at, $activity->completed_at,
+                        ]);
+                    }
+                });
+            fclose($output);
+        }, 'crm-lead-activities-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /** @param resource $output

@@ -440,6 +440,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/leads/import', [CrmLeadImportController::class, 'index'])->name('crm.leads.import.index');
     Route::get('crm/leads/export', [CrmLeadExportController::class, 'index'])->name('crm.leads.export.index');
     Route::get('crm/leads/export/download', [CrmLeadExportController::class, 'download'])->name('crm.leads.export.download');
+    Route::get('crm/leads/export/activities', [CrmLeadExportController::class, 'activities'])->name('crm.leads.export.activities');
+    Route::put('crm/leads/export/grants', [CrmLeadExportController::class, 'grant'])->name('crm.leads.export.grants');
     Route::post('crm/leads/import/preview', [CrmLeadImportController::class, 'preview'])->name('crm.leads.import.preview');
     Route::post('crm/leads/import/{batch}/commit', [CrmLeadImportController::class, 'commit'])->name('crm.leads.import.commit');
     Route::get('crm/leads/{lead}', [CrmLeadController::class, 'show'])->name('crm.leads.show');
