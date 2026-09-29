@@ -9,6 +9,8 @@ import {
     summarySentences,
 } from '../../resources/js/lib/home.ts';
 
+const SOON = { value: null, change: null, count: null, soon: true };
+
 const legacy = {
     metrics: {
         openMaintenance: 4,
@@ -228,4 +230,21 @@ await test('empty lists stay empty, and missing ones stay coming soon', () => {
     assert.deepEqual(view.insights, []);
     assert.deepEqual(view.dealPipeline, []);
     assert.equal(normalizeHome({}).leadSources, null);
+});
+
+await test('a whole KPI wrapper being null (not just its inner fields) never crashes', () => {
+    const restricted = {
+        ...kpis,
+        commission_payable: null,
+        pdc_due: null,
+        bounced_cheques: null,
+        expiring_contracts: { count: 0 },
+    };
+    const view = normalizeHome({ kpis: restricted });
+    assert.deepEqual(view.figures.commission_payable, SOON);
+    assert.deepEqual(view.figures.pdc_due, SOON);
+    assert.deepEqual(view.figures.bounced_cheques, SOON);
+    // No cheque-related attention items appear while their data is
+    // unavailable (soon), and nothing throws reading a null wrapper.
+    assert.deepEqual(attentionItems(view), []);
 });

@@ -140,17 +140,21 @@ export function normalizeHome(props: HomeProps): HomeView {
             payables: figure(k?.payables.value),
             vat_payable: figure(k?.vat_payable.value),
             commission_payable: figure(
-                k?.commission_payable.value,
+                k?.commission_payable?.value,
                 null,
-                k?.commission_payable.agents ?? null,
+                k?.commission_payable?.agents ?? null,
             ),
             active_deals: figure(k?.active_deals.count),
             expiring_contracts: figure(k?.expiring_contracts.count),
-            pdc_due: figure(k?.pdc_due.amount, null, k?.pdc_due.count ?? null),
-            bounced_cheques: figure(
-                k?.bounced_cheques.amount,
+            pdc_due: figure(
+                k?.pdc_due?.amount,
                 null,
-                k?.bounced_cheques.count ?? null,
+                k?.pdc_due?.count ?? null,
+            ),
+            bounced_cheques: figure(
+                k?.bounced_cheques?.amount,
+                null,
+                k?.bounced_cheques?.count ?? null,
             ),
             pending_approvals: figure(k?.pending_approvals?.count),
             overdue_tasks: figure(k?.overdue_tasks?.count),

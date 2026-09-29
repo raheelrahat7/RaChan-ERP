@@ -122,7 +122,7 @@ await test('abilities hide items, and a section with nothing left disappears', (
 await test('the command palette lists enabled pages only, children included', () => {
     const entries = commandEntries(NAVIGATION);
     assert.ok(entries.every((entry) => entry.href));
-    assert.ok(!entries.some((entry) => entry.label === 'AI Matchmaker'));
+    assert.ok(!entries.some((entry) => entry.label === 'Off-Plan Projects'));
     const vat = entries.find(
         (entry) => entry.href === '/accounting/vat-return',
     );
