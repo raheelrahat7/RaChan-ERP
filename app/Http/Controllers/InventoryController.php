@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\RealEstate\Queries\BuildingSkyline;
 use App\Models\Building;
 use App\Models\Organization;
 use App\Models\Owner;
 use App\Models\Property;
 use App\Models\Unit;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,12 +25,12 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory/Index', [
             'properties' => Property::where('organization_id', $organization->id)->with('buildings:id,property_id,name')->latest()->get(['id', 'name', 'type', 'city']),
-            'units' => Unit::where('organization_id', $organization->id)->with(['property:id,name', 'building:id,name'])->latest()->get()->map(fn (Unit $unit) => [...$unit->only('id', 'number', 'type', 'area', 'area_unit', 'status', 'asking_price', 'currency'), 'property' => $unit->property?->only('id', 'name'), 'building' => $unit->building?->only('id', 'name')]),
+            'units' => Unit::where('organization_id', $organization->id)->with(['property:id,name', 'building:id,name'])->latest()->get()->map(fn (Unit $unit) => [...$unit->only('id', 'number', 'floor', 'type', 'area', 'area_unit', 'status', 'asking_price', 'currency'), 'property' => $unit->property?->only('id', 'name'), 'building' => $unit->building?->only('id', 'name')]),
             'canManageInventory' => $request->user()->can('manageInventory', $organization),
         ]);
     }
 
-    public function showProperty(Request $request, Property $property): Response
+    public function showProperty(Request $request, Property $property, BuildingSkyline $skyline): Response
     {
         $organization = $this->organization($request);
         abort_unless($property->organization_id === $organization->id, 404);
@@ -35,13 +38,26 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory/Property', [
             'property' => $property->only('id', 'name', 'type', 'address_line_1', 'city', 'description'),
-            'buildings' => $property->buildings()->with('units:id,building_id,number,type,status')->get(),
-            'units' => $property->units()->whereNull('building_id')->get(['id', 'number', 'type', 'status']),
+            'buildings' => $property->buildings()->with('units:id,building_id,number,floor,type,status')->get(),
+            'skylines' => $skyline->forProperty($organization, $property, $request->user()->can('viewFinance', $organization)),
+            'units' => $property->units()->whereNull('building_id')->get(['id', 'number', 'floor', 'type', 'status']),
             'documents' => $property->documents()->latest()->get(['id', 'name', 'mime_type', 'size']),
             'owners' => $property->owners()->orderBy('name')->get(['owners.id', 'name', 'email', 'phone']),
             'availableOwners' => Owner::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']),
             'canManageInventory' => $request->user()->can('manageInventory', $organization),
         ]);
+    }
+
+    public function skyline(Request $request, Building $building, BuildingSkyline $skyline): JsonResponse
+    {
+        $organization = $this->organization($request);
+        abort_unless($building->organization_id === $organization->id, 404);
+        $this->authorize('viewInventory', $organization);
+        $property = Property::where('organization_id', $organization->id)->findOrFail($building->property_id);
+        $record = collect($skyline->forProperty($organization, $property, $request->user()->can('viewFinance', $organization)))->firstWhere('building.id', $building->id);
+        abort_unless($record !== null, 404);
+
+        return response()->json($record);
     }
 
     public function showUnit(Request $request, Unit $unit): Response
@@ -51,7 +67,7 @@ class InventoryController extends Controller
         $this->authorize('viewInventory', $organization);
 
         return Inertia::render('inventory/Unit', [
-            'unit' => $unit->load(['property:id,name', 'building:id,name'])->only('id', 'number', 'type', 'status', 'area', 'area_unit', 'asking_price', 'currency', 'property', 'building'),
+            'unit' => $unit->load(['property:id,name', 'building:id,name'])->only('id', 'number', 'floor', 'type', 'status', 'area', 'area_unit', 'asking_price', 'currency', 'property', 'building'),
             'documents' => $unit->documents()->latest()->get(['id', 'name', 'mime_type', 'size']),
             'canManageInventory' => $request->user()->can('manageInventory', $organization),
         ]);
@@ -71,13 +87,27 @@ class InventoryController extends Controller
     {
         $organization = $this->organization($request);
         $this->authorize('manageInventory', $organization);
-        $input = $request->validate(['property_id' => ['required', 'integer'], 'building_id' => ['nullable', 'integer'], 'number' => ['required', 'string', 'max:100'], 'type' => ['required', 'in:apartment,office,retail,warehouse,plot,other'], 'status' => ['required', 'in:available,reserved,leased,sold,unavailable'], 'area' => ['nullable', 'numeric', 'min:0'], 'asking_price' => ['nullable', 'numeric', 'min:0']]);
+        $input = $request->validate(['property_id' => ['required', 'integer'], 'building_id' => ['nullable', 'integer'], 'floor' => ['nullable', 'string', 'max:8', 'regex:/^(?:G|P[1-9][0-9]?|[1-9][0-9]{0,2})$/'], 'number' => ['required', 'string', 'max:100'], 'type' => ['required', 'in:apartment,office,retail,warehouse,plot,other'], 'status' => ['required', 'in:available,reserved,leased,sold,unavailable'], 'area' => ['nullable', 'numeric', 'min:0'], 'asking_price' => ['nullable', 'numeric', 'min:0']]);
         $property = Property::where('organization_id', $organization->id)->findOrFail((int) $input['property_id']);
-        if ($input['building_id'] ?? null) {
-            Building::where('organization_id', $organization->id)->where('property_id', $property->id)->findOrFail((int) $input['building_id']);
-        }
+        $building = ($input['building_id'] ?? null) ? Building::where('organization_id', $organization->id)->where('property_id', $property->id)->findOrFail((int) $input['building_id']) : null;
+        $this->validateFloor($building, $input['floor'] ?? null);
         $unit = Unit::create(['organization_id' => $organization->id, ...$input]);
         $audit->handle($organization, $request->user(), 'inventory.unit.created', $unit);
+
+        return back();
+    }
+
+    public function updateUnitFloor(Request $request, Unit $unit, RecordOrganizationAuditLog $audit): RedirectResponse
+    {
+        $organization = $this->organization($request);
+        abort_unless($unit->organization_id === $organization->id, 404);
+        $this->authorize('manageInventory', $organization);
+        $input = $request->validate(['floor' => ['nullable', 'string', 'max:8', 'regex:/^(?:G|P[1-9][0-9]?|[1-9][0-9]{0,2})$/']]);
+        $building = $unit->building_id === null ? null : Building::where('organization_id', $organization->id)->findOrFail($unit->building_id);
+        $this->validateFloor($building, $input['floor'] ?? null);
+        $before = $unit->floor;
+        $unit->update(['floor' => $input['floor'] ?? null]);
+        $audit->handle($organization, $request->user(), 'inventory.unit.floor_updated', $unit, ['before' => $before, 'after' => $unit->floor]);
 
         return back();
     }
@@ -134,5 +164,15 @@ class InventoryController extends Controller
         abort_unless($organization !== null, 404);
 
         return $organization;
+    }
+
+    private function validateFloor(?Building $building, ?string $floor): void
+    {
+        if ($floor === null) {
+            return;
+        }
+        if ($building === null || (ctype_digit($floor) && $building->floors !== null && (int) $floor > $building->floors)) {
+            throw ValidationException::withMessages(['floor' => 'Choose a floor within the selected building.']);
+        }
     }
 }

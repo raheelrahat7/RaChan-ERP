@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['organization_id', 'property_id', 'building_id', 'number', 'type', 'area', 'area_unit', 'status', 'asking_price', 'currency'])]
+#[Fillable(['organization_id', 'property_id', 'building_id', 'floor', 'number', 'type', 'area', 'area_unit', 'status', 'asking_price', 'currency'])]
 class Unit extends Model
 {
     /** @return BelongsTo<Organization, $this> */

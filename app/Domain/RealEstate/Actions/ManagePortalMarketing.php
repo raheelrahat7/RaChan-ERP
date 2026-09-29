@@ -134,6 +134,36 @@ class ManagePortalMarketing
         });
     }
 
+    /** @param array{delta:int,source_reference:string,reason:string} $input */
+    public function recordCreditMovement(Organization $org, User $actor, int $subscriptionId, array $input): void
+    {
+        $this->authorize($org, $actor);
+        DB::transaction(function () use ($org, $actor, $subscriptionId, $input): void {
+            $subscription = DB::table('portal_subscriptions')->where('organization_id', $org->id)
+                ->where('id', $subscriptionId)->lockForUpdate()->first();
+            abort_unless($subscription !== null, 404);
+            abort_unless($subscription->status === 'active', 422, 'Only active subscriptions can record credit usage.');
+            if (DB::table('portal_credit_movements')->where('subscription_id', $subscriptionId)
+                ->where('source_reference', $input['source_reference'])->exists()) {
+                throw ValidationException::withMessages(['source_reference' => 'This usage reference was already recorded.']);
+            }
+            $newUsed = (int) $subscription->credits_used + $input['delta'];
+            if ($newUsed < 0 || $newUsed > (int) $subscription->credits_total) {
+                throw ValidationException::withMessages(['delta' => 'Credit usage must remain between zero and the package total.']);
+            }
+            DB::table('portal_credit_movements')->insert([
+                'organization_id' => $org->id, 'subscription_id' => $subscriptionId,
+                'recorded_by' => $actor->id, 'delta' => $input['delta'],
+                'source_reference' => $input['source_reference'], 'reason' => $input['reason'],
+                'recorded_at' => now(),
+            ]);
+            DB::table('portal_subscriptions')->where('id', $subscriptionId)->update(['credits_used' => $newUsed, 'updated_at' => now()]);
+            $this->audit->handle($org, $actor, 'marketing.subscription.credits_recorded', $org,
+                ['subscription_id' => $subscriptionId, 'delta' => $input['delta'], 'credits_used' => $newUsed,
+                    'source_reference' => $input['source_reference'], 'reason' => $input['reason']]);
+        });
+    }
+
     /** @param array<string,mixed> $input */
     public function spend(Organization $org, User $actor, array $input): int
     {

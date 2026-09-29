@@ -78,4 +78,28 @@ class PortalMarketingTest extends TestCase
         $this->actingAs($owner)->post(route('marketing.publications.store'), ['listing_id' => $listing->id, 'portal' => 'bayut'])->assertSessionHasErrors(['listing_id']);
         $this->assertDatabaseCount('portal_publications', 0);
     }
+
+    public function test_manual_credit_usage_is_audited_idempotent_and_bounded_by_package(): void
+    {
+        [$org, $owner] = $this->context();
+        $this->actingAs($owner)->post(route('marketing.subscriptions.store'), [
+            'portal' => 'bayut', 'package' => 'Basic', 'contract_value_aed' => '1000.00',
+            'billing_cycle' => 'monthly', 'credits_total' => 5, 'starts_on' => today()->toDateString(),
+        ])->assertRedirect();
+        $subscription = DB::table('portal_subscriptions')->sole();
+        $input = ['delta' => 3, 'source_reference' => 'statement-1', 'reason' => 'Provider statement'];
+        $this->post(route('marketing.subscription-credits.store', $subscription->id), $input)->assertRedirect();
+        $this->post(route('marketing.subscription-credits.store', $subscription->id), $input)->assertSessionHasErrors(['source_reference']);
+        $this->post(route('marketing.subscription-credits.store', $subscription->id), ['delta' => 3, 'source_reference' => 'statement-2', 'reason' => 'Extra'])->assertSessionHasErrors(['delta']);
+        $this->post(route('marketing.subscription-credits.store', $subscription->id), ['delta' => -2, 'source_reference' => 'correction-1', 'reason' => 'Provider correction'])->assertRedirect();
+        $this->assertDatabaseHas('portal_subscriptions', ['id' => $subscription->id, 'credits_used' => 1]);
+        $this->assertDatabaseCount('portal_credit_movements', 2);
+        $this->get(route('marketing.subscriptions.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('subscriptions.data.0.credits_used', 1)->has('creditMovements', 2)->etc());
+        $other = Organization::factory()->create();
+        $foreign = DB::table('portal_subscriptions')->insertGetId(['organization_id' => $other->id, 'portal' => 'dubizzle',
+            'package' => 'Other', 'contract_value_aed' => 100, 'billing_cycle' => 'monthly', 'credits_total' => 5,
+            'credits_used' => 0, 'starts_on' => today()->toDateString(), 'status' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+        $this->post(route('marketing.subscription-credits.store', $foreign), ['delta' => 1, 'source_reference' => 'foreign', 'reason' => 'Wrong tenant'])->assertNotFound();
+    }
 }

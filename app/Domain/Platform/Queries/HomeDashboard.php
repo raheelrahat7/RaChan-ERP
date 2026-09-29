@@ -101,8 +101,7 @@ class HomeDashboard
             // Existing commission records distinguish the broker amount, but not company,
             // co-broker and referral shares. Do not invent the missing components.
             'commission_split' => null,
-            // Commissions belong to broker parties, which are not linked to users.
-            'top_agents' => [],
+            'top_agents' => $canViewFinance ? $this->topAgents($orgId, $range) : [],
             'lead_pipeline' => $this->leadPipeline($organization, $actor),
             'lead_sources' => $this->leadSources($organization, $actor, $range),
             'deal_pipeline' => $canViewTransactions ? $this->dealPipeline($orgId, $purpose) : null,
@@ -179,6 +178,26 @@ class HomeDashboard
             ->whereNull('paid_on')->whereBetween('payable_on', [$range['from'], $range['to']]);
 
         return ['value' => round((float) (clone $query)->sum('commission_amount'), 2), 'agents' => (clone $query)->distinct()->count('broker_id')];
+    }
+
+    /** @param array{from:string,to:string} $range
+     * @return list<array{user_id:int,name:string,team:null,commission:float,deals:int}>
+     */
+    private function topAgents(int $orgId, array $range): array
+    {
+        $rows = DB::table('commission_transactions as commission')
+            ->join('brokers as broker', 'broker.id', '=', 'commission.broker_id')
+            ->join('users as agent', 'agent.id', '=', 'broker.user_id')
+            ->join('organization_user as membership', fn ($join) => $join->on('membership.user_id', '=', 'agent.id')->where('membership.organization_id', '=', $orgId))
+            ->where('commission.organization_id', $orgId)->where('broker.organization_id', $orgId)
+            ->where('commission.currency', 'AED')->whereBetween('commission.payable_on', [$range['from'], $range['to']])
+            ->selectRaw("agent.id AS user_id, agent.name, SUM(commission.commission_amount) AS total_commission, COUNT(DISTINCT CONCAT(commission.source_type, ':', commission.source_id)) AS deals")
+            ->groupBy('agent.id', 'agent.name')->orderByDesc('total_commission')->limit(5)->get();
+
+        return array_values($rows->map(fn ($row) => [
+            'user_id' => (int) $row->user_id, 'name' => (string) $row->name, 'team' => null,
+            'commission' => round((float) $row->total_commission, 2), 'deals' => (int) $row->deals,
+        ])->all());
     }
 
     /** @return array{active_deals:int,expiring:int} */

@@ -34,6 +34,7 @@ class PortalMarketingController extends Controller
         return Inertia::render('marketing/Subscriptions', [
             'subscriptions' => DB::table('portal_subscriptions')->where('organization_id', $org->id)->orderByDesc('id')->paginate(30),
             'bills' => DB::table('portal_subscription_bills')->where('organization_id', $org->id)->orderByDesc('id')->limit(100)->get(),
+            'creditMovements' => DB::table('portal_credit_movements')->where('organization_id', $org->id)->orderByDesc('id')->limit(100)->get(),
             'canManage' => $request->user()->can('manageCrm', $org),
             'canLinkBill' => $request->user()->can('manageFinance', $org),
         ]);
@@ -107,6 +108,19 @@ class PortalMarketingController extends Controller
             'vendor_bill_id' => ['required', 'integer'], 'period_from' => ['required', 'date_format:Y-m-d'],
             'period_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:period_from'],
         ]));
+
+        return back();
+    }
+
+    public function subscriptionCredits(Request $request, int $subscription, ManagePortalMarketing $marketing): RedirectResponse
+    {
+        $org = $this->org($request);
+        $input = $request->validate([
+            'delta' => ['required', 'integer', 'between:-100000,100000', 'not_in:0'],
+            'source_reference' => ['required', 'string', 'max:100'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+        $marketing->recordCreditMovement($org, $request->user(), $subscription, $input);
 
         return back();
     }

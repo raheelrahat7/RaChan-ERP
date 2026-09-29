@@ -204,6 +204,8 @@ Route: `POST /demo`, named `marketing.demo.store`. It should redirect back with 
 
 ## Part E: Building skyline data (for later module phases)
 
+> **Backend update, 2026-09-29:** The owner subsequently asked Codex to complete remaining backend work. The inventory floor field, skyline read model, property-page prop and JSON route are implemented on `codex/phase-2-integration`. Frontend placement in facility-management and sales pages remains with Claude. See [the Part E route and status contract](CODEX_RED_MODULE_SCOPES_2026_09_28.md#part-e--building-skyline-backend).
+
 The owner wants a "building skyline" visual in the facility management and property sales sections: each building drawn as its floors and units, each unit coloured by status. The reference is concept B in `.superpowers/brainstorm/home-concepts.html`. Claude will build it during those module phases. The data it will need, from a property page or an operations page:
 
 ```ts
