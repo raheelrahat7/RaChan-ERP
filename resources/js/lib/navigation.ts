@@ -123,7 +123,12 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'contacts',
                 ability: 'crm',
             },
-            soon('AI Matchmaker', 'matchmaker', 'crm'),
+            {
+                label: 'AI Matchmaker',
+                href: '/crm/matchmaker',
+                icon: 'matchmaker',
+                ability: 'crm',
+            },
             {
                 label: 'Property & Listings',
                 href: '/real-estate/listings',
@@ -182,7 +187,7 @@ export const NAVIGATION: NavGroup[] = [
             },
             {
                 label: 'Broker Performance',
-                href: '/crm/pipeline-report',
+                href: '/crm/broker-performance',
                 icon: 'performance',
                 ability: 'crm',
             },
@@ -352,9 +357,14 @@ export const NAVIGATION: NavGroup[] = [
         id: 'workflow',
         label: 'Workflow',
         items: [
-            soon('Approvals', 'approvals'),
-            soon('Tasks', 'tasks'),
-            soon('Meetings & Viewings', 'viewings'),
+            { label: 'Approvals', href: '/approvals', icon: 'approvals' },
+            { label: 'Tasks', href: '/tasks', icon: 'tasks' },
+            {
+                label: 'Meetings & Viewings',
+                href: '/meetings',
+                icon: 'viewings',
+                ability: 'crm',
+            },
             {
                 label: 'Contracts & Signatures',
                 href: '/documents/signatures',
