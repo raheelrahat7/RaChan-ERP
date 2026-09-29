@@ -19,6 +19,7 @@ class PendingApprovals
             $items = [...$items, ...$this->rows($organization, $actor, 'operating_budgets', 'Finance', 'Budget', 'submitted_by', 'accounting.budgets', 'accounting.budgets.approve', 'accounting.budgets.reject', null)];
         }
         if ($owner) {
+            $items = [...$items, ...$this->commissionAllocations($organization, $actor)];
             foreach ([
                 ['customer_refunds', 'Customer refund', 'customer-refunds.approve', 'customer-refunds.reject', 'invoices.index', 'amount'],
                 ['vendor_credit_notes', 'Vendor credit', 'vendor-credit-notes.approve', 'vendor-credit-notes.reject', 'vendor-bills.index', 'amount'],
@@ -35,6 +36,32 @@ class PendingApprovals
         usort($items, fn (array $a, array $b): int => strcmp($b['submitted_at'], $a['submitted_at']));
 
         return $items;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function commissionAllocations(Organization $org, User $actor): array
+    {
+        return array_values(DB::table('commission_allocations as allocation')
+            ->join('commission_transactions as commission', 'commission.id', '=', 'allocation.commission_transaction_id')
+            ->join('users as requester', 'requester.id', '=', 'allocation.requested_by')
+            ->where('allocation.organization_id', $org->id)->where('commission.organization_id', $org->id)
+            ->where('allocation.status', 'submitted')->where('allocation.requested_by', '!=', $actor->id)
+            ->orderByDesc('allocation.created_at')
+            ->get(['allocation.id', 'allocation.created_at', 'commission.commission_amount', 'requester.name as requested_by'])
+            ->map(fn ($row): array => [
+                'key' => 'commission_allocations:'.$row->id,
+                'module' => 'Brokerage',
+                'transaction' => 'Commission #'.$row->id,
+                'amount' => round((float) $row->commission_amount, 2),
+                'cost_centre' => null,
+                'requested_by' => $row->requested_by,
+                'status' => 'submitted',
+                'submitted_at' => $row->created_at,
+                'href' => route('real-estate.brokerage.index'),
+                'approve_url' => route('real-estate.brokerage.allocations.approve', ['allocation' => $row->id]),
+                'reject_url' => route('real-estate.brokerage.allocations.reject', ['allocation' => $row->id]),
+                'reject_requires_reason' => true,
+            ])->all());
     }
 
     /** @return list<array<string, mixed>> */

@@ -98,9 +98,7 @@ class HomeDashboard
                 'overdue_tasks' => ['count' => $overdueTaskCount],
             ],
             'trend' => $canViewTransactions ? $this->trend($orgId, $purpose, $today) : null,
-            // Existing commission records distinguish the broker amount, but not company,
-            // co-broker and referral shares. Do not invent the missing components.
-            'commission_split' => null,
+            'commission_split' => $canViewFinance ? $this->commissionSplit($orgId, $range) : null,
             'top_agents' => $canViewFinance ? $this->topAgents($orgId, $range) : [],
             'lead_pipeline' => $this->leadPipeline($organization, $actor),
             'lead_sources' => $this->leadSources($organization, $actor, $range),
@@ -178,6 +176,34 @@ class HomeDashboard
             ->whereNull('paid_on')->whereBetween('payable_on', [$range['from'], $range['to']]);
 
         return ['value' => round((float) (clone $query)->sum('commission_amount'), 2), 'agents' => (clone $query)->distinct()->count('broker_id')];
+    }
+
+    /** @param array{from:string,to:string} $range
+     * @return array{net_company:float,agent_payable:float,co_broker:float,referral:float}|null
+     */
+    private function commissionSplit(int $orgId, array $range): ?array
+    {
+        $rows = DB::table('commission_transactions as commission')
+            ->leftJoin('commission_allocations as allocation', function ($join): void {
+                $join->on('allocation.commission_transaction_id', '=', 'commission.id')
+                    ->on('allocation.organization_id', '=', 'commission.organization_id')
+                    ->where('allocation.status', 'approved');
+            })
+            ->where('commission.organization_id', $orgId)->where('commission.currency', 'AED')
+            ->whereBetween('commission.payable_on', [$range['from'], $range['to']])
+            ->selectRaw('COUNT(*) AS total, COUNT(allocation.id) AS allocated, SUM(allocation.net_company) AS net_company, SUM(allocation.agent_payable) AS agent_payable, SUM(allocation.co_broker) AS co_broker, SUM(allocation.referral) AS referral')
+            ->first();
+
+        if (! $rows || (int) $rows->total === 0 || (int) $rows->total !== (int) $rows->allocated) {
+            return null;
+        }
+
+        return [
+            'net_company' => round((float) $rows->net_company, 2),
+            'agent_payable' => round((float) $rows->agent_payable, 2),
+            'co_broker' => round((float) $rows->co_broker, 2),
+            'referral' => round((float) $rows->referral, 2),
+        ];
     }
 
     /** @param array{from:string,to:string} $range

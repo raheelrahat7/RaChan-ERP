@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Brokerage\Actions\ManageCommissionAllocation;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Models\CommissionAllocation;
 use App\Models\CommissionPlan;
 use App\Models\CommissionTransaction;
 use Illuminate\Http\RedirectResponse;
@@ -22,8 +24,37 @@ class BrokerageController extends Controller
             'plans' => CommissionPlan::where('organization_id', $organization->id)->latest()->get(),
             'transactions' => CommissionTransaction::where('organization_id', $organization->id)
                 ->with('broker:id,name')->latest()->get(),
+            'allocations' => CommissionAllocation::where('organization_id', $organization->id)->latest()->get(),
             'canManage' => $request->user()->can('manageTransactions', $organization),
         ]);
+    }
+
+    public function submitAllocation(Request $request, CommissionTransaction $commission, ManageCommissionAllocation $allocations): RedirectResponse
+    {
+        $organization = $request->user()->currentOrganization;
+        abort_unless($organization !== null, 404);
+        $allocations->submit($organization, $request->user(), $commission, $request->only(['net_company', 'agent_payable', 'co_broker', 'referral']));
+
+        return back();
+    }
+
+    public function approveAllocation(Request $request, CommissionAllocation $allocation, ManageCommissionAllocation $allocations): RedirectResponse
+    {
+        $organization = $request->user()->currentOrganization;
+        abort_unless($organization !== null, 404);
+        $allocations->approve($organization, $request->user(), $allocation);
+
+        return back();
+    }
+
+    public function rejectAllocation(Request $request, CommissionAllocation $allocation, ManageCommissionAllocation $allocations): RedirectResponse
+    {
+        $organization = $request->user()->currentOrganization;
+        abort_unless($organization !== null, 404);
+        $values = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        $allocations->reject($organization, $request->user(), $allocation, $values['reason']);
+
+        return back();
     }
 
     public function storePlan(Request $request, RecordOrganizationAuditLog $audit): RedirectResponse

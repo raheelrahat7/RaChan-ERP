@@ -443,6 +443,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('real-estate/listings/inquiries', [ListingController::class, 'storeInquiry'])->name('real-estate.listings.inquiries.store');
     Route::get('real-estate/brokerage', [BrokerageController::class, 'index'])->name('real-estate.brokerage.index');
     Route::post('real-estate/brokerage/commission-plans', [BrokerageController::class, 'storePlan'])->name('real-estate.brokerage.plans.store');
+    Route::post('real-estate/brokerage/commissions/{commission}/allocation', [BrokerageController::class, 'submitAllocation'])->name('real-estate.brokerage.allocations.submit');
+    Route::post('real-estate/brokerage/allocations/{allocation}/approve', [BrokerageController::class, 'approveAllocation'])->name('real-estate.brokerage.allocations.approve');
+    Route::post('real-estate/brokerage/allocations/{allocation}/reject', [BrokerageController::class, 'rejectAllocation'])->name('real-estate.brokerage.allocations.reject');
     Route::get('organization', [OrganizationController::class, 'edit'])->name('organization.edit');
     Route::put('organization/switch/{organization}', [OrganizationController::class, 'switch'])->name('organization.switch');
     Route::put('organization/tax-settings', [OrganizationController::class, 'updateTaxSettings'])->name('organization.tax-settings.update');
