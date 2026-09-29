@@ -25,7 +25,7 @@ class ManageInternalChat
     {
         $this->member($org, $actor);
         DB::table('internal_chat_rooms')->insertOrIgnore([
-            'organization_id' => $org->id, 'kind' => 'workspace', 'name' => 'Workspace',
+            'organization_id' => $org->id, 'kind' => 'workspace', 'name' => 'Company chat',
             'room_key' => 'workspace', 'created_by' => $actor->id, 'created_at' => now(), 'updated_at' => now(),
         ]);
 
@@ -104,7 +104,11 @@ class ManageInternalChat
 
         return array_values($rooms->map(function ($room) use ($memberNames, $actor): array {
             $members = $memberNames->get($room->id, collect());
-            $title = $room->kind === 'direct' ? ($members->firstWhere('id', '!=', $actor->id)->name ?? 'Direct chat') : ($room->name ?? 'Group');
+            $title = match ($room->kind) {
+                'workspace' => 'Company chat',
+                'direct' => $members->firstWhere('id', '!=', $actor->id)->name ?? 'Direct chat',
+                default => $room->name ?? 'Group',
+            };
 
             return ['id' => $room->id, 'kind' => $room->kind, 'name' => $title,
                 'members' => $members->map(fn ($member) => ['id' => $member->id, 'name' => $member->name])->values()->all()];

@@ -355,11 +355,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <Head title="Team chat" />
+    <Head title="Company chat" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
-            title="Team chat"
-            description="Private direct messages, group rooms, and an organization workspace"
+            title="Company chat"
+            description="One chat for everyone in your ERP organization, plus private direct messages and groups"
         />
         <p v-if="error" class="text-destructive text-sm" role="alert">
             {{ error }}

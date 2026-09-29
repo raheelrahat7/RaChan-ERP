@@ -27,8 +27,11 @@ class InternalChatController extends Controller
             $allRooms = DB::table('internal_chat_rooms')->where('organization_id', $org->id)->orderBy('id')->get(['id', 'kind', 'name']);
             $names = DB::table('internal_chat_members as member')->join('users', 'users.id', '=', 'member.user_id')
                 ->whereIn('member.room_id', $allRooms->pluck('id'))->get(['member.room_id', 'users.name'])->groupBy('room_id');
-            $exportRooms = $allRooms->map(fn ($room) => ['id' => $room->id, 'name' => $room->kind === 'direct'
-                ? 'Direct: '.$names->get($room->id, collect())->pluck('name')->implode(', ') : ($room->name ?? 'Group')])->all();
+            $exportRooms = $allRooms->map(fn ($room) => ['id' => $room->id, 'name' => match ($room->kind) {
+                'workspace' => 'Company chat',
+                'direct' => 'Direct: '.$names->get($room->id, collect())->pluck('name')->implode(', '),
+                default => $room->name ?? 'Group',
+            }])->all();
         }
 
         return Inertia::render('chat/Index', [

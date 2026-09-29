@@ -106,7 +106,7 @@ export const NAVIGATION: NavGroup[] = [
                 badge: 'notifications_unread',
             },
             {
-                label: 'Team chat',
+                label: 'Company chat',
                 href: '/chat',
                 icon: 'chat',
                 ability: 'chat',

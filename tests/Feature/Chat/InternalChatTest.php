@@ -71,4 +71,24 @@ class InternalChatTest extends TestCase
         $this->postJson(route('chat.calls.end', $call))->assertOk();
         $this->assertDatabaseCount('internal_chat_call_signals', 0);
     }
+
+    public function test_company_chat_automatically_includes_new_members_without_crm_access(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        DB::table('accounting_companies')->insert([
+            ['organization_id' => $org->id, 'code' => 'A', 'name' => 'Company A', 'created_at' => now(), 'updated_at' => now()],
+            ['organization_id' => $org->id, 'code' => 'B', 'name' => 'Company B', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        $this->actingAs($owner)->get(route('chat.index'))->assertOk();
+        $workspace = DB::table('internal_chat_rooms')->where('organization_id', $org->id)->where('kind', 'workspace')->value('id');
+        $this->postJson(route('chat.send', $workspace), ['body' => 'Welcome everyone'])->assertOk();
+
+        $newMember = $this->member($org, OrganizationRole::Viewer);
+        $this->actingAs($newMember)->get(route('chat.index'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('rooms.0.kind', 'workspace')
+                ->where('rooms.0.name', 'Company chat')->where('messages.0.body', 'Welcome everyone')->etc());
+        $this->postJson(route('chat.send', $workspace), ['body' => 'Joined from another department'])->assertOk();
+        $this->postJson(route('chat.direct'), ['recipient_id' => $owner->id])->assertOk();
+    }
 }
