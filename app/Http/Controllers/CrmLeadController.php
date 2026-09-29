@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Actions\ManageLeadFollowUp;
 use App\Domain\Crm\Actions\ManageLeadPipeline;
+use App\Domain\Crm\Models\CustomFieldValue;
+use App\Domain\Crm\Queries\LeadFilters;
+use App\Domain\Crm\Queries\LeadTimeline;
 use App\Domain\Crm\Queries\PipelineOverview;
 use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Identity\Enums\OrganizationRole;
@@ -17,14 +21,17 @@ use Inertia\Response;
 
 class CrmLeadController extends Controller
 {
-    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility): Response
+    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility, ManageCustomFields $fields, LeadFilters $leadFilters): Response
     {
         $organization = $this->currentOrganization($request);
         $this->authorize('viewCrm', $organization);
 
         return Inertia::render('crm/Leads', [
-            ...$overview->leads($organization, $request->validate(['pipeline_id' => ['nullable', 'integer'], 'stage_id' => ['nullable', 'integer'], 'assignee_id' => ['nullable', 'integer']]), $request->user()),
+            ...$overview->leads($organization, $request->validate(['pipeline_id' => ['nullable', 'integer'], 'stage_id' => ['nullable', 'integer'], 'assignee_id' => ['nullable', 'integer'], 'q' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'], 'filters' => ['nullable', 'array', 'max:12'], 'filters.*.field' => ['required', 'string', 'max:100'], 'filters.*.operator' => ['required', 'string', 'max:20'], 'filters.*.value' => ['nullable'], 'filters.*.to' => ['nullable']]), $request->user()),
+            'filterCatalog' => $leadFilters->catalog($organization, $request->user()),
             'canManagePipelines' => $request->user()->can('manageCrmPipelines', $organization),
+            'customFields' => $fields->visible($organization, $request->user()),
+            'editableCustomFieldKeys' => array_map(fn ($field) => $field->key, $fields->visible($organization, $request->user(), true)),
             'canManageHierarchy' => $request->user()->hasOrganizationRole($organization, OrganizationRole::Owner) || $request->user()->hasOrganizationRole($organization, OrganizationRole::Administrator),
             'assigneeScoped' => $visibility->restricted($organization, $request->user()) && count($visibility->assigneeIds($organization, $request->user())) === 1,
             'limitedVisibility' => $visibility->restricted($organization, $request->user()),
@@ -46,6 +53,23 @@ class CrmLeadController extends Controller
         $manage->create($organization, $request->user(), $this->validatedLead($request));
 
         return back();
+    }
+
+    public function show(Request $request, CrmLead $lead, LeadVisibility $visibility, ManageCustomFields $fields, LeadTimeline $timeline): Response
+    {
+        $org = $this->currentOrganization($request);
+        $this->authorize('viewCrm', $org);
+        abort_unless($lead->organization_id === $org->id && $visibility->canSeeLead($org, $request->user(), $lead->assigned_to), 404);
+        $visible = $fields->visible($org, $request->user());
+        $values = CustomFieldValue::where('organization_id', $org->id)->where('lead_id', $lead->id)
+            ->whereIn('field_id', array_map(fn ($field) => $field->id, $visible))->get()->keyBy('field_id');
+
+        return Inertia::render('crm/LeadShow', [
+            'lead' => $lead->load(['stage', 'assignee:id,name'])->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'notes', 'status', 'stage', 'assignee', 'created_at', 'updated_at'),
+            'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'value' => $values->get($field->id)?->value], $visible),
+            'timeline' => $timeline->for($org, $request->user(), $lead),
+            'activities' => $lead->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest()->limit(50)->get(['id', 'organization_id', 'subject_type', 'subject_id', 'created_by', 'type', 'notes', 'due_at', 'completed_at', 'created_at']),
+        ]);
     }
 
     public function convert(Request $request, CrmLead $lead, ManageLeadPipeline $manage): RedirectResponse
@@ -127,12 +151,14 @@ class CrmLeadController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'company' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
             'source' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'project_name' => ['nullable', 'string', 'max:255'],
             'campaign_name' => ['nullable', 'string', 'max:255'],
             'meta_form_id' => ['nullable', 'string', 'max:100'],
             'meta_form_name' => ['nullable', 'string', 'max:255'],
+            'custom_fields' => ['sometimes', 'array'],
         ]);
     }
 }

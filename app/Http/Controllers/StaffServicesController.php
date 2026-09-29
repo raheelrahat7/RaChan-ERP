@@ -18,15 +18,34 @@ class StaffServicesController extends Controller
         $manage = $staff->manages($org, $request->user());
         $ids = DB::table('hr_staff')->where('organization_id', $org->id)
             ->when(! $manage, fn ($query) => $query->where('user_id', $request->user()->id))->pluck('id');
+        $activity = DB::table('sessions')->select('user_id')->selectRaw('MAX(last_activity) AS last_active')->whereNotNull('user_id')->groupBy('user_id');
 
         return Inertia::render('hr/Index', [
-            'staff' => DB::table('hr_staff as staff')->join('users', 'users.id', '=', 'staff.user_id')
+            'staff' => DB::table('hr_staff as staff')->join('users', 'users.id', '=', 'staff.user_id')->leftJoinSub($activity, 'sessions', 'sessions.user_id', '=', 'staff.user_id')
                 ->where('staff.organization_id', $org->id)->whereIn('staff.id', $ids)
-                ->orderBy('users.name')->get(['staff.id', 'staff.user_id', 'users.name', 'staff.job_title', 'staff.hired_on', 'staff.status']),
+                ->orderBy('users.name')->get(['staff.id', 'staff.user_id', 'users.name', 'staff.job_title', 'staff.hired_on', 'staff.dismissed_on', 'staff.status', 'sessions.last_active']),
             'documents' => DB::table('hr_staff_documents')->where('organization_id', $org->id)->whereIn('staff_id', $ids)->orderBy('expires_on')->limit(100)->get(),
             'leaveRequests' => DB::table('hr_leave_requests')->where('organization_id', $org->id)->whereIn('staff_id', $ids)->orderByDesc('id')->limit(100)->get(),
             'members' => $manage ? $org->users()->orderBy('name')->get(['users.id', 'users.name']) : [],
             'canManage' => $manage,
+        ]);
+    }
+
+    public function show(Request $request, int $staff, ManageStaffServices $manage): Response
+    {
+        $org = $this->org($request);
+        $record = DB::table('hr_staff as staff')->join('users', 'users.id', '=', 'staff.user_id')
+            ->where('staff.organization_id', $org->id)->where('staff.id', $staff)
+            ->first(['staff.id', 'staff.user_id', 'users.name', 'users.email', 'staff.job_title', 'staff.hired_on', 'staff.dismissed_on', 'staff.dismissal_reason', 'staff.status']);
+        abort_unless($record !== null && ($manage->manages($org, $request->user()) || $record->user_id === $request->user()->id), 404);
+        $record->last_active = DB::table('sessions')->where('user_id', $record->user_id)->max('last_activity');
+
+        return Inertia::render('hr/Show', [
+            'staff' => $record,
+            'documents' => DB::table('hr_staff_documents')->where('organization_id', $org->id)->where('staff_id', $record->id)->orderBy('expires_on')->get(),
+            'leaveRequests' => DB::table('hr_leave_requests')->where('organization_id', $org->id)->where('staff_id', $record->id)->latest()->get(),
+            'canManage' => $manage->manages($org, $request->user()),
+            'canDismiss' => $manage->manages($org, $request->user()) && $record->status === 'active' && $record->user_id !== $request->user()->id,
         ]);
     }
 
@@ -36,6 +55,15 @@ class StaffServicesController extends Controller
         $manage->staff($org, $request->user(), $request->validate([
             'user_id' => ['required', 'integer'], 'job_title' => ['nullable', 'string', 'max:255'], 'hired_on' => ['nullable', 'date_format:Y-m-d'],
         ]));
+
+        return back();
+    }
+
+    public function dismiss(Request $request, int $staff, ManageStaffServices $manage): RedirectResponse
+    {
+        $org = $this->org($request);
+        $input = $request->validate(['dismissed_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'], 'reason' => ['required', 'string', 'max:2000']]);
+        $manage->dismiss($org, $request->user(), $staff, $input['dismissed_on'], $input['reason']);
 
         return back();
     }

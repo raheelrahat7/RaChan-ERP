@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Accounting\Actions\ManageLegacyJournalMapping;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Actions\RemoveOrganizationMember;
 use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -117,21 +116,14 @@ class OrganizationController extends Controller
         return back();
     }
 
-    public function removeMember(Request $request, User $member, RecordOrganizationAuditLog $audit, ManageLegacyJournalMapping $mappingApprovals): RedirectResponse
+    public function removeMember(Request $request, User $member, RemoveOrganizationMember $members): RedirectResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization && $organization->users()->whereKey($member)->exists(), 404);
         $this->authorize('manageMembers', $organization);
         abort_if($member->id === $request->user()->id, 422);
 
-        DB::transaction(function () use ($organization, $request, $member, $audit, $mappingApprovals): void {
-            $mappingApprovals->revokeForRemovedMember($organization, $request->user(), $member);
-            $organization->users()->detach($member);
-            DB::table('crm_team_memberships')->where('organization_id', $organization->id)->where('user_id', $member->id)->delete();
-            DB::table('crm_visibility_grants')->where('organization_id', $organization->id)->where('user_id', $member->id)->delete();
-            DB::table('crm_edit_grants')->where('organization_id', $organization->id)->where('user_id', $member->id)->delete();
-            $audit->handle($organization, $request->user(), 'organization.member.removed', $member);
-        });
+        $members->handle($organization, $request->user(), $member);
 
         return back();
     }

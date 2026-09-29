@@ -2,6 +2,8 @@
 
 namespace App\Domain\Crm\Queries;
 
+use App\Domain\Crm\Actions\ManageCustomFields;
+use App\Domain\Crm\Models\CustomFieldValue;
 use App\Domain\Crm\Models\Pipeline;
 use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Crm\Services\StageEntryRules;
@@ -19,7 +21,7 @@ class PipelineOverview
     }
 
     /**
-     * @param  array<string, int|null>  $filters
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
     public function leads(Organization $org, array $filters, ?User $actor = null): array
@@ -43,16 +45,25 @@ class PipelineOverview
         $query = CrmLead::where('organization_id', $org->id)->where('pipeline_id', $pipelineId)->when($assigneeId, fn ($q) => $q->where('assigned_to', $assigneeId));
         if ($actor) {
             $visibility->scope($query, $org, $actor);
+            app(LeadFilters::class)->apply($query, $org, $actor, $filters['filters'] ?? [], $filters['q'] ?? null);
         }
         $counts = (clone $query)->selectRaw('current_stage_id, count(*) as total')->groupBy('current_stage_id')->pluck('total', 'current_stage_id');
         $role = $actor?->organizations()->whereKey($org->id)->value('organization_user.role');
         $rules = app(StageEntryRules::class);
         $won = $pipeline->stages->first(fn ($stage) => $stage->active && $stage->type === 'won');
-        $leadRows = $query->when($stageId, fn ($q) => $q->where('current_stage_id', $stageId))->with(['assignee:id,name', 'listing:id,reference', 'stage', 'history.actor:id,name'])->latest()->get();
+        $query->when($stageId, fn ($q) => $q->where('current_stage_id', $stageId));
+        $total = (clone $query)->count();
+        $page = max(1, (int) ($filters['page'] ?? 1));
+        $leadRows = $query->with(['assignee:id,name', 'listing:id,reference', 'stage', 'history.actor:id,name'])->latest()->offset(($page - 1) * 50)->limit(50)->get();
+        $fields = $actor ? app(ManageCustomFields::class)->visible($org, $actor) : [];
+        $fieldIds = array_map(fn ($field) => $field->id, $fields);
+        $fieldKeys = collect($fields)->pluck('key', 'id');
+        $customValues = CustomFieldValue::where('organization_id', $org->id)
+            ->whereIn('lead_id', $leadRows->pluck('id'))->whereIn('field_id', $fieldIds)->get()->groupBy('lead_id');
         $leads = [];
         foreach ($leadRows as $lead) {
             $leads[] = [
-                ...$lead->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'source', 'status', 'notes', 'project_name', 'campaign_name', 'meta_form_id', 'meta_form_name', 'pipeline_id', 'current_stage_id', 'lost_reason_id'),
+                ...$lead->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'status', 'notes', 'project_name', 'campaign_name', 'meta_form_id', 'meta_form_name', 'pipeline_id', 'current_stage_id', 'lost_reason_id'),
                 'listing' => $lead->listing?->only('id', 'reference'),
                 'transitionOptions' => $pipeline->stages->map(function ($stage) use ($lead, $role, $pipeline, $rules) {
                     $reasons = [];
@@ -78,11 +89,12 @@ class PipelineOverview
                 'converted' => $lead->converted_at !== null,
                 'assigned_to' => $lead->assigned_to,
                 'assignee' => $lead->assignee?->only('id', 'name'),
+                'custom_fields' => collect($customValues->get($lead->id, []))->mapWithKeys(fn ($value) => [$fieldKeys[$value->field_id] => $value->value])->all(),
                 'stage' => $lead->stage?->only('id', 'name', 'type', 'color', 'active'),
                 'history' => $lead->history->map(fn ($history) => [...$history->only('id', 'changed_at', 'snapshot', 'notes'), 'actor' => $history->actor?->name]),
             ];
         }
 
-        return ['pipelines' => $pipelines, 'leads' => $leads, 'filters' => ['pipeline_id' => $pipelineId, 'stage_id' => $stageId, 'assignee_id' => $assigneeId], 'stageCounts' => $pipeline->stages->map(fn ($stage) => [...$stage->only('id', 'name', 'type', 'color', 'active'), 'count' => (int) ($counts[$stage->id] ?? 0)])];
+        return ['pipelines' => $pipelines, 'leads' => $leads, 'filters' => ['pipeline_id' => $pipelineId, 'stage_id' => $stageId, 'assignee_id' => $assigneeId, 'q' => $filters['q'] ?? '', 'filters' => $filters['filters'] ?? [], 'page' => $page], 'filteredTotal' => $total, 'stageCounts' => $pipeline->stages->map(fn ($stage) => [...$stage->only('id', 'name', 'type', 'color', 'active'), 'count' => (int) ($counts[$stage->id] ?? 0)])];
     }
 }

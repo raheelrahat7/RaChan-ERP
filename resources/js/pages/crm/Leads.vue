@@ -5,6 +5,7 @@ const { t } = useLocale();
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { reactive, computed, onMounted, ref } from 'vue';
 import CrmLeadDetailsEditor from '@/components/CrmLeadDetailsEditor.vue';
+import CustomLeadFields from '@/components/CustomLeadFields.vue';
 import CrmPipelineBoard from '@/components/CrmPipelineBoard.vue';
 import CrmLeadStageEditor from '@/components/CrmLeadStageEditor.vue';
 import CrmLeadTransfer from '@/components/CrmLeadTransfer.vue';
@@ -24,6 +25,7 @@ type Lead = {
     email: string | null;
     phone: string | null;
     company: string | null;
+    city: string | null;
     source: string | null;
     listing: { id: number; reference: string } | null;
     project_name: string | null;
@@ -52,6 +54,7 @@ type Lead = {
     }[];
     converted: boolean;
     assigned_to: number | null;
+    custom_fields: Record<string, string | number | boolean | string[] | null>;
     assignee: { id: number; name: string } | null;
 };
 type Activity = {
@@ -62,6 +65,19 @@ type Activity = {
     lead: Pick<Lead, 'id' | 'first_name' | 'last_name'> | null;
     creator: { id: number; name: string } | null;
 };
+type FilterClause = {
+    field: string;
+    operator: string;
+    value: string;
+    to?: string;
+};
+type FilterField = {
+    key: string;
+    label: string;
+    type: string;
+    group: string;
+    options: string[];
+};
 
 const props = defineProps<{
     pipelines: Pipeline[];
@@ -70,7 +86,12 @@ const props = defineProps<{
         pipeline_id: number;
         stage_id: number | null;
         assignee_id: number | null;
+        q: string;
+        filters: FilterClause[];
+        page: number;
     };
+    filterCatalog: FilterField[];
+    filteredTotal: number;
     canManagePipelines: boolean;
     canManageHierarchy: boolean;
     assigneeScoped: boolean;
@@ -79,6 +100,15 @@ const props = defineProps<{
     activities: Activity[];
     canManageCrm: boolean;
     members: { id: number; name: string }[];
+    customFields: {
+        id: number;
+        key: string;
+        name: string;
+        type: string;
+        options: string[] | null;
+        required: boolean;
+    }[];
+    editableCustomFieldKeys: string[];
     followUps: (Activity & { is_overdue: boolean })[];
 }>();
 
@@ -88,7 +118,55 @@ onMounted(() => {
     const saved = localStorage.getItem('crm-lead-view');
     if (saved === 'board' || saved === 'list') leadView.value = saved;
 });
-const filters = reactive({ ...props.filters });
+const filters = reactive({
+    ...props.filters,
+    filters: [...props.filters.filters],
+});
+const findField = ref('');
+const chosenField = ref('');
+const availableFilterFields = computed(() =>
+    props.filterCatalog.filter((field) =>
+        `${field.label} ${field.key}`
+            .toLowerCase()
+            .includes(findField.value.toLowerCase()),
+    ),
+);
+function filterMeta(key: string): FilterField | undefined {
+    return props.filterCatalog.find((field) => field.key === key);
+}
+function operators(type: string): { value: string; label: string }[] {
+    const shared = [
+        { value: 'equals', label: 'Equals' },
+        { value: 'not_equals', label: 'Not equal' },
+        { value: 'empty', label: 'Empty' },
+        { value: 'not_empty', label: 'Not empty' },
+    ];
+    if (['number', 'currency', 'date', 'datetime'].includes(type))
+        return [
+            ...shared,
+            { value: 'gte', label: 'At least / after' },
+            { value: 'lte', label: 'At most / before' },
+            { value: 'between', label: 'Between' },
+        ];
+    if (['text', 'long_text', 'email', 'phone', 'url'].includes(type))
+        return [...shared, { value: 'contains', label: 'Contains' }];
+    return shared;
+}
+function filterInputType(type: string): string {
+    if (['number', 'currency'].includes(type)) return 'number';
+    if (['date', 'datetime'].includes(type))
+        return type === 'datetime' ? 'datetime-local' : 'date';
+    return 'text';
+}
+function addFilter(): void {
+    if (!chosenField.value || !filterMeta(chosenField.value)) return;
+    filters.filters.push({
+        field: chosenField.value,
+        operator: 'equals',
+        value: '',
+    });
+    chosenField.value = '';
+}
 const appliedPipeline = computed(() =>
     props.pipelines.find(
         (pipeline) => pipeline.id === props.filters.pipeline_id,
@@ -101,7 +179,20 @@ const selectedPipeline = computed(() =>
 );
 function filterLeads(resetStage = false): void {
     if (resetStage) filters.stage_id = null;
+    filters.page = 1;
     router.get('/crm/leads', { ...filters }, { preserveScroll: true });
+}
+function changePage(page: number): void {
+    router.get(
+        '/crm/leads',
+        { ...props.filters, page },
+        { preserveScroll: true },
+    );
+}
+function clearFilters(): void {
+    filters.q = '';
+    filters.filters = [];
+    filterLeads();
 }
 const form = useForm({
     pipeline_id:
@@ -111,12 +202,17 @@ const form = useForm({
     email: '',
     phone: '',
     company: '',
+    city: '',
     source: '',
     project_name: '',
     campaign_name: '',
     meta_form_id: '',
     meta_form_name: '',
     notes: '',
+    custom_fields: {} as Record<
+        string,
+        string | number | boolean | string[] | null
+    >,
 });
 const activityForm = useForm({
     lead_id: '',
@@ -203,8 +299,26 @@ function switchLeadView(view: 'board' | 'list'): void {
             class="text-sm underline"
             >Manage CRM pipelines</Link
         >
+        <Link
+            v-if="canManageHierarchy"
+            href="/crm/custom-fields"
+            class="text-sm underline"
+            >CRM field settings</Link
+        >
+        <Link
+            v-if="canManageHierarchy"
+            href="/crm/automation"
+            class="text-sm underline"
+            >Automation rules</Link
+        >
         <Link href="/crm/assignment" class="text-sm underline"
             >Assignment routing and check-in</Link
+        >
+        <Link
+            v-if="canManageCrm"
+            href="/crm/leads/import"
+            class="text-sm underline"
+            >Import leads</Link
         >
         <div
             class="flex flex-wrap items-center gap-2"
@@ -236,6 +350,16 @@ function switchLeadView(view: 'board' | 'list'): void {
                     class="flex flex-wrap items-end gap-3"
                     @submit.prevent="filterLeads()"
                 >
+                    <div class="min-w-48 flex-1">
+                        <Label for="lead-search"
+                            >Search leads and permitted fields</Label
+                        ><Input
+                            id="lead-search"
+                            v-model="filters.q"
+                            type="search"
+                            placeholder="Name, contact, source or custom value"
+                        />
+                    </div>
                     <div>
                         <Label for="filter-pipeline">Pipeline</Label
                         ><select
@@ -299,6 +423,180 @@ function switchLeadView(view: 'board' | 'list'): void {
                     </p>
                     <Button>{{ t('Apply filters') }}</Button>
                 </form>
+                <details class="rounded-md border p-3">
+                    <summary class="cursor-pointer font-medium">
+                        Filter field settings
+                    </summary>
+                    <div class="mt-3 space-y-3">
+                        <Label for="find-filter-field">Find field</Label>
+                        <Input
+                            id="find-filter-field"
+                            v-model="findField"
+                            type="search"
+                            placeholder="Find field"
+                        />
+                        <div class="flex flex-wrap gap-2">
+                            <select
+                                v-model="chosenField"
+                                aria-label="Filter field"
+                                class="border-input bg-background h-9 min-w-48 rounded-md border px-3"
+                            >
+                                <option value="">Choose a field</option>
+                                <optgroup
+                                    v-for="group in ['Lead', 'Activity']"
+                                    :key="group"
+                                    :label="group"
+                                >
+                                    <option
+                                        v-for="field in availableFilterFields.filter(
+                                            (item) => item.group === group,
+                                        )"
+                                        :key="field.key"
+                                        :value="field.key"
+                                    >
+                                        {{ field.label }}
+                                    </option>
+                                </optgroup>
+                            </select>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                @click="addFilter"
+                                >Add field</Button
+                            >
+                        </div>
+                        <div
+                            v-for="(clause, index) in filters.filters"
+                            :key="`${clause.field}-${index}`"
+                            class="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]"
+                        >
+                            <span class="self-center text-sm font-medium">{{
+                                filterMeta(clause.field)?.label
+                            }}</span>
+                            <select
+                                v-model="clause.operator"
+                                :aria-label="`Operator for ${filterMeta(clause.field)?.label}`"
+                                class="border-input bg-background h-9 rounded-md border px-2"
+                            >
+                                <option
+                                    v-for="operator in operators(
+                                        filterMeta(clause.field)?.type ??
+                                            'text',
+                                    )"
+                                    :key="operator.value"
+                                    :value="operator.value"
+                                >
+                                    {{ operator.label }}
+                                </option>
+                            </select>
+                            <template
+                                v-if="
+                                    !['empty', 'not_empty'].includes(
+                                        clause.operator,
+                                    )
+                                "
+                            >
+                                <select
+                                    v-if="
+                                        filterMeta(clause.field)?.type ===
+                                        'user'
+                                    "
+                                    v-model="clause.value"
+                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
+                                    class="border-input bg-background h-9 rounded-md border px-2"
+                                >
+                                    <option value="">Select member</option>
+                                    <option
+                                        v-for="member in members"
+                                        :key="member.id"
+                                        :value="String(member.id)"
+                                    >
+                                        {{ member.name }}
+                                    </option>
+                                </select>
+                                <select
+                                    v-else-if="
+                                        filterMeta(clause.field)?.options
+                                            .length ||
+                                        filterMeta(clause.field)?.type ===
+                                            'checkbox'
+                                    "
+                                    v-model="clause.value"
+                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
+                                    class="border-input bg-background h-9 rounded-md border px-2"
+                                >
+                                    <option value="">Select value</option>
+                                    <option
+                                        v-for="option in filterMeta(
+                                            clause.field,
+                                        )?.type === 'checkbox'
+                                            ? ['true', 'false']
+                                            : filterMeta(clause.field)?.options"
+                                        :key="option"
+                                        :value="option"
+                                    >
+                                        {{ option }}
+                                    </option>
+                                </select>
+                                <Input
+                                    v-else
+                                    v-model="clause.value"
+                                    :type="
+                                        filterInputType(
+                                            filterMeta(clause.field)?.type ??
+                                                'text',
+                                        )
+                                    "
+                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
+                                />
+                                <Input
+                                    v-if="clause.operator === 'between'"
+                                    v-model="clause.to"
+                                    :type="
+                                        filterInputType(
+                                            filterMeta(clause.field)?.type ??
+                                                'text',
+                                        )
+                                    "
+                                    aria-label="Range end"
+                                />
+                            </template>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                @click="filters.filters.splice(index, 1)"
+                                >Remove</Button
+                            >
+                        </div>
+                        <div class="flex gap-2">
+                            <Button type="button" @click="filterLeads()"
+                                >Apply filters</Button
+                            ><Button
+                                type="button"
+                                variant="outline"
+                                @click="clearFilters"
+                                >Clear</Button
+                            >
+                        </div>
+                    </div>
+                </details>
+                <div
+                    v-if="props.filters.q || props.filters.filters.length"
+                    class="flex flex-wrap gap-2"
+                    aria-label="Active filters"
+                >
+                    <Badge v-if="props.filters.q" variant="secondary"
+                        >Search: {{ props.filters.q }}</Badge
+                    >
+                    <Badge
+                        v-for="(clause, index) in props.filters.filters"
+                        :key="index"
+                        variant="secondary"
+                        >{{ filterMeta(clause.field)?.label }} ·
+                        {{ clause.operator }} {{ clause.value }}</Badge
+                    >
+                </div>
                 <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
                     <div
                         v-for="stage in stageCounts"
@@ -370,6 +668,10 @@ function switchLeadView(view: 'board' | 'list'): void {
                         ><Input id="company" v-model="form.company" />
                     </div>
                     <div class="space-y-2">
+                        <Label for="city">City</Label
+                        ><Input id="city" v-model="form.city" />
+                    </div>
+                    <div class="space-y-2">
                         <Label for="source">Source</Label
                         ><Input
                             id="source"
@@ -406,6 +708,16 @@ function switchLeadView(view: 'board' | 'list'): void {
                             :message="error"
                         />
                     </div>
+                    <CustomLeadFields
+                        v-model="form.custom_fields"
+                        :fields="
+                            customFields.filter((field) =>
+                                editableCustomFieldKeys.includes(field.key),
+                            )
+                        "
+                        :members="members"
+                        prefix="new-lead"
+                    />
                     <div class="space-y-2">
                         <Label for="lead-notes">{{ t('Notes') }}</Label
                         ><Input
@@ -512,7 +824,7 @@ function switchLeadView(view: 'board' | 'list'): void {
         <div id="crm-lead-results" class="scroll-mt-4">
             <p class="mb-3 text-sm font-medium">
                 {{ leadView === 'board' ? 'Kanban board' : 'Lead list' }} ·
-                {{ leads.length }} shown
+                {{ leads.length }} of {{ filteredTotal }} shown
             </p>
             <CrmPipelineBoard
                 v-if="leadView === 'board' && appliedPipeline"
@@ -544,7 +856,12 @@ function switchLeadView(view: 'board' | 'list'): void {
                     >
                         <div class="min-w-48 flex-1">
                             <p class="font-medium">
-                                {{ lead.first_name }} {{ lead.last_name }}
+                                <Link
+                                    :href="`/crm/leads/${lead.id}`"
+                                    class="hover:underline"
+                                    >{{ lead.first_name }}
+                                    {{ lead.last_name }}</Link
+                                >
                             </p>
                             <p class="text-muted-foreground text-sm">
                                 {{
@@ -612,7 +929,17 @@ function switchLeadView(view: 'board' | 'list'): void {
                             <summary class="cursor-pointer text-sm">
                                 Edit lead details
                             </summary>
-                            <CrmLeadDetailsEditor :lead="lead" />
+                            <CrmLeadDetailsEditor
+                                :lead="lead"
+                                :custom-fields="
+                                    customFields.filter((field) =>
+                                        editableCustomFieldKeys.includes(
+                                            field.key,
+                                        ),
+                                    )
+                                "
+                                :members="members"
+                            />
                         </details>
                         <CrmLeadStageEditor
                             v-if="canManageCrm && !lead.converted"
@@ -685,6 +1012,25 @@ function switchLeadView(view: 'board' | 'list'): void {
                     </div>
                 </CardContent>
             </Card>
+        </div>
+        <div
+            v-if="filteredTotal > 50"
+            class="flex items-center justify-end gap-3"
+        >
+            <Button
+                variant="outline"
+                :disabled="props.filters.page <= 1"
+                @click="changePage(props.filters.page - 1)"
+                >Previous</Button
+            ><span class="text-sm"
+                >Page {{ props.filters.page }} of
+                {{ Math.ceil(filteredTotal / 50) }}</span
+            ><Button
+                variant="outline"
+                :disabled="props.filters.page * 50 >= filteredTotal"
+                @click="changePage(props.filters.page + 1)"
+                >Next</Button
+            >
         </div>
 
         <Card v-if="activities.length"

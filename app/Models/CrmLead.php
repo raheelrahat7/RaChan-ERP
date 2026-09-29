@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['pipeline_id', 'current_stage_id', 'lost_reason_id', 'stage_changed_at', 'organization_id', 'listing_id', 'assigned_to', 'first_name', 'last_name', 'email', 'phone', 'company', 'source', 'status', 'notes', 'project_name', 'campaign_name', 'meta_form_id', 'meta_form_name', 'meta_page_id', 'meta_lead_id', 'converted_at', 'converted_contact_id', 'converted_account_id'])]
+#[Fillable(['pipeline_id', 'current_stage_id', 'lost_reason_id', 'stage_changed_at', 'organization_id', 'listing_id', 'assigned_to', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'status', 'notes', 'project_name', 'campaign_name', 'meta_form_id', 'meta_form_name', 'meta_page_id', 'meta_lead_id', 'converted_at', 'converted_contact_id', 'converted_account_id'])]
 class CrmLead extends Model
 {
     /** @return BelongsTo<Listing, $this> */

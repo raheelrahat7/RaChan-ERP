@@ -59,4 +59,19 @@ class StaffServicesTest extends TestCase
         $this->actingAs($viewer)->post(route('hr.documents.store', $staff->id), ['type' => 'visa', 'expires_on' => now()->addMonth()->toDateString()])->assertForbidden();
         $this->assertDatabaseCount('hr_staff_documents', 0);
     }
+
+    public function test_owner_can_dismiss_from_staff_profile_and_revoke_membership(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $employee = $this->member($org, OrganizationRole::Viewer);
+        $this->actingAs($owner)->post(route('hr.staff.store'), ['user_id' => $employee->id, 'hired_on' => today()->subMonth()->toDateString()])->assertRedirect();
+        $staff = DB::table('hr_staff')->sole();
+        $this->get(route('hr.staff.show', $staff->id))->assertInertia(fn (Assert $page) => $page->where('staff.user_id', $employee->id)->where('canDismiss', true)->etc());
+        $this->actingAs($employee)->post(route('hr.staff.dismiss', $staff->id), ['dismissed_on' => today()->toDateString(), 'reason' => 'Role ended'])->assertForbidden();
+        $this->actingAs($owner)->post(route('hr.staff.dismiss', $staff->id), ['dismissed_on' => today()->toDateString(), 'reason' => 'Role ended'])->assertRedirect();
+        $this->assertDatabaseHas('hr_staff', ['id' => $staff->id, 'status' => 'dismissed', 'dismissal_reason' => 'Role ended']);
+        $this->assertFalse($org->users()->whereKey($employee->id)->exists());
+        $this->actingAs($employee)->get(route('hr.staff.show', $staff->id))->assertNotFound();
+    }
 }

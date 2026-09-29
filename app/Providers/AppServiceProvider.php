@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Crm\Events\LeadStageChanged;
 use App\Domain\Crm\Listeners\CreateStageEntryFollowUp;
 use App\Domain\Crm\Listeners\DeliverStageEntryNotification;
+use App\Domain\Crm\Listeners\RunAutomationRules;
 use App\Domain\Crm\Observers\LeadPipelineObserver;
 use App\Domain\Crm\Observers\OrganizationPipelineObserver;
 use App\Models\CrmLead;
@@ -36,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         CrmLead::observe(LeadPipelineObserver::class);
         Event::listen(LeadStageChanged::class, DeliverStageEntryNotification::class);
         Event::listen(LeadStageChanged::class, CreateStageEntryFollowUp::class);
+        Event::listen(LeadStageChanged::class, RunAutomationRules::class);
     }
 
     /**

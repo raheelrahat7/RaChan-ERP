@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 
 class ManageLeadPipeline
 {
-    public function __construct(private RecordOrganizationAuditLog $audit, private StageEntryRules $rules, private LeadVisibility $visibility, private AssignLeadOnStageEntry $autoAssign) {}
+    public function __construct(private RecordOrganizationAuditLog $audit, private StageEntryRules $rules, private LeadVisibility $visibility, private AssignLeadOnStageEntry $autoAssign, private ManageCustomFields $fields) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -30,12 +30,15 @@ class ManageLeadPipeline
     {
         return DB::transaction(function () use ($org, $actor, $data): CrmLead {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
+            $custom = $data['custom_fields'] ?? [];
+            unset($data['custom_fields']);
             if ($this->visibility->restricted($org, $actor)) {
                 $data['assigned_to'] = $actor->id;
             }
             $lead = $org->leads()->create($data);
             $this->rules->enforce($lead, $lead->stage, $this->role($org, $actor), false);
             $this->autoAssign->handle($org, $lead, $lead->stage);
+            $this->fields->writeValues($org, $actor, $lead, $custom, true);
             $this->record($org, $actor, $lead, null, $lead->stage, null, 'Lead created.');
             $this->audit->handle($org, $actor, 'crm.lead.created', $lead);
 
@@ -201,9 +204,13 @@ class ManageLeadPipeline
             if ($lead->converted_at) {
                 $this->fail('first_name', 'Converted lead details cannot be changed.');
             }
+            $custom = $data['custom_fields'] ?? [];
+            unset($data['custom_fields']);
             $before = $lead->only(array_keys($data));
             $lead->update($data);
-            $this->audit->handle($org, $actor, 'crm.lead.details_updated', $lead, ['before' => $before, 'after' => $data]);
+            $this->fields->writeValues($org, $actor, $lead, $custom, false);
+            $changed = array_keys(array_filter($data, fn ($value, $key) => $before[$key] !== $value, ARRAY_FILTER_USE_BOTH));
+            $this->audit->handle($org, $actor, 'crm.lead.details_updated', $lead, ['changed_fields' => $changed]);
         });
     }
 

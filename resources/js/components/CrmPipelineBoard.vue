@@ -3,6 +3,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { computed, ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import CrmLeadStageEditor from '@/components/CrmLeadStageEditor.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -209,7 +210,11 @@ function restoreFocus(event: Event): void {
                     @dragend="endDrag"
                 >
                     <h4 class="font-medium">
-                        {{ lead.first_name }} {{ lead.last_name }}
+                        <Link
+                            :href="`/crm/leads/${lead.id}`"
+                            class="hover:underline"
+                            >{{ lead.first_name }} {{ lead.last_name }}</Link
+                        >
                     </h4>
                     <p class="text-muted-foreground text-sm break-words">
                         {{
