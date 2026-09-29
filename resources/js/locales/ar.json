@@ -996,5 +996,10 @@
     "Ends on": "تاريخ الانتهاء",
     "Submit": "إرسال",
     "Approve leave": "الموافقة على الإجازة",
-    "Reject leave": "رفض الإجازة"
+    "Reject leave": "رفض الإجازة",
+    "Every report you have access to, in one place.": "كل التقارير التي يمكنك الوصول إليها في مكان واحد.",
+    "You don't have access to any reports yet.": "ليس لديك صلاحية الوصول إلى أي تقارير بعد.",
+    "CRM pipeline": "مسار العملاء المحتملين",
+    "Property profitability": "ربحية العقارات",
+    "Operating budgets": "الميزانيات التشغيلية"
 }
