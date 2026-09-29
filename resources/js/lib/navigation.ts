@@ -412,7 +412,12 @@ export const NAVIGATION: NavGroup[] = [
             { label: 'Report Centre', href: '/reports', icon: 'reportCentre' },
             soon('GAIM Compliance', 'gaim'),
             soon('Bulletins', 'bulletins'),
-            soon('Lead Gateway', 'leadGateway'),
+            {
+                label: 'Lead Gateway',
+                href: '/crm/lead-gateway',
+                icon: 'leadGateway',
+                ability: 'crm',
+            },
             {
                 label: 'Follow-up Automation',
                 href: '/crm/assignment#follow-up',

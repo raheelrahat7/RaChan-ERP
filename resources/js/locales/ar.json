@@ -1001,5 +1001,13 @@
     "You don't have access to any reports yet.": "ليس لديك صلاحية الوصول إلى أي تقارير بعد.",
     "CRM pipeline": "مسار العملاء المحتملين",
     "Property profitability": "ربحية العقارات",
-    "Operating budgets": "الميزانيات التشغيلية"
+    "Operating budgets": "الميزانيات التشغيلية",
+    "Where your leads are coming from, and which channels are connected.": "من أين يأتي عملاؤك المحتملون، وما القنوات المتصلة.",
+    "Lead sources": "مصادر العملاء المحتملين",
+    "No leads recorded yet.": "لا يوجد عملاء محتملون مسجلون بعد.",
+    "Connected Meta pages": "صفحات ميتا المتصلة",
+    "Manage in Broker Allocation": "إدارة من توزيع الوسطاء",
+    "Meta page ID": "معرّف صفحة ميتا",
+    "Subscribed": "مشترك",
+    "No Meta pages connected yet.": "لا توجد صفحات ميتا متصلة بعد."
 }
