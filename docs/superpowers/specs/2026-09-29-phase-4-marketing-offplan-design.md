@@ -8,10 +8,10 @@
 
 - `Off-Plan Projects`: `soon('Off-Plan Projects', 'offPlan', 'listings')` → `{ label: 'Off-Plan Projects', href: '/real-estate/off-plan', icon: 'offPlan', ability: 'listings' }`
 - The Marketing group's five `soon()` placeholders collapse to three real links, matching what Codex actually built (no `marketing` ability key exists — matches the pattern already used for Approvals/Tasks):
-  - `{ label: 'Marketing & Portals', href: '/marketing/portals', icon: 'marketing' }`
-  - `{ label: 'Portal Subscriptions', href: '/marketing/subscriptions', icon: 'portalSubscriptions' }`
-  - `{ label: 'Listing Costing', href: '/marketing/costing', icon: 'costing' }`
-  - `Portal Listings` and `Portal Invoicing` are dropped — they were placeholder labels for concepts that turned out to live inside the Portal and Subscriptions pages, not separate routes. Their icon keys (`portalListings`, `portalInvoicing`) and the now-unused `RelatedType`/nav union members stay in `nav-icons.ts`/`navigation.ts`'s type union harmlessly (removing them isn't required for correctness and risks an unrelated diff); the plan will only touch the `soon(...)` call sites.
+    - `{ label: 'Marketing & Portals', href: '/marketing/portals', icon: 'marketing' }`
+    - `{ label: 'Portal Subscriptions', href: '/marketing/subscriptions', icon: 'portalSubscriptions' }`
+    - `{ label: 'Listing Costing', href: '/marketing/costing', icon: 'costing' }`
+    - `Portal Listings` and `Portal Invoicing` are dropped — they were placeholder labels for concepts that turned out to live inside the Portal and Subscriptions pages, not separate routes. Their icon keys (`portalListings`, `portalInvoicing`) and the now-unused `RelatedType`/nav union members stay in `nav-icons.ts`/`navigation.ts`'s type union harmlessly (removing them isn't required for correctness and risks an unrelated diff); the plan will only touch the `soon(...)` call sites.
 - `Secondary Market` unchanged (`soon`).
 
 ## Data contracts (read from controllers/actions/migrations directly)
@@ -19,51 +19,111 @@
 ```ts
 // Off-Plan
 type OffPlanProject = {
-    id: number; developer_id: number; developer_name: string; cost_centre_id: number | null;
-    code: string; name: string; emirate: string; location: string | null;
-    completion_on: string | null; commission_rate: string; status: 'active' | string;
+    id: number;
+    developer_id: number;
+    developer_name: string;
+    cost_centre_id: number | null;
+    code: string;
+    name: string;
+    emirate: string;
+    location: string | null;
+    completion_on: string | null;
+    commission_rate: string;
+    status: 'active' | string;
 };
 type OffPlanUnit = {
-    id: number; project_id: number; number: string; type: string | null;
-    area_sqft: string | null; price_aed: string; status: 'available' | 'reserved' | 'sold';
+    id: number;
+    project_id: number;
+    number: string;
+    type: string | null;
+    area_sqft: string | null;
+    price_aed: string;
+    status: 'available' | 'reserved' | 'sold';
 };
-type OffPlanMilestone = { id: number; sequence: number; label: string; percentage: string; due_on: string | null };
+type OffPlanMilestone = {
+    id: number;
+    sequence: number;
+    label: string;
+    percentage: string;
+    due_on: string | null;
+};
 type OffPlanDeal = {
-    id: number; unit_id: number; lead_id: number; reference: string; price_aed: string;
-    status: 'enquiry' | 'reserved' | 'contracted' | 'cancelled'; contracted_on: string | null; notes: string | null;
+    id: number;
+    unit_id: number;
+    lead_id: number;
+    reference: string;
+    price_aed: string;
+    status: 'enquiry' | 'reserved' | 'contracted' | 'cancelled';
+    contracted_on: string | null;
+    notes: string | null;
 };
 // index props: { projects: Paginated<OffPlanProject>, developers: { id: number; name: string }[], canManage: boolean }
 // show props: { project: OffPlanProject, units: Paginated<OffPlanUnit>, milestones: OffPlanMilestone[], deals: OffPlanDeal[], canManage: boolean }
 
 // Marketing
 type Campaign = {
-    id: number; name: string; type: string; budget_aed: string;
-    starts_on: string | null; ends_on: string | null; status: 'draft' | string;
+    id: number;
+    name: string;
+    type: string;
+    budget_aed: string;
+    starts_on: string | null;
+    ends_on: string | null;
+    status: 'draft' | string;
 };
 type Publication = {
-    id: number; listing_id: number; campaign_id: number | null; portal: 'bayut' | 'property_finder' | 'dubizzle';
-    status: 'local_validated' | string; validated_at: string;
+    id: number;
+    listing_id: number;
+    campaign_id: number | null;
+    portal: 'bayut' | 'property_finder' | 'dubizzle';
+    status: 'local_validated' | string;
+    validated_at: string;
 };
 // marketing/Portal props: { campaigns: Paginated<Campaign>, publications: Publication[], canManage: boolean, providerSelected: boolean }
 
 type Subscription = {
-    id: number; portal: 'bayut' | 'property_finder' | 'dubizzle'; package: string;
-    contract_value_aed: string; billing_cycle: 'monthly' | 'quarterly' | 'annual';
-    credits_total: number; credits_used: number; starts_on: string; renews_on: string | null;
+    id: number;
+    portal: 'bayut' | 'property_finder' | 'dubizzle';
+    package: string;
+    contract_value_aed: string;
+    billing_cycle: 'monthly' | 'quarterly' | 'annual';
+    credits_total: number;
+    credits_used: number;
+    starts_on: string;
+    renews_on: string | null;
     status: 'active' | string;
 };
-type SubscriptionBill = { id: number; subscription_id: number; vendor_bill_id: number; period_from: string; period_to: string };
+type SubscriptionBill = {
+    id: number;
+    subscription_id: number;
+    vendor_bill_id: number;
+    period_from: string;
+    period_to: string;
+};
 // marketing/Subscriptions props: { subscriptions: Paginated<Subscription>, bills: SubscriptionBill[], canManage: boolean, canLinkBill: boolean }
 
 type PortalCost = {
-    portal: 'bayut' | 'property_finder' | 'dubizzle'; published_listings: number; local_validated_listings: number;
-    total_leads: number; actual_spend_aed: number; estimated_spend_aed: number;
-    cost_per_listing: number | null; cost_per_lead: number | null; cost_per_deal: null; roi: null;
+    portal: 'bayut' | 'property_finder' | 'dubizzle';
+    published_listings: number;
+    local_validated_listings: number;
+    total_leads: number;
+    actual_spend_aed: number;
+    estimated_spend_aed: number;
+    cost_per_listing: number | null;
+    cost_per_lead: number | null;
+    cost_per_deal: null;
+    roi: null;
 };
 type ListingSpend = {
-    id: number; listing_id: number; publication_id: number | null; campaign_id: number | null; vendor_bill_id: number | null;
-    channel: 'bayut' | 'property_finder' | 'dubizzle' | 'other'; source: 'estimate' | 'bill_linked';
-    amount_aed: string; incurred_on: string; reason: string;
+    id: number;
+    listing_id: number;
+    publication_id: number | null;
+    campaign_id: number | null;
+    vendor_bill_id: number | null;
+    channel: 'bayut' | 'property_finder' | 'dubizzle' | 'other';
+    source: 'estimate' | 'bill_linked';
+    amount_aed: string;
+    incurred_on: string;
+    reason: string;
 };
 // marketing/Costing props: { portals: PortalCost[], spend: Paginated<ListingSpend>, canManage: boolean }
 ```
