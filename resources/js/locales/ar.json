@@ -851,5 +851,15 @@
     "Deals and commission show only to owners without a restricted view.": "تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم.",
     "Enquiry": "استفسار",
     "Local validated": "تحقق محلي",
-    "Contracted": "متعاقد"
+    "Contracted": "متعاقد",
+    "New project": "مشروع جديد",
+    "No off-plan projects yet.": "لا توجد مشاريع على الخارطة بعد.",
+    "Code": "الرمز",
+    "Project": "المشروع",
+    "Developer": "المطوّر",
+    "Emirate": "الإمارة",
+    "Cost centre ID": "معرّف مركز التكلفة",
+    "Completion date": "تاريخ الإنجاز",
+    "Commission rate %": "نسبة العمولة %",
+    "Create project": "إنشاء مشروع"
 }
