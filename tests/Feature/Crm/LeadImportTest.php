@@ -131,6 +131,9 @@ class LeadImportTest extends TestCase
         $activityCsv = $this->get(route('crm.leads.export.activities'))->assertOk()->streamedContent();
         $this->assertStringContainsString('Own comment', $activityCsv);
         $this->assertStringNotContainsString('Private comment', $activityCsv);
+        $this->get(route('crm.leads.export.activities', ['lead_id' => $foreignLead->id]))->assertNotFound();
+        $this->assertStringContainsString('Own comment', $this->get(route('crm.leads.export.activities', ['lead_id' => $ownLead->id]))->assertOk()->streamedContent());
+        $this->assertStringContainsString('Private comment', $this->actingAs($owner)->get(route('crm.leads.export.activities', ['lead_id' => $foreignLead->id]))->assertOk()->streamedContent());
         $this->actingAs($owner)->put(route('crm.leads.export.grants'), ['user_id' => $agent->id, 'allowed' => false])->assertRedirect();
         $this->actingAs($agent)->get(route('crm.leads.export.activities'))->assertForbidden();
     }

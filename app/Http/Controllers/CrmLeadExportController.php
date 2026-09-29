@@ -41,8 +41,9 @@ class CrmLeadExportController extends Controller
     {
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
+        $data = $request->validate(['lead_id' => ['sometimes', 'integer', 'min:1']]);
 
-        return $exports->downloadActivities($org, $request->user());
+        return $exports->downloadActivities($org, $request->user(), $data['lead_id'] ?? null);
     }
 
     public function grant(Request $request, ManageLeadExportGrants $grants): RedirectResponse

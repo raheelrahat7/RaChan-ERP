@@ -48,9 +48,9 @@ function setGrant(userId: number, allowed: boolean): void {
             ><CardContent class="space-y-6">
                 <p class="text-muted-foreground text-sm">
                     Only selected columns are included. Phone numbers, email
-                    addresses, lead notes, and activity notes are off by
-                    default. Chat messages are unavailable because this CRM does
-                    not store them.
+                    addresses, lead notes, and lead activity comments are off by
+                    default. To export the full activity and comment history,
+                    use the separate download below.
                 </p>
                 <section v-for="group in groups" :key="group">
                     <h2 class="mb-3 font-medium">{{ group }}</h2>

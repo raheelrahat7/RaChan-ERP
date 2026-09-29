@@ -57,7 +57,7 @@ class CrmLeadController extends Controller
         return back();
     }
 
-    public function show(Request $request, CrmLead $lead, LeadVisibility $visibility, ManageCustomFields $fields, LeadTimeline $timeline): Response
+    public function show(Request $request, CrmLead $lead, LeadVisibility $visibility, ManageCustomFields $fields, LeadTimeline $timeline, ExportLeads $exports): Response
     {
         $org = $this->currentOrganization($request);
         $this->authorize('viewCrm', $org);
@@ -70,6 +70,7 @@ class CrmLeadController extends Controller
             'lead' => $lead->load(['stage', 'assignee:id,name'])->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'notes', 'status', 'stage', 'assignee', 'created_at', 'updated_at'),
             'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'value' => $values->get($field->id)?->value], $visible),
             'timeline' => $timeline->for($org, $request->user(), $lead),
+            'canExportActivities' => $exports->canExport($org, $request->user()),
             'activities' => $lead->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest()->limit(50)->get(['id', 'organization_id', 'subject_type', 'subject_id', 'created_by', 'type', 'notes', 'due_at', 'completed_at', 'created_at']),
         ]);
     }

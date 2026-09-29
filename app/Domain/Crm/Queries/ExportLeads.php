@@ -112,12 +112,17 @@ class ExportLeads
         }, 'crm-leads-'.now()->format('Y-m-d-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    public function downloadActivities(Organization $org, User $actor): StreamedResponse
+    public function downloadActivities(Organization $org, User $actor, ?int $leadId = null): StreamedResponse
     {
         $this->authorize($org, $actor);
-        $this->audit->handle($org, $actor, 'crm.lead_activities.exported', $org);
+        if ($leadId !== null) {
+            $visibleLead = $this->visibility->scope(CrmLead::where('organization_id', $org->id), $org, $actor)
+                ->whereKey($leadId)->exists();
+            abort_unless($visibleLead, 404);
+        }
+        $this->audit->handle($org, $actor, 'crm.lead_activities.exported', $org, ['lead_id' => $leadId]);
 
-        return response()->streamDownload(function () use ($org, $actor): void {
+        return response()->streamDownload(function () use ($org, $actor, $leadId): void {
             $output = fopen('php://output', 'w');
             if ($output === false) {
                 throw new \RuntimeException('Could not open export stream.');
@@ -125,7 +130,8 @@ class ExportLeads
             $this->writeRow($output, ['Lead ID', 'Lead name', 'Activity type', 'Comment', 'Created by', 'Created at', 'Due at', 'Completed at']);
             $leads = $this->visibility->scope(CrmLead::where('organization_id', $org->id), $org, $actor)->select('id');
             CrmActivity::where('organization_id', $org->id)->where('subject_type', CrmLead::class)
-                ->whereIn('subject_id', $leads)->with(['subject:id,first_name,last_name', 'creator:id,name'])
+                ->whereIn('subject_id', $leads)->when($leadId !== null, fn ($query) => $query->where('subject_id', $leadId))
+                ->with(['subject:id,first_name,last_name', 'creator:id,name'])
                 ->orderBy('id')->chunkById(200, function ($activities) use ($output): void {
                     foreach ($activities as $activity) {
                         $lead = $activity->subject;

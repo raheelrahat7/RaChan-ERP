@@ -48,6 +48,7 @@ const props = defineProps<{
     customFields: Field[];
     timeline: Entry[];
     activities: Activity[];
+    canExportActivities: boolean;
 }>();
 const tab = ref<'details' | 'activities' | 'history'>('details');
 function display(value: Field['value']): string {
@@ -137,7 +138,15 @@ function display(value: Field['value']): string {
             >
         </div>
         <Card v-if="tab === 'activities'"
-            ><CardHeader><CardTitle>Activities</CardTitle></CardHeader
+            ><CardHeader
+                class="flex flex-row items-center justify-between gap-3"
+                ><CardTitle>Activities and comments</CardTitle
+                ><a
+                    v-if="canExportActivities"
+                    :href="`/crm/leads/export/activities?lead_id=${lead.id}`"
+                    class="text-sm underline"
+                    >Download this lead</a
+                ></CardHeader
             ><CardContent class="space-y-3"
                 ><p
                     v-if="!activities.length"
