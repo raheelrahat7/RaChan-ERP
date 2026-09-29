@@ -83,6 +83,8 @@ class ImportLeads
             'mapping' => ['required', 'array'], 'mapping.*' => ['nullable', 'string', 'max:100'],
             'duplicate_mode' => ['required', 'in:skip,allow'],
             'pipeline_id' => ['required', 'integer'],
+            'required_targets' => ['sometimes', 'array', 'max:100'],
+            'required_targets.*' => ['string', 'max:100', 'distinct'],
         ])->validate();
         $mapping = array_filter($data['mapping'], fn ($target) => $target !== null && $target !== '');
         if (count($mapping) !== count(array_unique($mapping)) || array_diff(array_keys($mapping), $batch->headers) || array_diff(array_values($mapping), $this->targets($org, $actor))) {
@@ -91,9 +93,14 @@ class ImportLeads
         if ((! in_array('first_name', $mapping, true) || ! in_array('last_name', $mapping, true)) && ! in_array('full_name', $mapping, true)) {
             throw ValidationException::withMessages(['mapping' => 'Map first and last names, or a full-name column.']);
         }
+        $requiredTargets = $data['required_targets'] ?? [];
+        if (array_diff($requiredTargets, array_values($mapping))) {
+            throw ValidationException::withMessages(['required_targets' => 'Required import fields must be mapped to a source column.']);
+        }
         $pipeline = Pipeline::where('organization_id', $org->id)->where('active', true)->findOrFail((int) $data['pipeline_id']);
+        $customFields = collect($this->fields->visible($org, $actor, true))->keyBy('key');
 
-        return DB::transaction(function () use ($org, $actor, $batch, $mapping, $data, $pipeline): LeadImportBatch {
+        return DB::transaction(function () use ($org, $actor, $batch, $mapping, $data, $pipeline, $requiredTargets, $customFields): LeadImportBatch {
             $batch = LeadImportBatch::where('organization_id', $org->id)->where('user_id', $actor->id)->lockForUpdate()->findOrFail($batch->id);
             if ($batch->committed_at) {
                 return $batch;
@@ -106,13 +113,35 @@ class ImportLeads
             $errors = [];
             $seen = [];
             foreach ($batch->rows as $index => $row) {
+                $missing = [];
+                foreach ($mapping as $header => $target) {
+                    if (in_array($target, $requiredTargets, true) && trim((string) ($row[$header] ?? '')) === '') {
+                        $missing[] = $header;
+                    }
+                }
+                if ($missing !== []) {
+                    $errors[] = ['row' => $index + 2, 'messages' => ['Required source fields are blank: '.implode(', ', $missing).'.']];
+
+                    continue;
+                }
                 $leadData = ['pipeline_id' => $pipeline->id];
                 $custom = [];
                 foreach ($mapping as $header => $target) {
+                    $cell = $row[$header] === '' ? null : $row[$header];
                     if (str_starts_with($target, 'custom:')) {
-                        $custom[substr($target, 7)] = $row[$header] ?: null;
+                        $key = substr($target, 7);
+                        $type = $customFields->get($key)?->type;
+                        $custom[$key] = match ($type) {
+                            'multi_select' => $cell === null ? null : array_map('trim', explode('|', $cell)),
+                            'checkbox' => $cell === null ? null : match (mb_strtolower($cell)) {
+                                'yes', 'true', '1' => true,
+                                'no', 'false', '0' => false,
+                                default => $cell,
+                            },
+                            default => $cell,
+                        };
                     } else {
-                        $leadData[$target] = $row[$header] ?: null;
+                        $leadData[$target] = $cell;
                     }
                 }
                 if (! empty($leadData['full_name'])) {

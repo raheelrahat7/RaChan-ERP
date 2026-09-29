@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Crm\Actions\ImportLeads;
+use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Models\LeadImportBatch;
 use App\Domain\Crm\Models\Pipeline;
+use App\Domain\Identity\Enums\OrganizationRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -13,7 +15,7 @@ use Inertia\Response;
 
 class CrmLeadImportController extends Controller
 {
-    public function index(Request $request, ImportLeads $imports): Response
+    public function index(Request $request, ImportLeads $imports, ManageCustomFields $fields): Response
     {
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
@@ -23,6 +25,9 @@ class CrmLeadImportController extends Controller
         return Inertia::render('crm/LeadImport', [
             'batch' => $batch ? ['id' => $batch->id, 'headers' => $batch->headers, 'preview' => array_slice($batch->rows, 0, 10), 'row_count' => count($batch->rows), 'summary' => $batch->summary, 'errors' => $batch->errors, 'committed_at' => $batch->committed_at] : null,
             'targets' => $imports->targets($org, $request->user()),
+            'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'required' => $field->required], $fields->visible($org, $request->user(), true)),
+            'fieldTypes' => ManageCustomFields::TYPES,
+            'canConfigureFields' => $request->user()->hasOrganizationRole($org, OrganizationRole::Owner) || $request->user()->hasOrganizationRole($org, OrganizationRole::Administrator),
             'pipelines' => Pipeline::where('organization_id', $org->id)->where('active', true)->get(['id', 'name']),
         ]);
     }

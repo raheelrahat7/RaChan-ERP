@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { ref, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -27,13 +27,69 @@ const props = defineProps<{
     batch: Batch | null;
     targets: string[];
     pipelines: { id: number; name: string }[];
+    customFields: {
+        key: string;
+        name: string;
+        type: string;
+        required: boolean;
+    }[];
+    fieldTypes: string[];
+    canConfigureFields: boolean;
 }>();
 const upload = useForm<{ file: File | null }>({ file: null });
 const commit = useForm({
     mapping: {} as Record<string, string>,
+    required_targets: [] as string[],
     duplicate_mode: 'skip',
     pipeline_id: props.pipelines[0]?.id ?? 0,
 });
+const activeHeader = ref<string | null>(null);
+const fieldForm = useForm({
+    name: '',
+    key: '',
+    type: 'text',
+    options: '',
+    required: false,
+    view_roles: ['owner', 'administrator'] as string[],
+    edit_roles: ['owner', 'administrator'] as string[],
+});
+function startField(header: string): void {
+    activeHeader.value = header;
+    fieldForm.name = header;
+    fieldForm.key = header
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+    fieldForm.type = 'text';
+    fieldForm.options = '';
+    fieldForm.required = false;
+    fieldForm.clearErrors();
+}
+function createField(): void {
+    const header = activeHeader.value;
+    fieldForm
+        .transform((data) => ({
+            ...data,
+            options: data.options
+                .split('\n')
+                .map((value) => value.trim())
+                .filter(Boolean),
+        }))
+        .post('/crm/custom-fields', {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (header) commit.mapping[header] = `custom:${fieldForm.key}`;
+                activeHeader.value = null;
+                fieldForm.reset();
+            },
+        });
+}
+function toggleRequired(target: string, enabled: boolean): void {
+    commit.required_targets = enabled
+        ? [...new Set([...commit.required_targets, target])]
+        : commit.required_targets.filter((item) => item !== target);
+}
 watch(
     () => props.batch?.id,
     () => {
@@ -46,6 +102,7 @@ watch(
             mapping[header] = props.targets.includes(guess) ? guess : '';
         }
         commit.mapping = mapping;
+        commit.required_targets = [];
     },
     { immediate: true },
 );
@@ -161,7 +218,11 @@ function downloadErrors(): void {
                     </table>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
-                    <div v-for="header in batch.headers" :key="header">
+                    <div
+                        v-for="header in batch.headers"
+                        :key="header"
+                        class="space-y-2 rounded-md border p-3"
+                    >
                         <Label :for="`mapping-${header}`">{{ header }}</Label
                         ><select
                             :id="`mapping-${header}`"
@@ -181,8 +242,160 @@ function downloadErrors(): void {
                                 }}
                             </option>
                         </select>
+                        <div class="flex flex-wrap items-center gap-3 text-xs">
+                            <label
+                                v-if="commit.mapping[header]"
+                                class="flex items-center gap-2"
+                            >
+                                <input
+                                    type="checkbox"
+                                    :checked="
+                                        commit.required_targets.includes(
+                                            commit.mapping[header],
+                                        ) ||
+                                        customFields.some(
+                                            (field) =>
+                                                `custom:${field.key}` ===
+                                                    commit.mapping[header] &&
+                                                field.required,
+                                        )
+                                    "
+                                    :disabled="
+                                        customFields.some(
+                                            (field) =>
+                                                `custom:${field.key}` ===
+                                                    commit.mapping[header] &&
+                                                field.required,
+                                        )
+                                    "
+                                    @change="
+                                        toggleRequired(
+                                            commit.mapping[header],
+                                            ($event.target as HTMLInputElement)
+                                                .checked,
+                                        )
+                                    "
+                                />
+                                Required in this import
+                            </label>
+                            <Button
+                                v-if="canConfigureFields"
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                @click="startField(header)"
+                                >Create field from column</Button
+                            >
+                        </div>
                     </div>
                 </div>
+                <form
+                    v-if="activeHeader && canConfigureFields"
+                    class="grid gap-3 rounded-md border p-4 sm:grid-cols-2"
+                    @submit.prevent="createField"
+                >
+                    <h3 class="font-medium sm:col-span-2">
+                        New lead field for “{{ activeHeader }}”
+                    </h3>
+                    <div>
+                        <Label for="new-field-name">Field name</Label
+                        ><Input
+                            id="new-field-name"
+                            v-model="fieldForm.name"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <Label for="new-field-key">Internal key</Label
+                        ><Input
+                            id="new-field-key"
+                            v-model="fieldForm.key"
+                            required
+                            pattern="[A-Za-z0-9_-]+"
+                        />
+                    </div>
+                    <div>
+                        <Label for="new-field-type">Type</Label
+                        ><select
+                            id="new-field-type"
+                            v-model="fieldForm.type"
+                            class="border-input bg-background h-9 w-full rounded-md border px-3"
+                        >
+                            <option
+                                v-for="type in fieldTypes"
+                                :key="type"
+                                :value="type"
+                            >
+                                {{ type.replaceAll('_', ' ') }}
+                            </option>
+                        </select>
+                    </div>
+                    <div
+                        v-if="
+                            ['single_select', 'multi_select'].includes(
+                                fieldForm.type,
+                            )
+                        "
+                    >
+                        <Label for="new-field-options"
+                            >Options, one per line</Label
+                        ><textarea
+                            id="new-field-options"
+                            v-model="fieldForm.options"
+                            class="border-input bg-background min-h-20 w-full rounded-md border p-2"
+                            required
+                        />
+                    </div>
+                    <label class="flex items-center gap-2 text-sm"
+                        ><input
+                            v-model="fieldForm.required"
+                            type="checkbox"
+                        />Required on every new lead</label
+                    >
+                    <label class="flex items-center gap-2 text-sm"
+                        ><input
+                            type="checkbox"
+                            :checked="fieldForm.view_roles.length > 2"
+                            @change="
+                                fieldForm.view_roles = (
+                                    $event.target as HTMLInputElement
+                                ).checked
+                                    ? [
+                                          'owner',
+                                          'administrator',
+                                          'manager',
+                                          'member',
+                                          'viewer',
+                                      ]
+                                    : ['owner', 'administrator'];
+                                fieldForm.edit_roles = [
+                                    ...fieldForm.view_roles,
+                                ];
+                            "
+                        />Visible to all CRM roles</label
+                    >
+                    <p class="text-muted-foreground text-xs sm:col-span-2">
+                        New fields default to owner and administrator access.
+                        Import-only required fields can be chosen above without
+                        making the field compulsory on every lead.
+                    </p>
+                    <InputError
+                        v-for="(error, key) in fieldForm.errors"
+                        :key="key"
+                        :message="error"
+                        class="sm:col-span-2"
+                    />
+                    <div class="flex gap-2 sm:col-span-2">
+                        <Button :disabled="fieldForm.processing"
+                            >Create and map field</Button
+                        ><Button
+                            type="button"
+                            variant="outline"
+                            @click="activeHeader = null"
+                            >Cancel</Button
+                        >
+                    </div>
+                </form>
                 <p class="text-muted-foreground text-sm">
                     Map first and last name, or full name. Blank source cells
                     stay empty. Custom fields are limited to those you may edit.

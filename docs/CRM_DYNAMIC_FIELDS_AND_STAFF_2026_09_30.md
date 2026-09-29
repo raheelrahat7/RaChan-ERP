@@ -9,6 +9,8 @@ This increment extends the existing Z1 CRM and HR modules. It does not import re
 - Combined server-side lead and activity filters with a searchable field picker, active filters, pagination, and permission-scoped queries.
 - Existing pipeline Kanban and stage rules retained; lead list and detail pages include custom data, activities, and history.
 - CSV preview, mapping, validation, duplicate handling, row errors, and a final summary. Files are limited to UTF-8 CSV, 2 MB and 1,000 rows per batch.
+- On the import mapping screen, owners and administrators can create a custom field from a source column, choose its type, options, organization-wide required setting, and visibility. Each import can separately require mapped columns; blank values then fail that row without changing the global field definition. Multi-select CSV cells use `|` between choices.
+- Owners and administrators can export a permission-checked CSV with a chosen set of built-in and custom columns. Contact details and activity notes are optional and unselected by default. Exported cells are protected against spreadsheet-formula execution. The CRM currently has activity notes, not a stored chat-message stream, so chat export is not offered.
 - Stage-entry automation for notifying the assignee or creating a follow-up, with a unique execution record per rule and stage event. Rules cannot mutate stages, preventing automation loops.
 - Lead history from organization audit events, including throttled views. Sensitive field values are not copied into audit details.
 

@@ -320,6 +320,12 @@ function switchLeadView(view: 'board' | 'list'): void {
             class="text-sm underline"
             >Import leads</Link
         >
+        <Link
+            v-if="canManageHierarchy"
+            href="/crm/leads/export"
+            class="text-sm underline"
+            >Export leads</Link
+        >
         <div
             class="flex flex-wrap items-center gap-2"
             role="group"
