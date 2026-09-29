@@ -151,7 +151,7 @@ export const NAVIGATION: NavGroup[] = [
                 label: 'Off-Plan Projects',
                 href: '/real-estate/off-plan',
                 icon: 'offPlan',
-                ability: 'listings',
+                ability: 'crm',
             },
             soon('Secondary Market', 'secondary', 'listings'),
             {
@@ -206,16 +206,19 @@ export const NAVIGATION: NavGroup[] = [
                 label: 'Marketing & Portals',
                 href: '/marketing/portals',
                 icon: 'marketing',
+                ability: 'crm',
             },
             {
                 label: 'Portal Subscriptions',
                 href: '/marketing/subscriptions',
                 icon: 'portalSubscriptions',
+                ability: 'accounting',
             },
             {
                 label: 'Listing Costing',
                 href: '/marketing/costing',
                 icon: 'costing',
+                ability: 'accounting',
             },
         ],
     },

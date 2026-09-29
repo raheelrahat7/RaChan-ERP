@@ -228,6 +228,7 @@ const columns: DataTableColumn<OffPlanProject>[] = [
                                 v-model="form.completion_on"
                                 type="date"
                             />
+                            <InputError :message="form.errors.completion_on" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="project-commission"
@@ -243,6 +244,9 @@ const columns: DataTableColumn<OffPlanProject>[] = [
                                 min="0"
                                 max="100"
                                 step="0.01"
+                            />
+                            <InputError
+                                :message="form.errors.commission_rate"
                             />
                         </div>
                     </div>

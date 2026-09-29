@@ -148,5 +148,8 @@ await test('a real section disappears when abilities hide all of its items, soon
             commission: false,
         }).includes('sales'),
     );
+    assert.ok(
+        !groupIds({ crm: false, accounting: false }).includes('marketing'),
+    );
     assert.ok(groupIds({}).includes('finance'));
 });

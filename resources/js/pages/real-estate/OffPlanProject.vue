@@ -2,6 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '@/components/DataTable.vue';
+import Pagination from '@/components/Pagination.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPicker from '@/components/RecordPicker.vue';
 import StatusDot from '@/components/StatusDot.vue';
@@ -27,7 +28,7 @@ import InputError from '@/components/InputError.vue';
 import Money from '@/components/Money.vue';
 import { useLocale } from '@/composables/useLocale';
 import {
-    allowedDealTransitions,
+    dealTransitionsForUnit,
     milestonePercentageValid,
 } from '@/lib/offplan';
 import type { DealStatus } from '@/lib/offplan';
@@ -168,6 +169,7 @@ const dealDialogOpen = ref(false);
 const dealLeadId = ref<number | null>(null);
 const dealForm = useForm({
     unit_id: null as number | null,
+    lead_id: null as number | null,
     reference: '',
     price_aed: '',
     notes: '',
@@ -191,6 +193,14 @@ function unitNumber(unitId: number): string {
         props.units.data.find((unit) => unit.id === unitId)?.number ??
         String(unitId)
     );
+}
+
+function dealTransitions(deal: OffPlanDeal): DealStatus[] {
+    const unit = props.units.data.find(
+        (candidate) => candidate.id === deal.unit_id,
+    );
+
+    return dealTransitionsForUnit(deal.status, unit?.status ?? 'available');
 }
 
 const contractDialogDeal = ref<OffPlanDeal | null>(null);
@@ -273,6 +283,7 @@ function submitContract(): void {
                     ><StatusDot :status="row.status"
                 /></template>
             </DataTable>
+            <Pagination :links="units.links" />
         </section>
 
         <section class="flex flex-col gap-3">
@@ -363,7 +374,7 @@ function submitContract(): void {
                 <template #cell-id="{ row }">
                     <div v-if="canManage" class="flex justify-end gap-2">
                         <Button
-                            v-for="next in allowedDealTransitions(row.status)"
+                            v-for="next in dealTransitions(row)"
                             :key="next"
                             size="sm"
                             :variant="
@@ -423,6 +434,7 @@ function submitContract(): void {
                             min="0"
                             step="0.01"
                         />
+                        <InputError :message="unitForm.errors.area_sqft" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="unit-price">{{ t('Price (AED)') }}</Label>
@@ -511,6 +523,7 @@ function submitContract(): void {
                             v-model="milestoneForm.due_on"
                             type="date"
                         />
+                        <InputError :message="milestoneForm.errors.due_on" />
                     </div>
                     <p v-if="milestoneError" class="text-destructive text-xs">
                         {{ milestoneError }}
@@ -572,6 +585,7 @@ function submitContract(): void {
                             v-model="dealLeadId"
                             label="Search leads…"
                         />
+                        <InputError :message="dealForm.errors.lead_id" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="deal-reference">{{ t('Reference') }}</Label>
@@ -597,6 +611,7 @@ function submitContract(): void {
                             min="0.01"
                             step="0.01"
                         />
+                        <InputError :message="dealForm.errors.price_aed" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="deal-notes"
@@ -606,6 +621,7 @@ function submitContract(): void {
                             ></Label
                         >
                         <Textarea id="deal-notes" v-model="dealForm.notes" />
+                        <InputError :message="dealForm.errors.notes" />
                     </div>
                     <DialogFooter>
                         <Button

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
     allowedDealTransitions,
+    dealTransitionsForUnit,
     milestonePercentageValid,
 } from '../../resources/js/lib/offplan.ts';
 
@@ -33,4 +34,22 @@ await test('milestone percentage is valid up to the server tolerance of 100.001'
 await test('milestone percentage handles an empty existing total', () => {
     assert.equal(milestonePercentageValid(0, 100), true);
     assert.equal(milestonePercentageValid(0, 100.01), false);
+});
+
+await test('an enquiry deal loses the Reserve option once its unit is no longer available', () => {
+    assert.deepEqual(dealTransitionsForUnit('enquiry', 'available'), [
+        'reserved',
+        'cancelled',
+    ]);
+    assert.deepEqual(dealTransitionsForUnit('enquiry', 'reserved'), [
+        'cancelled',
+    ]);
+    assert.deepEqual(dealTransitionsForUnit('enquiry', 'sold'), ['cancelled']);
+});
+
+await test('a reserved deal is unaffected since it never offers Reserve anyway', () => {
+    assert.deepEqual(dealTransitionsForUnit('reserved', 'reserved'), [
+        'contracted',
+        'cancelled',
+    ]);
 });

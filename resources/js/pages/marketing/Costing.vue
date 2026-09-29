@@ -263,6 +263,7 @@ function submit(): void {
                                 type="number"
                                 min="1"
                             />
+                            <InputError :message="form.errors.publication_id" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="spend-campaign"
@@ -277,6 +278,7 @@ function submit(): void {
                                 type="number"
                                 min="1"
                             />
+                            <InputError :message="form.errors.campaign_id" />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
@@ -301,6 +303,7 @@ function submit(): void {
                                     }}</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <InputError :message="form.errors.channel" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label>{{ t('Source') }}</Label>
@@ -357,6 +360,7 @@ function submit(): void {
                                 v-model="form.incurred_on"
                                 type="date"
                             />
+                            <InputError :message="form.errors.incurred_on" />
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
