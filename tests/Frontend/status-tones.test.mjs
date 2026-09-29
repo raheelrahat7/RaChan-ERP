@@ -60,3 +60,9 @@ await test('a missing status still shows readable text', () => {
     assert.equal(displayStatusLabel(''), '—');
     assert.equal(displayStatusLabel('in_progress'), 'In progress');
 });
+
+await test('off-plan and marketing statuses map to the right tone', () => {
+    assert.equal(statusTone('enquiry'), 'info');
+    assert.equal(statusTone('contracted'), 'success');
+    assert.equal(statusTone('local_validated'), 'info');
+});
