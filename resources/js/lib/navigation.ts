@@ -147,7 +147,12 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'owners',
                 ability: 'listings',
             },
-            soon('Off-Plan Projects', 'offPlan', 'listings'),
+            {
+                label: 'Off-Plan Projects',
+                href: '/real-estate/off-plan',
+                icon: 'offPlan',
+                ability: 'listings',
+            },
             soon('Secondary Market', 'secondary', 'listings'),
             {
                 label: 'Reservations',
@@ -197,11 +202,21 @@ export const NAVIGATION: NavGroup[] = [
         id: 'marketing',
         label: 'Marketing',
         items: [
-            soon('Marketing & Portals', 'marketing', 'marketing'),
-            soon('Portal Listings', 'portalListings', 'marketing'),
-            soon('Portal Subscriptions', 'portalSubscriptions', 'marketing'),
-            soon('Portal Invoicing', 'portalInvoicing', 'marketing'),
-            soon('Listing Costing', 'costing', 'marketing'),
+            {
+                label: 'Marketing & Portals',
+                href: '/marketing/portals',
+                icon: 'marketing',
+            },
+            {
+                label: 'Portal Subscriptions',
+                href: '/marketing/subscriptions',
+                icon: 'portalSubscriptions',
+            },
+            {
+                label: 'Listing Costing',
+                href: '/marketing/costing',
+                icon: 'costing',
+            },
         ],
     },
     {

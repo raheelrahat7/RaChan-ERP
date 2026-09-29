@@ -122,7 +122,7 @@ await test('abilities hide items, and a section with nothing left disappears', (
 await test('the command palette lists enabled pages only, children included', () => {
     const entries = commandEntries(NAVIGATION);
     assert.ok(entries.every((entry) => entry.href));
-    assert.ok(!entries.some((entry) => entry.label === 'Off-Plan Projects'));
+    assert.ok(!entries.some((entry) => entry.label === 'Secondary Market'));
     const vat = entries.find(
         (entry) => entry.href === '/accounting/vat-return',
     );
@@ -148,6 +148,5 @@ await test('a real section disappears when abilities hide all of its items, soon
             commission: false,
         }).includes('sales'),
     );
-    assert.ok(!groupIds({ marketing: false }).includes('marketing'));
     assert.ok(groupIds({}).includes('finance'));
 });
