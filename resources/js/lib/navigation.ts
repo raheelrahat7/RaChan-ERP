@@ -260,7 +260,12 @@ export const NAVIGATION: NavGroup[] = [
                     },
                 ],
             },
-            soon('Cheques (PDC)', 'cheques', 'pdc'),
+            {
+                label: 'Cheques (PDC)',
+                href: '/transactions/pdc',
+                icon: 'cheques',
+                ability: 'pdc',
+            },
             {
                 label: 'Receivables',
                 href: '/invoices',

@@ -944,5 +944,21 @@
     "Other": "أخرى",
     "Amount (AED)": "المبلغ (د.إ)",
     "Incurred on": "تاريخ التكبد",
-    "Record": "تسجيل"
+    "Record": "تسجيل",
+    "Cheque #": "رقم الشيك",
+    "Payer": "الدافع",
+    "Bank": "البنك",
+    "No cheques match these filters.": "لا توجد شيكات مطابقة لهذه الفلاتر.",
+    "Deposit": "إيداع",
+    "Bounce": "ارتداد",
+    "Clear": "مقاصة",
+    "Deposit cheque": "إيداع شيك",
+    "Clear cheque": "مقاصة شيك",
+    "Bounce cheque": "ارتداد شيك",
+    "Occurred on": "تاريخ الحدوث",
+    "deposited": "مودَع",
+    "cleared": "مقاصّ",
+    "bounced": "مرتد",
+    "replaced": "مستبدل",
+    "Replaced": "مستبدل"
 }
