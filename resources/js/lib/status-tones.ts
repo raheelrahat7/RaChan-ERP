@@ -53,6 +53,7 @@ export const STATUS_TONES: Record<string, StatusTone> = {
     draft: 'neutral',
     closed: 'neutral',
     cancelled: 'neutral',
+    replaced: 'neutral',
     void: 'neutral',
     voided: 'neutral',
     inactive: 'neutral',

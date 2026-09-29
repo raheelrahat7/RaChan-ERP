@@ -31,11 +31,13 @@
 ### Task 1: Status tones for off-plan and marketing statuses
 
 **Files:**
+
 - Modify: `resources/js/lib/status-tones.ts`
 - Test: `tests/Frontend/status-tones.test.mjs`
 - Modify: `resources/js/locales/ar.json` (Arabic labels, required by the existing "every mapped status has an Arabic label" test)
 
 **Interfaces:**
+
 - Produces: `STATUS_TONES` gains `enquiry: 'info'`, `contracted: 'success'`, `local_validated: 'info'` — consumed by every later task's `StatusDot`/badge usage.
 
 - [ ] **Step 1: Write the failing test**
@@ -103,6 +105,7 @@ git commit -m "feat(status-tones): add off-plan and marketing statuses"
 **Files:** Create the page.
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces: nothing consumed by later tasks (Task 3 is a separate page with its own props).
 
@@ -162,7 +165,9 @@ defineProps<{
 }>();
 defineOptions({
     layout: {
-        breadcrumbs: [{ title: 'Off-Plan Projects', href: '/real-estate/off-plan' }],
+        breadcrumbs: [
+            { title: 'Off-Plan Projects', href: '/real-estate/off-plan' },
+        ],
     },
 });
 
@@ -188,7 +193,8 @@ function openCreate(): void {
 function submit(): void {
     form.transform((data) => ({
         ...data,
-        cost_centre_id: data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
+        cost_centre_id:
+            data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
     })).post('/real-estate/off-plan/projects', {
         preserveScroll: true,
         onSuccess: () => (dialogOpen.value = false),
@@ -210,7 +216,9 @@ const columns: DataTableColumn<OffPlanProject>[] = [
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <PageHeader eyebrow="Real Estate" title="Off-Plan Projects">
             <template #actions>
-                <Button v-if="canManage" @click="openCreate">{{ t('New project') }}</Button>
+                <Button v-if="canManage" @click="openCreate">{{
+                    t('New project')
+                }}</Button>
             </template>
         </PageHeader>
 
@@ -228,22 +236,38 @@ const columns: DataTableColumn<OffPlanProject>[] = [
                     >{{ row.code }}</Link
                 >
             </template>
-            <template #cell-completion_on="{ row }">{{ row.completion_on ?? '—' }}</template>
-            <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+            <template #cell-completion_on="{ row }">{{
+                row.completion_on ?? '—'
+            }}</template>
+            <template #cell-status="{ row }"
+                ><StatusDot :status="row.status"
+            /></template>
         </DataTable>
         <Pagination :links="projects.links" />
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('New project') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('New project')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submit">
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Developer') }}</Label>
                         <Select
-                            :model-value="form.developer_id ? String(form.developer_id) : ''"
-                            @update:model-value="form.developer_id = Number($event)"
+                            :model-value="
+                                form.developer_id
+                                    ? String(form.developer_id)
+                                    : ''
+                            "
+                            @update:model-value="
+                                form.developer_id = Number($event)
+                            "
                         >
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem
                                     v-for="developer in developers"
@@ -258,9 +282,16 @@ const columns: DataTableColumn<OffPlanProject>[] = [
                     <div class="flex flex-col gap-1.5">
                         <Label for="project-cost-centre"
                             >{{ t('Cost centre ID') }}
-                            <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
-                        <Input id="project-cost-centre" v-model="form.cost_centre_id" type="number" min="1" />
+                        <Input
+                            id="project-cost-centre"
+                            v-model="form.cost_centre_id"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="form.errors.cost_centre_id" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
@@ -277,37 +308,69 @@ const columns: DataTableColumn<OffPlanProject>[] = [
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <Label for="project-emirate">{{ t('Emirate') }}</Label>
-                            <Input id="project-emirate" v-model="form.emirate" />
+                            <Label for="project-emirate">{{
+                                t('Emirate')
+                            }}</Label>
+                            <Input
+                                id="project-emirate"
+                                v-model="form.emirate"
+                            />
                             <InputError :message="form.errors.emirate" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="project-location"
                                 >{{ t('Location') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="project-location" v-model="form.location" />
+                            <Input
+                                id="project-location"
+                                v-model="form.location"
+                            />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="project-completion"
                                 >{{ t('Completion date') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="project-completion" v-model="form.completion_on" type="date" />
+                            <Input
+                                id="project-completion"
+                                v-model="form.completion_on"
+                                type="date"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="project-commission"
                                 >{{ t('Commission rate %') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="project-commission" v-model="form.commission_rate" type="number" min="0" max="100" step="0.01" />
+                            <Input
+                                id="project-commission"
+                                v-model="form.commission_rate"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                            />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="form.processing">{{ t('Create project') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="form.processing">{{
+                            t('Create project')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -351,6 +414,7 @@ Run: `docker exec z1erp-web sh -lc 'cd /workspace && php scripts/sync-arabic-cat
 **Files:** Create the page. Reuses `RecordPicker` (`type="lead"`).
 
 **Interfaces:**
+
 - Consumes: nothing new from Task 1/2 besides `StatusDot`.
 - Produces: nothing consumed later.
 
@@ -367,11 +431,17 @@ import {
 } from '../../resources/js/lib/offplan.ts';
 
 await test('enquiry deals can move to reserved or cancelled, nothing else', () => {
-    assert.deepEqual(allowedDealTransitions('enquiry'), ['reserved', 'cancelled']);
+    assert.deepEqual(allowedDealTransitions('enquiry'), [
+        'reserved',
+        'cancelled',
+    ]);
 });
 
 await test('reserved deals can move to contracted or cancelled', () => {
-    assert.deepEqual(allowedDealTransitions('reserved'), ['contracted', 'cancelled']);
+    assert.deepEqual(allowedDealTransitions('reserved'), [
+        'contracted',
+        'cancelled',
+    ]);
 });
 
 await test('contracted and cancelled deals have no further transitions', () => {
@@ -412,7 +482,10 @@ export function allowedDealTransitions(status: DealStatus): DealStatus[] {
     }
 }
 
-export function milestonePercentageValid(existingTotal: number, newPercentage: number): boolean {
+export function milestonePercentageValid(
+    existingTotal: number,
+    newPercentage: number,
+): boolean {
     return existingTotal + newPercentage <= 100.001;
 }
 ```
@@ -453,7 +526,10 @@ import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/InputError.vue';
 import Money from '@/components/Money.vue';
 import { useLocale } from '@/composables/useLocale';
-import { allowedDealTransitions, milestonePercentageValid } from '@/lib/offplan';
+import {
+    allowedDealTransitions,
+    milestonePercentageValid,
+} from '@/lib/offplan';
 import type { DealStatus } from '@/lib/offplan';
 import type { DataTableColumn } from '@/lib/data-table';
 
@@ -475,7 +551,13 @@ type OffPlanUnit = {
     price_aed: string;
     status: 'available' | 'reserved' | 'sold';
 };
-type OffPlanMilestone = { id: number; sequence: number; label: string; percentage: string; due_on: string | null };
+type OffPlanMilestone = {
+    id: number;
+    sequence: number;
+    label: string;
+    percentage: string;
+    due_on: string | null;
+};
 type OffPlanDeal = {
     id: number;
     unit_id: number;
@@ -489,7 +571,10 @@ type OffPlanDeal = {
 
 const props = defineProps<{
     project: OffPlanProject;
-    units: { data: OffPlanUnit[]; links: { label: string; url: string | null; active: boolean }[] };
+    units: {
+        data: OffPlanUnit[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
     milestones: OffPlanMilestone[];
     deals: OffPlanDeal[];
     canManage: boolean;
@@ -513,7 +598,12 @@ const unitColumns: DataTableColumn<OffPlanUnit>[] = [
     { key: 'status', label: 'Status' },
 ];
 const unitDialogOpen = ref(false);
-const unitForm = useForm({ number: '', type: '', area_sqft: '', price_aed: '' });
+const unitForm = useForm({
+    number: '',
+    type: '',
+    area_sqft: '',
+    price_aed: '',
+});
 function openUnit(): void {
     unitForm.reset();
     unitDialogOpen.value = true;
@@ -526,10 +616,18 @@ function submitUnit(): void {
 }
 
 const milestoneTotal = computed(() =>
-    props.milestones.reduce((sum, milestone) => sum + Number(milestone.percentage), 0),
+    props.milestones.reduce(
+        (sum, milestone) => sum + Number(milestone.percentage),
+        0,
+    ),
 );
 const milestoneDialogOpen = ref(false);
-const milestoneForm = useForm({ sequence: '', label: '', percentage: '', due_on: '' });
+const milestoneForm = useForm({
+    sequence: '',
+    label: '',
+    percentage: '',
+    due_on: '',
+});
 const milestoneError = ref<string | null>(null);
 function openMilestone(): void {
     milestoneForm.reset();
@@ -537,8 +635,15 @@ function openMilestone(): void {
     milestoneDialogOpen.value = true;
 }
 function submitMilestone(): void {
-    if (!milestonePercentageValid(milestoneTotal.value, Number(milestoneForm.percentage))) {
-        milestoneError.value = t('Payment milestone percentages cannot exceed 100% in total.');
+    if (
+        !milestonePercentageValid(
+            milestoneTotal.value,
+            Number(milestoneForm.percentage),
+        )
+    ) {
+        milestoneError.value = t(
+            'Payment milestone percentages cannot exceed 100% in total.',
+        );
 
         return;
     }
@@ -549,7 +654,9 @@ function submitMilestone(): void {
     });
 }
 
-const availableUnits = computed(() => props.units.data.filter((unit) => unit.status === 'available'));
+const availableUnits = computed(() =>
+    props.units.data.filter((unit) => unit.status === 'available'),
+);
 const dealColumns: DataTableColumn<OffPlanDeal>[] = [
     { key: 'reference', label: 'Reference' },
     { key: 'unit_id', label: 'Unit' },
@@ -559,7 +666,12 @@ const dealColumns: DataTableColumn<OffPlanDeal>[] = [
 ];
 const dealDialogOpen = ref(false);
 const dealLeadId = ref<number | null>(null);
-const dealForm = useForm({ unit_id: null as number | null, reference: '', price_aed: '', notes: '' });
+const dealForm = useForm({
+    unit_id: null as number | null,
+    reference: '',
+    price_aed: '',
+    notes: '',
+});
 function openDeal(): void {
     dealForm.reset();
     dealLeadId.value = null;
@@ -575,7 +687,10 @@ function submitDeal(): void {
 }
 
 function unitNumber(unitId: number): string {
-    return props.units.data.find((unit) => unit.id === unitId)?.number ?? String(unitId);
+    return (
+        props.units.data.find((unit) => unit.id === unitId)?.number ??
+        String(unitId)
+    );
 }
 
 const contractDialogDeal = ref<OffPlanDeal | null>(null);
@@ -592,9 +707,12 @@ function transition(deal: OffPlanDeal, status: DealStatus): void {
             ? t('Cancel this deal?')
             : t('Reserve this unit for this deal?');
     if (confirm(question)) {
-        useForm({ status, contracted_on: null }).post(`/real-estate/off-plan/deals/${deal.id}/status`, {
-            preserveScroll: true,
-        });
+        useForm({ status, contracted_on: null }).post(
+            `/real-estate/off-plan/deals/${deal.id}/status`,
+            {
+                preserveScroll: true,
+            },
+        );
     }
 }
 function submitContract(): void {
@@ -602,11 +720,17 @@ function submitContract(): void {
         return;
     }
     contractForm
-        .transform((data) => ({ status: 'contracted', contracted_on: data.contracted_on }))
-        .post(`/real-estate/off-plan/deals/${contractDialogDeal.value.id}/status`, {
-            preserveScroll: true,
-            onSuccess: () => (contractDialogDeal.value = null),
-        });
+        .transform((data) => ({
+            status: 'contracted',
+            contracted_on: data.contracted_on,
+        }))
+        .post(
+            `/real-estate/off-plan/deals/${contractDialogDeal.value.id}/status`,
+            {
+                preserveScroll: true,
+                onSuccess: () => (contractDialogDeal.value = null),
+            },
+        );
 }
 </script>
 
@@ -619,13 +743,18 @@ function submitContract(): void {
             </template>
         </PageHeader>
         <p class="text-muted-foreground -mt-2 text-sm">
-            {{ project.code }} · {{ project.emirate }} · {{ t('Commission') }} {{ project.commission_rate }}%
+            {{ project.code }} · {{ project.emirate }} · {{ t('Commission') }}
+            {{ project.commission_rate }}%
         </p>
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Units') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openUnit">{{ t('Add unit') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Units') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openUnit">{{
+                    t('Add unit')
+                }}</Button>
             </div>
             <DataTable
                 :columns="unitColumns"
@@ -634,37 +763,70 @@ function submitContract(): void {
                 :row-label="(row) => row.number"
                 empty-title="No units yet."
             >
-                <template #cell-area_sqft="{ row }">{{ row.area_sqft ?? '—' }}</template>
-                <template #cell-price_aed="{ row }"><Money :value="row.price_aed" /></template>
-                <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+                <template #cell-area_sqft="{ row }">{{
+                    row.area_sqft ?? '—'
+                }}</template>
+                <template #cell-price_aed="{ row }"
+                    ><Money :value="row.price_aed"
+                /></template>
+                <template #cell-status="{ row }"
+                    ><StatusDot :status="row.status"
+                /></template>
             </DataTable>
         </section>
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Payment milestones') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openMilestone">{{ t('Add milestone') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Payment milestones') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openMilestone">{{
+                    t('Add milestone')
+                }}</Button>
             </div>
-            <p class="text-muted-foreground text-xs">{{ t('Allocated') }}: {{ milestoneTotal }}%</p>
+            <p class="text-muted-foreground text-xs">
+                {{ t('Allocated') }}: {{ milestoneTotal }}%
+            </p>
             <div class="bg-card shadow-panel overflow-hidden rounded-lg border">
                 <table class="w-full text-[13px]">
                     <thead>
                         <tr class="text-label border-b">
-                            <th class="py-2.5 ps-5 pe-3 text-start font-medium">{{ t('Sequence') }}</th>
-                            <th class="px-3 text-start font-medium">{{ t('Label') }}</th>
-                            <th class="px-3 text-end font-medium">{{ t('Percentage') }}</th>
-                            <th class="px-3 pe-5 text-start font-medium">{{ t('Due') }}</th>
+                            <th class="py-2.5 ps-5 pe-3 text-start font-medium">
+                                {{ t('Sequence') }}
+                            </th>
+                            <th class="px-3 text-start font-medium">
+                                {{ t('Label') }}
+                            </th>
+                            <th class="px-3 text-end font-medium">
+                                {{ t('Percentage') }}
+                            </th>
+                            <th class="px-3 pe-5 text-start font-medium">
+                                {{ t('Due') }}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="milestone in milestones" :key="milestone.id" class="border-b last:border-b-0">
-                            <td class="py-3 ps-5 pe-3">{{ milestone.sequence }}</td>
+                        <tr
+                            v-for="milestone in milestones"
+                            :key="milestone.id"
+                            class="border-b last:border-b-0"
+                        >
+                            <td class="py-3 ps-5 pe-3">
+                                {{ milestone.sequence }}
+                            </td>
                             <td class="px-3">{{ milestone.label }}</td>
-                            <td class="px-3 text-end tabular-nums">{{ milestone.percentage }}%</td>
-                            <td class="px-3 pe-5">{{ milestone.due_on ?? '—' }}</td>
+                            <td class="px-3 text-end tabular-nums">
+                                {{ milestone.percentage }}%
+                            </td>
+                            <td class="px-3 pe-5">
+                                {{ milestone.due_on ?? '—' }}
+                            </td>
                         </tr>
                         <tr v-if="milestones.length === 0">
-                            <td colspan="4" class="text-muted-foreground p-8 text-center text-sm">
+                            <td
+                                colspan="4"
+                                class="text-muted-foreground p-8 text-center text-sm"
+                            >
                                 {{ t('No payment milestones yet.') }}
                             </td>
                         </tr>
@@ -675,8 +837,12 @@ function submitContract(): void {
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Deals') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openDeal">{{ t('New deal') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Deals') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openDeal">{{
+                    t('New deal')
+                }}</Button>
             </div>
             <DataTable
                 :columns="dealColumns"
@@ -685,18 +851,36 @@ function submitContract(): void {
                 :row-label="(row) => row.reference"
                 empty-title="No deals yet."
             >
-                <template #cell-unit_id="{ row }">{{ unitNumber(row.unit_id) }}</template>
-                <template #cell-price_aed="{ row }"><Money :value="row.price_aed" /></template>
-                <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+                <template #cell-unit_id="{ row }">{{
+                    unitNumber(row.unit_id)
+                }}</template>
+                <template #cell-price_aed="{ row }"
+                    ><Money :value="row.price_aed"
+                /></template>
+                <template #cell-status="{ row }"
+                    ><StatusDot :status="row.status"
+                /></template>
                 <template #cell-id="{ row }">
                     <div v-if="canManage" class="flex justify-end gap-2">
                         <Button
                             v-for="next in allowedDealTransitions(row.status)"
                             :key="next"
                             size="sm"
-                            :variant="next === 'cancelled' ? 'destructive-outline' : 'outline'"
+                            :variant="
+                                next === 'cancelled'
+                                    ? 'destructive-outline'
+                                    : 'outline'
+                            "
                             @click="transition(row, next)"
-                            >{{ t(next === 'reserved' ? 'Reserve' : next === 'contracted' ? 'Contract' : 'Cancel') }}</Button
+                            >{{
+                                t(
+                                    next === 'reserved'
+                                        ? 'Reserve'
+                                        : next === 'contracted'
+                                          ? 'Contract'
+                                          : 'Cancel',
+                                )
+                            }}</Button
                         >
                     </div>
                 </template>
@@ -705,7 +889,11 @@ function submitContract(): void {
 
         <Dialog v-model:open="unitDialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Add unit') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Add unit')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submitUnit">
                     <div class="flex flex-col gap-1.5">
                         <Label for="unit-number">{{ t('Unit number') }}</Label>
@@ -714,25 +902,49 @@ function submitContract(): void {
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="unit-type"
-                            >{{ t('Type') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            >{{ t('Type') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
                         <Input id="unit-type" v-model="unitForm.type" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="unit-area"
                             >{{ t('Area (sqft)') }}
-                            <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
-                        <Input id="unit-area" v-model="unitForm.area_sqft" type="number" min="0" step="0.01" />
+                        <Input
+                            id="unit-area"
+                            v-model="unitForm.area_sqft"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="unit-price">{{ t('Price (AED)') }}</Label>
-                        <Input id="unit-price" v-model="unitForm.price_aed" type="number" min="0.01" step="0.01" />
+                        <Input
+                            id="unit-price"
+                            v-model="unitForm.price_aed"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                        />
                         <InputError :message="unitForm.errors.price_aed" />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="unitDialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="unitForm.processing">{{ t('Add') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="unitDialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="unitForm.processing">{{
+                            t('Add')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -740,36 +952,82 @@ function submitContract(): void {
 
         <Dialog v-model:open="milestoneDialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Add milestone') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitMilestone">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Add milestone')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitMilestone"
+                >
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <Label for="milestone-sequence">{{ t('Sequence') }}</Label>
-                            <Input id="milestone-sequence" v-model="milestoneForm.sequence" type="number" min="1" max="999" />
-                            <InputError :message="milestoneForm.errors.sequence" />
+                            <Label for="milestone-sequence">{{
+                                t('Sequence')
+                            }}</Label>
+                            <Input
+                                id="milestone-sequence"
+                                v-model="milestoneForm.sequence"
+                                type="number"
+                                min="1"
+                                max="999"
+                            />
+                            <InputError
+                                :message="milestoneForm.errors.sequence"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <Label for="milestone-percentage">{{ t('Percentage') }}</Label>
-                            <Input id="milestone-percentage" v-model="milestoneForm.percentage" type="number" min="0.01" max="100" step="0.01" />
+                            <Label for="milestone-percentage">{{
+                                t('Percentage')
+                            }}</Label>
+                            <Input
+                                id="milestone-percentage"
+                                v-model="milestoneForm.percentage"
+                                type="number"
+                                min="0.01"
+                                max="100"
+                                step="0.01"
+                            />
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="milestone-label">{{ t('Label') }}</Label>
-                        <Input id="milestone-label" v-model="milestoneForm.label" />
+                        <Input
+                            id="milestone-label"
+                            v-model="milestoneForm.label"
+                        />
                         <InputError :message="milestoneForm.errors.label" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="milestone-due"
                             >{{ t('Due date') }}
-                            <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
-                        <Input id="milestone-due" v-model="milestoneForm.due_on" type="date" />
+                        <Input
+                            id="milestone-due"
+                            v-model="milestoneForm.due_on"
+                            type="date"
+                        />
                     </div>
-                    <p v-if="milestoneError" class="text-destructive text-xs">{{ milestoneError }}</p>
+                    <p v-if="milestoneError" class="text-destructive text-xs">
+                        {{ milestoneError }}
+                    </p>
                     <InputError :message="milestoneForm.errors.percentage" />
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="milestoneDialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="milestoneForm.processing">{{ t('Add') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="milestoneDialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="milestoneForm.processing"
+                            >{{ t('Add') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -777,65 +1035,132 @@ function submitContract(): void {
 
         <Dialog v-model:open="dealDialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('New deal') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('New deal')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submitDeal">
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Unit') }}</Label>
                         <Select
-                            :model-value="dealForm.unit_id ? String(dealForm.unit_id) : ''"
-                            @update:model-value="dealForm.unit_id = Number($event)"
+                            :model-value="
+                                dealForm.unit_id ? String(dealForm.unit_id) : ''
+                            "
+                            @update:model-value="
+                                dealForm.unit_id = Number($event)
+                            "
                         >
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="unit in availableUnits" :key="unit.id" :value="String(unit.id)">{{
-                                    unit.number
-                                }}</SelectItem>
+                                <SelectItem
+                                    v-for="unit in availableUnits"
+                                    :key="unit.id"
+                                    :value="String(unit.id)"
+                                    >{{ unit.number }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                         <InputError :message="dealForm.errors.unit_id" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Lead') }}</Label>
-                        <RecordPicker type="lead" v-model="dealLeadId" label="Search leads…" />
+                        <RecordPicker
+                            type="lead"
+                            v-model="dealLeadId"
+                            label="Search leads…"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="deal-reference">{{ t('Reference') }}</Label>
-                        <Input id="deal-reference" v-model="dealForm.reference" />
+                        <Input
+                            id="deal-reference"
+                            v-model="dealForm.reference"
+                        />
                         <InputError :message="dealForm.errors.reference" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="deal-price"
                             >{{ t('Price (AED)') }}
-                            <span class="text-muted-foreground font-normal">({{ t('optional, defaults to unit price') }})</span></Label
+                            <span class="text-muted-foreground font-normal"
+                                >({{
+                                    t('optional, defaults to unit price')
+                                }})</span
+                            ></Label
                         >
-                        <Input id="deal-price" v-model="dealForm.price_aed" type="number" min="0.01" step="0.01" />
+                        <Input
+                            id="deal-price"
+                            v-model="dealForm.price_aed"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="deal-notes"
-                            >{{ t('Notes') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            >{{ t('Notes') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
                         <Textarea id="deal-notes" v-model="dealForm.notes" />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dealDialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="dealForm.processing">{{ t('Create deal') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dealDialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="dealForm.processing">{{
+                            t('Create deal')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="contractDialogDeal !== null" @update:open="(value) => !value && (contractDialogDeal = null)">
+        <Dialog
+            :open="contractDialogDeal !== null"
+            @update:open="(value) => !value && (contractDialogDeal = null)"
+        >
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Contract this deal') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitContract">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Contract this deal')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitContract"
+                >
                     <div class="flex flex-col gap-1.5">
-                        <Label for="contract-date">{{ t('Contracted on') }}</Label>
-                        <Input id="contract-date" v-model="contractForm.contracted_on" type="date" />
-                        <InputError :message="contractForm.errors.contracted_on" />
+                        <Label for="contract-date">{{
+                            t('Contracted on')
+                        }}</Label>
+                        <Input
+                            id="contract-date"
+                            v-model="contractForm.contracted_on"
+                            type="date"
+                        />
+                        <InputError
+                            :message="contractForm.errors.contracted_on"
+                        />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="contractDialogDeal = null">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="contractForm.processing">{{ t('Confirm') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="contractDialogDeal = null"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="contractForm.processing"
+                            >{{ t('Confirm') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -898,6 +1223,7 @@ Run: `docker exec z1erp-web sh -lc 'cd /workspace && php scripts/sync-arabic-cat
 **Files:** Create the page. Reuses `RecordPicker` (`type="lead"`).
 
 **Interfaces:**
+
 - Consumes: nothing from Tasks 1–3.
 - Produces: nothing consumed later.
 
@@ -955,18 +1281,29 @@ type Publication = {
 };
 
 const props = defineProps<{
-    campaigns: { data: Campaign[]; links: { label: string; url: string | null; active: boolean }[] };
+    campaigns: {
+        data: Campaign[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
     publications: Publication[];
     canManage: boolean;
     providerSelected: boolean;
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'Marketing & Portals', href: '/marketing/portals' }] },
+    layout: {
+        breadcrumbs: [
+            { title: 'Marketing & Portals', href: '/marketing/portals' },
+        ],
+    },
 });
 
 const { t } = useLocale();
 const portalLabel = (portal: string) =>
-    ({ bayut: 'Bayut', property_finder: 'Property Finder', dubizzle: 'Dubizzle' })[portal] ?? portal;
+    ({
+        bayut: 'Bayut',
+        property_finder: 'Property Finder',
+        dubizzle: 'Dubizzle',
+    })[portal] ?? portal;
 
 const campaignColumns: DataTableColumn<Campaign>[] = [
     { key: 'name', label: 'Name' },
@@ -993,7 +1330,8 @@ function submitCampaign(): void {
         .transform((data) => ({
             ...data,
             vendor_id: data.vendor_id === '' ? null : Number(data.vendor_id),
-            cost_centre_id: data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
+            cost_centre_id:
+                data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
         }))
         .post('/marketing/campaigns', {
             preserveScroll: true,
@@ -1009,7 +1347,11 @@ const publicationColumns: DataTableColumn<Publication>[] = [
     { key: 'id', label: '', align: 'end' },
 ];
 const publishDialogOpen = ref(false);
-const publishForm = useForm({ listing_id: '', campaign_id: '', portal: 'bayut' as Publication['portal'] });
+const publishForm = useForm({
+    listing_id: '',
+    campaign_id: '',
+    portal: 'bayut' as Publication['portal'],
+});
 function openPublish(): void {
     publishForm.reset();
     publishDialogOpen.value = true;
@@ -1019,7 +1361,8 @@ function submitPublish(): void {
         .transform((data) => ({
             ...data,
             listing_id: Number(data.listing_id),
-            campaign_id: data.campaign_id === '' ? null : Number(data.campaign_id),
+            campaign_id:
+                data.campaign_id === '' ? null : Number(data.campaign_id),
         }))
         .post('/marketing/publications', {
             preserveScroll: true,
@@ -1041,10 +1384,13 @@ function submitEnquiry(): void {
     }
     enquiryForm
         .transform((data) => ({ ...data, lead_id: enquiryLeadId.value }))
-        .post(`/marketing/publications/${enquiryPublication.value.id}/enquiries`, {
-            preserveScroll: true,
-            onSuccess: () => (enquiryPublication.value = null),
-        });
+        .post(
+            `/marketing/publications/${enquiryPublication.value.id}/enquiries`,
+            {
+                preserveScroll: true,
+                onSuccess: () => (enquiryPublication.value = null),
+            },
+        );
 }
 </script>
 
@@ -1055,8 +1401,12 @@ function submitEnquiry(): void {
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Campaigns') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openCampaign">{{ t('New campaign') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Campaigns') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openCampaign">{{
+                    t('New campaign')
+                }}</Button>
             </div>
             <DataTable
                 :columns="campaignColumns"
@@ -1065,16 +1415,24 @@ function submitEnquiry(): void {
                 :row-label="(row) => row.name"
                 empty-title="No campaigns yet."
             >
-                <template #cell-budget_aed="{ row }"><Money :value="row.budget_aed" /></template>
-                <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+                <template #cell-budget_aed="{ row }"
+                    ><Money :value="row.budget_aed"
+                /></template>
+                <template #cell-status="{ row }"
+                    ><StatusDot :status="row.status"
+                /></template>
             </DataTable>
             <Pagination :links="campaigns.links" />
         </section>
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Publications') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openPublish">{{ t('Publish listing') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Publications') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openPublish">{{
+                    t('Publish listing')
+                }}</Button>
             </div>
             <DataTable
                 :columns="publicationColumns"
@@ -1082,22 +1440,43 @@ function submitEnquiry(): void {
                 :row-key="(row) => row.id"
                 empty-title="No publications yet."
             >
-                <template #cell-listing_id="{ row }">#{{ row.listing_id }}</template>
-                <template #cell-portal="{ row }"><Badge variant="outline">{{ portalLabel(row.portal) }}</Badge></template>
-                <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
-                <template #cell-validated_at="{ row }"><DateText :value="row.validated_at" /></template>
+                <template #cell-listing_id="{ row }"
+                    >#{{ row.listing_id }}</template
+                >
+                <template #cell-portal="{ row }"
+                    ><Badge variant="outline">{{
+                        portalLabel(row.portal)
+                    }}</Badge></template
+                >
+                <template #cell-status="{ row }"
+                    ><StatusDot :status="row.status"
+                /></template>
+                <template #cell-validated_at="{ row }"
+                    ><DateText :value="row.validated_at"
+                /></template>
                 <template #cell-id="{ row }">
-                    <Button v-if="canManage" size="sm" variant="outline" @click="openEnquiry(row)">{{
-                        t('Record enquiry')
-                    }}</Button>
+                    <Button
+                        v-if="canManage"
+                        size="sm"
+                        variant="outline"
+                        @click="openEnquiry(row)"
+                        >{{ t('Record enquiry') }}</Button
+                    >
                 </template>
             </DataTable>
         </section>
 
         <Dialog v-model:open="campaignDialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('New campaign') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitCampaign">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('New campaign')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitCampaign"
+                >
                     <div class="flex flex-col gap-1.5">
                         <Label for="campaign-name">{{ t('Name') }}</Label>
                         <Input id="campaign-name" v-model="campaignForm.name" />
@@ -1112,45 +1491,88 @@ function submitEnquiry(): void {
                         <div class="flex flex-col gap-1.5">
                             <Label for="campaign-vendor"
                                 >{{ t('Vendor ID') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="campaign-vendor" v-model="campaignForm.vendor_id" type="number" min="1" />
+                            <Input
+                                id="campaign-vendor"
+                                v-model="campaignForm.vendor_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="campaign-cost-centre"
                                 >{{ t('Cost centre ID') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="campaign-cost-centre" v-model="campaignForm.cost_centre_id" type="number" min="1" />
+                            <Input
+                                id="campaign-cost-centre"
+                                v-model="campaignForm.cost_centre_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="campaign-budget"
                             >{{ t('Budget (AED)') }}
-                            <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
-                        <Input id="campaign-budget" v-model="campaignForm.budget_aed" type="number" min="0" step="0.01" />
+                        <Input
+                            id="campaign-budget"
+                            v-model="campaignForm.budget_aed"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                        />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="campaign-starts"
                                 >{{ t('Starts') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="campaign-starts" v-model="campaignForm.starts_on" type="date" />
+                            <Input
+                                id="campaign-starts"
+                                v-model="campaignForm.starts_on"
+                                type="date"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="campaign-ends"
                                 >{{ t('Ends') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="campaign-ends" v-model="campaignForm.ends_on" type="date" />
+                            <Input
+                                id="campaign-ends"
+                                v-model="campaignForm.ends_on"
+                                type="date"
+                            />
                         </div>
                     </div>
                     <InputError :message="campaignForm.errors.ends_on" />
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="campaignDialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="campaignForm.processing">{{ t('Create') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="campaignDialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="campaignForm.processing"
+                            >{{ t('Create') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1158,69 +1580,152 @@ function submitEnquiry(): void {
 
         <Dialog v-model:open="publishDialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Publish listing') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitPublish">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Publish listing')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitPublish"
+                >
                     <div class="flex flex-col gap-1.5">
-                        <Label for="publish-listing">{{ t('Listing ID') }}</Label>
-                        <Input id="publish-listing" v-model="publishForm.listing_id" type="number" min="1" />
+                        <Label for="publish-listing">{{
+                            t('Listing ID')
+                        }}</Label>
+                        <Input
+                            id="publish-listing"
+                            v-model="publishForm.listing_id"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="publishForm.errors.listing_id" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Portal') }}</Label>
                         <Select v-model="publishForm.portal">
-                            <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger class="w-full"
+                                ><SelectValue
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="bayut">{{ t('Bayut') }}</SelectItem>
-                                <SelectItem value="property_finder">{{ t('Property Finder') }}</SelectItem>
-                                <SelectItem value="dubizzle">{{ t('Dubizzle') }}</SelectItem>
+                                <SelectItem value="bayut">{{
+                                    t('Bayut')
+                                }}</SelectItem>
+                                <SelectItem value="property_finder">{{
+                                    t('Property Finder')
+                                }}</SelectItem>
+                                <SelectItem value="dubizzle">{{
+                                    t('Dubizzle')
+                                }}</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="publishForm.errors.portal" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label>{{ t('Campaign') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label>
+                        <Label
+                            >{{ t('Campaign') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
+                        >
                         <Select
                             :model-value="publishForm.campaign_id"
-                            @update:model-value="(value) => (publishForm.campaign_id = (value as string) ?? '')"
+                            @update:model-value="
+                                (value) =>
+                                    (publishForm.campaign_id =
+                                        (value as string) ?? '')
+                            "
                         >
-                            <SelectTrigger class="w-full"><SelectValue :placeholder="t('None')" /></SelectTrigger>
+                            <SelectTrigger class="w-full"
+                                ><SelectValue :placeholder="t('None')"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{{ t('None') }}</SelectItem>
-                                <SelectItem v-for="campaign in campaigns.data" :key="campaign.id" :value="String(campaign.id)">{{
-                                    campaign.name
+                                <SelectItem value="">{{
+                                    t('None')
                                 }}</SelectItem>
+                                <SelectItem
+                                    v-for="campaign in campaigns.data"
+                                    :key="campaign.id"
+                                    :value="String(campaign.id)"
+                                    >{{ campaign.name }}</SelectItem
+                                >
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="publishDialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="publishForm.processing">{{ t('Publish') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="publishDialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="publishForm.processing"
+                            >{{ t('Publish') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="enquiryPublication !== null" @update:open="(value) => !value && (enquiryPublication = null)">
+        <Dialog
+            :open="enquiryPublication !== null"
+            @update:open="(value) => !value && (enquiryPublication = null)"
+        >
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Record enquiry') }}</DialogTitle></DialogHeader>
-                <form class="flex flex-col gap-4" @submit.prevent="submitEnquiry">
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Record enquiry')
+                    }}</DialogTitle></DialogHeader
+                >
+                <form
+                    class="flex flex-col gap-4"
+                    @submit.prevent="submitEnquiry"
+                >
                     <div class="flex flex-col gap-1.5">
                         <Label>{{ t('Lead') }}</Label>
-                        <RecordPicker type="lead" v-model="enquiryLeadId" label="Search leads…" />
+                        <RecordPicker
+                            type="lead"
+                            v-model="enquiryLeadId"
+                            label="Search leads…"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label for="enquiry-reference">{{ t('Source reference') }}</Label>
-                        <Input id="enquiry-reference" v-model="enquiryForm.source_reference" />
-                        <InputError :message="enquiryForm.errors.source_reference" />
+                        <Label for="enquiry-reference">{{
+                            t('Source reference')
+                        }}</Label>
+                        <Input
+                            id="enquiry-reference"
+                            v-model="enquiryForm.source_reference"
+                        />
+                        <InputError
+                            :message="enquiryForm.errors.source_reference"
+                        />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <Label for="enquiry-received">{{ t('Received at') }}</Label>
-                        <Input id="enquiry-received" v-model="enquiryForm.received_at" type="datetime-local" />
+                        <Label for="enquiry-received">{{
+                            t('Received at')
+                        }}</Label>
+                        <Input
+                            id="enquiry-received"
+                            v-model="enquiryForm.received_at"
+                            type="datetime-local"
+                        />
                         <InputError :message="enquiryForm.errors.received_at" />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="enquiryPublication = null">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="enquiryForm.processing">{{ t('Save') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="enquiryPublication = null"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="enquiryForm.processing"
+                            >{{ t('Save') }}</Button
+                        >
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1323,18 +1828,35 @@ type Subscription = {
 };
 
 defineProps<{
-    subscriptions: { data: Subscription[]; links: { label: string; url: string | null; active: boolean }[] };
-    bills: { id: number; subscription_id: number; vendor_bill_id: number; period_from: string; period_to: string }[];
+    subscriptions: {
+        data: Subscription[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
+    bills: {
+        id: number;
+        subscription_id: number;
+        vendor_bill_id: number;
+        period_from: string;
+        period_to: string;
+    }[];
     canManage: boolean;
     canLinkBill: boolean;
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'Portal Subscriptions', href: '/marketing/subscriptions' }] },
+    layout: {
+        breadcrumbs: [
+            { title: 'Portal Subscriptions', href: '/marketing/subscriptions' },
+        ],
+    },
 });
 
 const { t } = useLocale();
 const portalLabel = (portal: string) =>
-    ({ bayut: 'Bayut', property_finder: 'Property Finder', dubizzle: 'Dubizzle' })[portal] ?? portal;
+    ({
+        bayut: 'Bayut',
+        property_finder: 'Property Finder',
+        dubizzle: 'Dubizzle',
+    })[portal] ?? portal;
 
 const columns: DataTableColumn<Subscription>[] = [
     { key: 'portal', label: 'Portal' },
@@ -1364,22 +1886,26 @@ function openCreate(): void {
     dialogOpen.value = true;
 }
 function submit(): void {
-    form
-        .transform((data) => ({
-            ...data,
-            company_id: data.company_id === '' ? null : Number(data.company_id),
-            branch_id: data.branch_id === '' ? null : Number(data.branch_id),
-            cost_centre_id: data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
-            credits_total: data.credits_total === '' ? null : Number(data.credits_total),
-        }))
-        .post('/marketing/subscriptions', {
-            preserveScroll: true,
-            onSuccess: () => (dialogOpen.value = false),
-        });
+    form.transform((data) => ({
+        ...data,
+        company_id: data.company_id === '' ? null : Number(data.company_id),
+        branch_id: data.branch_id === '' ? null : Number(data.branch_id),
+        cost_centre_id:
+            data.cost_centre_id === '' ? null : Number(data.cost_centre_id),
+        credits_total:
+            data.credits_total === '' ? null : Number(data.credits_total),
+    })).post('/marketing/subscriptions', {
+        preserveScroll: true,
+        onSuccess: () => (dialogOpen.value = false),
+    });
 }
 
 const linkingSubscription = ref<Subscription | null>(null);
-const linkForm = useForm({ vendor_bill_id: '', period_from: '', period_to: '' });
+const linkForm = useForm({
+    vendor_bill_id: '',
+    period_from: '',
+    period_to: '',
+});
 function openLink(subscription: Subscription): void {
     linkForm.reset();
     linkingSubscription.value = subscription;
@@ -1389,11 +1915,17 @@ function submitLink(): void {
         return;
     }
     linkForm
-        .transform((data) => ({ ...data, vendor_bill_id: Number(data.vendor_bill_id) }))
-        .post(`/marketing/subscriptions/${linkingSubscription.value.id}/bills`, {
-            preserveScroll: true,
-            onSuccess: () => (linkingSubscription.value = null),
-        });
+        .transform((data) => ({
+            ...data,
+            vendor_bill_id: Number(data.vendor_bill_id),
+        }))
+        .post(
+            `/marketing/subscriptions/${linkingSubscription.value.id}/bills`,
+            {
+                preserveScroll: true,
+                onSuccess: () => (linkingSubscription.value = null),
+            },
+        );
 }
 </script>
 
@@ -1402,7 +1934,9 @@ function submitLink(): void {
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <PageHeader eyebrow="Marketing" title="Portal Subscriptions">
             <template #actions>
-                <Button v-if="canManage" @click="openCreate">{{ t('New subscription') }}</Button>
+                <Button v-if="canManage" @click="openCreate">{{
+                    t('New subscription')
+                }}</Button>
             </template>
         </PageHeader>
 
@@ -1413,30 +1947,60 @@ function submitLink(): void {
             :row-label="(row) => row.package"
             empty-title="No subscriptions yet."
         >
-            <template #cell-portal="{ row }"><Badge variant="outline">{{ portalLabel(row.portal) }}</Badge></template>
-            <template #cell-credits_used="{ row }">{{ row.credits_used }} / {{ row.credits_total }}</template>
-            <template #cell-billing_cycle="{ row }">{{ t(row.billing_cycle) }}</template>
-            <template #cell-renews_on="{ row }">{{ row.renews_on ?? '—' }}</template>
-            <template #cell-status="{ row }"><StatusDot :status="row.status" /></template>
+            <template #cell-portal="{ row }"
+                ><Badge variant="outline">{{
+                    portalLabel(row.portal)
+                }}</Badge></template
+            >
+            <template #cell-credits_used="{ row }"
+                >{{ row.credits_used }} / {{ row.credits_total }}</template
+            >
+            <template #cell-billing_cycle="{ row }">{{
+                t(row.billing_cycle)
+            }}</template>
+            <template #cell-renews_on="{ row }">{{
+                row.renews_on ?? '—'
+            }}</template>
+            <template #cell-status="{ row }"
+                ><StatusDot :status="row.status"
+            /></template>
             <template #cell-id="{ row }">
-                <Button v-if="canLinkBill" size="sm" variant="outline" @click="openLink(row)">{{ t('Link bill') }}</Button>
+                <Button
+                    v-if="canLinkBill"
+                    size="sm"
+                    variant="outline"
+                    @click="openLink(row)"
+                    >{{ t('Link bill') }}</Button
+                >
             </template>
         </DataTable>
         <Pagination :links="subscriptions.links" />
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('New subscription') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('New subscription')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submit">
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label>{{ t('Portal') }}</Label>
                             <Select v-model="form.portal">
-                                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                                <SelectTrigger class="w-full"
+                                    ><SelectValue
+                                /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="bayut">{{ t('Bayut') }}</SelectItem>
-                                    <SelectItem value="property_finder">{{ t('Property Finder') }}</SelectItem>
-                                    <SelectItem value="dubizzle">{{ t('Dubizzle') }}</SelectItem>
+                                    <SelectItem value="bayut">{{
+                                        t('Bayut')
+                                    }}</SelectItem>
+                                    <SelectItem value="property_finder">{{
+                                        t('Property Finder')
+                                    }}</SelectItem>
+                                    <SelectItem value="dubizzle">{{
+                                        t('Dubizzle')
+                                    }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1449,93 +2013,191 @@ function submitLink(): void {
                     <div class="grid grid-cols-3 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="sub-company"
-                                >{{ t('Company ID') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                >{{ t('Company ID') }}
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="sub-company" v-model="form.company_id" type="number" min="1" />
+                            <Input
+                                id="sub-company"
+                                v-model="form.company_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="sub-branch"
-                                >{{ t('Branch ID') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                >{{ t('Branch ID') }}
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="sub-branch" v-model="form.branch_id" type="number" min="1" />
+                            <Input
+                                id="sub-branch"
+                                v-model="form.branch_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="sub-cost-centre"
                                 >{{ t('Cost centre ID') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="sub-cost-centre" v-model="form.cost_centre_id" type="number" min="1" />
+                            <Input
+                                id="sub-cost-centre"
+                                v-model="form.cost_centre_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <Label for="sub-value">{{ t('Contract value (AED)') }}</Label>
-                            <Input id="sub-value" v-model="form.contract_value_aed" type="number" min="0" step="0.01" />
-                            <InputError :message="form.errors.contract_value_aed" />
+                            <Label for="sub-value">{{
+                                t('Contract value (AED)')
+                            }}</Label>
+                            <Input
+                                id="sub-value"
+                                v-model="form.contract_value_aed"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                            />
+                            <InputError
+                                :message="form.errors.contract_value_aed"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label>{{ t('Billing cycle') }}</Label>
                             <Select v-model="form.billing_cycle">
-                                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                                <SelectTrigger class="w-full"
+                                    ><SelectValue
+                                /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="monthly">{{ t('monthly') }}</SelectItem>
-                                    <SelectItem value="quarterly">{{ t('quarterly') }}</SelectItem>
-                                    <SelectItem value="annual">{{ t('annual') }}</SelectItem>
+                                    <SelectItem value="monthly">{{
+                                        t('monthly')
+                                    }}</SelectItem>
+                                    <SelectItem value="quarterly">{{
+                                        t('quarterly')
+                                    }}</SelectItem>
+                                    <SelectItem value="annual">{{
+                                        t('annual')
+                                    }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="sub-credits"
-                            >{{ t('Credits total') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                            >{{ t('Credits total') }}
+                            <span class="text-muted-foreground font-normal"
+                                >({{ t('optional') }})</span
+                            ></Label
                         >
-                        <Input id="sub-credits" v-model="form.credits_total" type="number" min="0" />
+                        <Input
+                            id="sub-credits"
+                            v-model="form.credits_total"
+                            type="number"
+                            min="0"
+                        />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="sub-starts">{{ t('Starts on') }}</Label>
-                            <Input id="sub-starts" v-model="form.starts_on" type="date" />
+                            <Input
+                                id="sub-starts"
+                                v-model="form.starts_on"
+                                type="date"
+                            />
                             <InputError :message="form.errors.starts_on" />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="sub-renews"
-                                >{{ t('Renews on') }} <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                >{{ t('Renews on') }}
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="sub-renews" v-model="form.renews_on" type="date" />
+                            <Input
+                                id="sub-renews"
+                                v-model="form.renews_on"
+                                type="date"
+                            />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="form.processing">{{ t('Create') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="form.processing">{{
+                            t('Create')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="linkingSubscription !== null" @update:open="(value) => !value && (linkingSubscription = null)">
+        <Dialog
+            :open="linkingSubscription !== null"
+            @update:open="(value) => !value && (linkingSubscription = null)"
+        >
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Link vendor bill') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Link vendor bill')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submitLink">
                     <div class="flex flex-col gap-1.5">
                         <Label for="link-bill">{{ t('Vendor bill ID') }}</Label>
-                        <Input id="link-bill" v-model="linkForm.vendor_bill_id" type="number" min="1" />
+                        <Input
+                            id="link-bill"
+                            v-model="linkForm.vendor_bill_id"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="linkForm.errors.vendor_bill_id" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <Label for="link-from">{{ t('Period from') }}</Label>
-                            <Input id="link-from" v-model="linkForm.period_from" type="date" />
-                            <InputError :message="linkForm.errors.period_from" />
+                            <Label for="link-from">{{
+                                t('Period from')
+                            }}</Label>
+                            <Input
+                                id="link-from"
+                                v-model="linkForm.period_from"
+                                type="date"
+                            />
+                            <InputError
+                                :message="linkForm.errors.period_from"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="link-to">{{ t('Period to') }}</Label>
-                            <Input id="link-to" v-model="linkForm.period_to" type="date" />
+                            <Input
+                                id="link-to"
+                                v-model="linkForm.period_to"
+                                type="date"
+                            />
                             <InputError :message="linkForm.errors.period_to" />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="linkingSubscription = null">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="linkForm.processing">{{ t('Link') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="linkingSubscription = null"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="linkForm.processing">{{
+                            t('Link')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1620,7 +2282,10 @@ Expected: FAIL — `resources/js/lib/costing.ts` does not exist.
 ```ts
 export type SpendSource = 'estimate' | 'bill_linked';
 
-export function clearBillIdIfEstimate(source: SpendSource, currentBillId: string): string {
+export function clearBillIdIfEstimate(
+    source: SpendSource,
+    currentBillId: string,
+): string {
     return source === 'estimate' ? '' : currentBillId;
 }
 ```
@@ -1689,16 +2354,25 @@ type ListingSpend = {
 
 defineProps<{
     portals: PortalCost[];
-    spend: { data: ListingSpend[]; links: { label: string; url: string | null; active: boolean }[] };
+    spend: {
+        data: ListingSpend[];
+        links: { label: string; url: string | null; active: boolean }[];
+    };
     canManage: boolean;
 }>();
 defineOptions({
-    layout: { breadcrumbs: [{ title: 'Listing Costing', href: '/marketing/costing' }] },
+    layout: {
+        breadcrumbs: [{ title: 'Listing Costing', href: '/marketing/costing' }],
+    },
 });
 
 const { t } = useLocale();
 const portalLabel = (portal: string) =>
-    ({ bayut: 'Bayut', property_finder: 'Property Finder', dubizzle: 'Dubizzle' })[portal] ?? portal;
+    ({
+        bayut: 'Bayut',
+        property_finder: 'Property Finder',
+        dubizzle: 'Dubizzle',
+    })[portal] ?? portal;
 
 const spendColumns: DataTableColumn<ListingSpend>[] = [
     { key: 'listing_id', label: 'Listing' },
@@ -1723,7 +2397,10 @@ const form = useForm({
 watch(
     () => form.source,
     (source) => {
-        form.vendor_bill_id = clearBillIdIfEstimate(source, form.vendor_bill_id);
+        form.vendor_bill_id = clearBillIdIfEstimate(
+            source,
+            form.vendor_bill_id,
+        );
     },
 );
 function openCreate(): void {
@@ -1731,18 +2408,18 @@ function openCreate(): void {
     dialogOpen.value = true;
 }
 function submit(): void {
-    form
-        .transform((data) => ({
-            ...data,
-            listing_id: Number(data.listing_id),
-            publication_id: data.publication_id === '' ? null : Number(data.publication_id),
-            campaign_id: data.campaign_id === '' ? null : Number(data.campaign_id),
-            vendor_bill_id: data.vendor_bill_id === '' ? null : Number(data.vendor_bill_id),
-        }))
-        .post('/marketing/costing', {
-            preserveScroll: true,
-            onSuccess: () => (dialogOpen.value = false),
-        });
+    form.transform((data) => ({
+        ...data,
+        listing_id: Number(data.listing_id),
+        publication_id:
+            data.publication_id === '' ? null : Number(data.publication_id),
+        campaign_id: data.campaign_id === '' ? null : Number(data.campaign_id),
+        vendor_bill_id:
+            data.vendor_bill_id === '' ? null : Number(data.vendor_bill_id),
+    })).post('/marketing/costing', {
+        preserveScroll: true,
+        onSuccess: () => (dialogOpen.value = false),
+    });
 }
 </script>
 
@@ -1752,11 +2429,19 @@ function submit(): void {
         <PageHeader eyebrow="Marketing" title="Listing Costing" />
 
         <div class="grid gap-4 md:grid-cols-3">
-            <div v-for="portal in portals" :key="portal.portal" class="bg-card shadow-panel rounded-lg border p-5">
-                <p class="font-display text-lg font-medium">{{ portalLabel(portal.portal) }}</p>
+            <div
+                v-for="portal in portals"
+                :key="portal.portal"
+                class="bg-card shadow-panel rounded-lg border p-5"
+            >
+                <p class="font-display text-lg font-medium">
+                    {{ portalLabel(portal.portal) }}
+                </p>
                 <dl class="mt-3 flex flex-col gap-2 text-sm">
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Local-validated listings') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Local-validated listings') }}
+                        </dt>
                         <dd>{{ portal.local_validated_listings }}</dd>
                     </div>
                     <div class="flex justify-between">
@@ -1764,29 +2449,45 @@ function submit(): void {
                         <dd>{{ portal.total_leads }}</dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Actual spend') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Actual spend') }}
+                        </dt>
                         <dd><Money :value="portal.actual_spend_aed" /></dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Estimated spend') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Estimated spend') }}
+                        </dt>
                         <dd><Money :value="portal.estimated_spend_aed" /></dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Cost per listing') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Cost per listing') }}
+                        </dt>
                         <dd>
-                            <Money v-if="portal.cost_per_listing !== null" :value="portal.cost_per_listing" />
+                            <Money
+                                v-if="portal.cost_per_listing !== null"
+                                :value="portal.cost_per_listing"
+                            />
                             <span v-else class="text-faint">—</span>
                         </dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Cost per lead') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Cost per lead') }}
+                        </dt>
                         <dd>
-                            <Money v-if="portal.cost_per_lead !== null" :value="portal.cost_per_lead" />
+                            <Money
+                                v-if="portal.cost_per_lead !== null"
+                                :value="portal.cost_per_lead"
+                            />
                             <span v-else class="text-faint">—</span>
                         </dd>
                     </div>
                     <div class="flex justify-between">
-                        <dt class="text-muted-foreground">{{ t('Cost per deal') }}</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Cost per deal') }}
+                        </dt>
                         <dd class="text-faint">—</dd>
                     </div>
                     <div class="flex justify-between">
@@ -1799,8 +2500,12 @@ function submit(): void {
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h2 class="font-display text-2xl font-medium">{{ t('Spend log') }}</h2>
-                <Button v-if="canManage" size="sm" @click="openCreate">{{ t('Record spend') }}</Button>
+                <h2 class="font-display text-2xl font-medium">
+                    {{ t('Spend log') }}
+                </h2>
+                <Button v-if="canManage" size="sm" @click="openCreate">{{
+                    t('Record spend')
+                }}</Button>
             </div>
             <DataTable
                 :columns="spendColumns"
@@ -1808,77 +2513,150 @@ function submit(): void {
                 :row-key="(row) => row.id"
                 empty-title="No spend recorded yet."
             >
-                <template #cell-listing_id="{ row }">#{{ row.listing_id }}</template>
-                <template #cell-channel="{ row }"><Badge variant="outline">{{ portalLabel(row.channel) }}</Badge></template>
-                <template #cell-source="{ row }">{{ t(row.source === 'estimate' ? 'Estimate' : 'Bill-linked') }}</template>
-                <template #cell-amount_aed="{ row }"><Money :value="row.amount_aed" /></template>
+                <template #cell-listing_id="{ row }"
+                    >#{{ row.listing_id }}</template
+                >
+                <template #cell-channel="{ row }"
+                    ><Badge variant="outline">{{
+                        portalLabel(row.channel)
+                    }}</Badge></template
+                >
+                <template #cell-source="{ row }">{{
+                    t(row.source === 'estimate' ? 'Estimate' : 'Bill-linked')
+                }}</template>
+                <template #cell-amount_aed="{ row }"
+                    ><Money :value="row.amount_aed"
+                /></template>
             </DataTable>
             <Pagination :links="spend.links" />
         </section>
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
-                <DialogHeader><DialogTitle>{{ t('Record spend') }}</DialogTitle></DialogHeader>
+                <DialogHeader
+                    ><DialogTitle>{{
+                        t('Record spend')
+                    }}</DialogTitle></DialogHeader
+                >
                 <form class="flex flex-col gap-4" @submit.prevent="submit">
                     <div class="flex flex-col gap-1.5">
                         <Label for="spend-listing">{{ t('Listing ID') }}</Label>
-                        <Input id="spend-listing" v-model="form.listing_id" type="number" min="1" />
+                        <Input
+                            id="spend-listing"
+                            v-model="form.listing_id"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="form.errors.listing_id" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label for="spend-publication"
                                 >{{ t('Publication ID') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="spend-publication" v-model="form.publication_id" type="number" min="1" />
+                            <Input
+                                id="spend-publication"
+                                v-model="form.publication_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="spend-campaign"
                                 >{{ t('Campaign ID') }}
-                                <span class="text-muted-foreground font-normal">({{ t('optional') }})</span></Label
+                                <span class="text-muted-foreground font-normal"
+                                    >({{ t('optional') }})</span
+                                ></Label
                             >
-                            <Input id="spend-campaign" v-model="form.campaign_id" type="number" min="1" />
+                            <Input
+                                id="spend-campaign"
+                                v-model="form.campaign_id"
+                                type="number"
+                                min="1"
+                            />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
                             <Label>{{ t('Channel') }}</Label>
                             <Select v-model="form.channel">
-                                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                                <SelectTrigger class="w-full"
+                                    ><SelectValue
+                                /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="bayut">{{ t('Bayut') }}</SelectItem>
-                                    <SelectItem value="property_finder">{{ t('Property Finder') }}</SelectItem>
-                                    <SelectItem value="dubizzle">{{ t('Dubizzle') }}</SelectItem>
-                                    <SelectItem value="other">{{ t('Other') }}</SelectItem>
+                                    <SelectItem value="bayut">{{
+                                        t('Bayut')
+                                    }}</SelectItem>
+                                    <SelectItem value="property_finder">{{
+                                        t('Property Finder')
+                                    }}</SelectItem>
+                                    <SelectItem value="dubizzle">{{
+                                        t('Dubizzle')
+                                    }}</SelectItem>
+                                    <SelectItem value="other">{{
+                                        t('Other')
+                                    }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label>{{ t('Source') }}</Label>
                             <Select v-model="form.source">
-                                <SelectTrigger class="w-full"><SelectValue /></SelectTrigger>
+                                <SelectTrigger class="w-full"
+                                    ><SelectValue
+                                /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="estimate">{{ t('Estimate') }}</SelectItem>
-                                    <SelectItem value="bill_linked">{{ t('Bill-linked') }}</SelectItem>
+                                    <SelectItem value="estimate">{{
+                                        t('Estimate')
+                                    }}</SelectItem>
+                                    <SelectItem value="bill_linked">{{
+                                        t('Bill-linked')
+                                    }}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
-                    <div v-if="form.source === 'bill_linked'" class="flex flex-col gap-1.5">
-                        <Label for="spend-bill">{{ t('Vendor bill ID') }}</Label>
-                        <Input id="spend-bill" v-model="form.vendor_bill_id" type="number" min="1" />
+                    <div
+                        v-if="form.source === 'bill_linked'"
+                        class="flex flex-col gap-1.5"
+                    >
+                        <Label for="spend-bill">{{
+                            t('Vendor bill ID')
+                        }}</Label>
+                        <Input
+                            id="spend-bill"
+                            v-model="form.vendor_bill_id"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="form.errors.vendor_bill_id" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
-                            <Label for="spend-amount">{{ t('Amount (AED)') }}</Label>
-                            <Input id="spend-amount" v-model="form.amount_aed" type="number" min="0.01" step="0.01" />
+                            <Label for="spend-amount">{{
+                                t('Amount (AED)')
+                            }}</Label>
+                            <Input
+                                id="spend-amount"
+                                v-model="form.amount_aed"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                            />
                             <InputError :message="form.errors.amount_aed" />
                         </div>
                         <div class="flex flex-col gap-1.5">
-                            <Label for="spend-date">{{ t('Incurred on') }}</Label>
-                            <Input id="spend-date" v-model="form.incurred_on" type="date" />
+                            <Label for="spend-date">{{
+                                t('Incurred on')
+                            }}</Label>
+                            <Input
+                                id="spend-date"
+                                v-model="form.incurred_on"
+                                type="date"
+                            />
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5">
@@ -1887,8 +2665,15 @@ function submit(): void {
                         <InputError :message="form.errors.reason" />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" @click="dialogOpen = false">{{ t('Cancel') }}</Button>
-                        <Button type="submit" :disabled="form.processing">{{ t('Record') }}</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="form.processing">{{
+                            t('Record')
+                        }}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -1940,6 +2725,7 @@ Run: `docker exec z1erp-web sh -lc 'cd /workspace && php scripts/sync-arabic-cat
 ### Task 7: Navigation wiring and phase verification
 
 **Files:**
+
 - Modify: `resources/js/lib/navigation.ts`
 - Modify: `tests/Frontend/navigation.test.mjs` if any soon-item example needs swapping (same pattern as Phase 3 Task 9)
 

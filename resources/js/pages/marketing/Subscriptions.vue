@@ -93,6 +93,10 @@ const form = useForm({
     credits_total: '',
     starts_on: '',
     renews_on: '',
+    // Not a real input: declared so `form.errors.lines` is typed. The backend's
+    // ManageAccountingDimensions::validateLine() reports company/branch/cost-centre
+    // combination errors under this synthetic key, not under any one field.
+    lines: '',
 });
 function openCreate(): void {
     form.reset();
@@ -303,6 +307,7 @@ function submitLink(): void {
                             </Select>
                         </div>
                     </div>
+                    <InputError :message="form.errors.lines" />
                     <div class="flex flex-col gap-1.5">
                         <Label for="sub-credits"
                             >{{ t('Credits total') }}
@@ -316,6 +321,7 @@ function submitLink(): void {
                             type="number"
                             min="0"
                         />
+                        <InputError :message="form.errors.credits_total" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
@@ -339,6 +345,7 @@ function submitLink(): void {
                                 v-model="form.renews_on"
                                 type="date"
                             />
+                            <InputError :message="form.errors.renews_on" />
                         </div>
                     </div>
                     <DialogFooter>

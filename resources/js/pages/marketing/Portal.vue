@@ -140,7 +140,11 @@ function submitPublish(): void {
 
 const enquiryPublication = ref<Publication | null>(null);
 const enquiryLeadId = ref<number | null>(null);
-const enquiryForm = useForm({ source_reference: '', received_at: '' });
+const enquiryForm = useForm({
+    lead_id: null as number | null,
+    source_reference: '',
+    received_at: '',
+});
 function openEnquiry(publication: Publication): void {
     enquiryForm.reset();
     enquiryLeadId.value = null;
@@ -269,6 +273,9 @@ function submitEnquiry(): void {
                                 type="number"
                                 min="1"
                             />
+                            <InputError
+                                :message="campaignForm.errors.vendor_id"
+                            />
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <Label for="campaign-cost-centre"
@@ -282,6 +289,9 @@ function submitEnquiry(): void {
                                 v-model="campaignForm.cost_centre_id"
                                 type="number"
                                 min="1"
+                            />
+                            <InputError
+                                :message="campaignForm.errors.cost_centre_id"
                             />
                         </div>
                     </div>
@@ -299,6 +309,7 @@ function submitEnquiry(): void {
                             min="0"
                             step="0.01"
                         />
+                        <InputError :message="campaignForm.errors.budget_aed" />
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div class="flex flex-col gap-1.5">
@@ -312,6 +323,9 @@ function submitEnquiry(): void {
                                 id="campaign-starts"
                                 v-model="campaignForm.starts_on"
                                 type="date"
+                            />
+                            <InputError
+                                :message="campaignForm.errors.starts_on"
                             />
                         </div>
                         <div class="flex flex-col gap-1.5">
@@ -408,9 +422,6 @@ function submitEnquiry(): void {
                                 ><SelectValue :placeholder="t('None')"
                             /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{{
-                                    t('None')
-                                }}</SelectItem>
                                 <SelectItem
                                     v-for="campaign in campaigns.data"
                                     :key="campaign.id"
@@ -458,6 +469,7 @@ function submitEnquiry(): void {
                             v-model="enquiryLeadId"
                             label="Search leads…"
                         />
+                        <InputError :message="enquiryForm.errors.lead_id" />
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <Label for="enquiry-reference">{{

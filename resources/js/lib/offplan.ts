@@ -17,3 +17,16 @@ export function milestonePercentageValid(
 ): boolean {
     return existingTotal + newPercentage <= 100.001;
 }
+
+export type UnitStatus = 'available' | 'reserved' | 'sold';
+
+export function dealTransitionsForUnit(
+    status: DealStatus,
+    unitStatus: UnitStatus,
+): DealStatus[] {
+    const transitions = allowedDealTransitions(status);
+
+    return unitStatus === 'available'
+        ? transitions
+        : transitions.filter((next) => next !== 'reserved');
+}

@@ -66,3 +66,7 @@ await test('off-plan and marketing statuses map to the right tone', () => {
     assert.equal(statusTone('contracted'), 'success');
     assert.equal(statusTone('local_validated'), 'info');
 });
+
+await test('a replaced cheque is a neutral terminal state, like cancelled', () => {
+    assert.equal(statusTone('replaced'), 'neutral');
+});

@@ -154,7 +154,12 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'owners',
                 ability: 'listings',
             },
-            soon('Off-Plan Projects', 'offPlan', 'listings'),
+            {
+                label: 'Off-Plan Projects',
+                href: '/real-estate/off-plan',
+                icon: 'offPlan',
+                ability: 'crm',
+            },
             soon('Secondary Market', 'secondary', 'listings'),
             {
                 label: 'Reservations',
@@ -204,11 +209,24 @@ export const NAVIGATION: NavGroup[] = [
         id: 'marketing',
         label: 'Marketing',
         items: [
-            soon('Marketing & Portals', 'marketing', 'marketing'),
-            soon('Portal Listings', 'portalListings', 'marketing'),
-            soon('Portal Subscriptions', 'portalSubscriptions', 'marketing'),
-            soon('Portal Invoicing', 'portalInvoicing', 'marketing'),
-            soon('Listing Costing', 'costing', 'marketing'),
+            {
+                label: 'Marketing & Portals',
+                href: '/marketing/portals',
+                icon: 'marketing',
+                ability: 'crm',
+            },
+            {
+                label: 'Portal Subscriptions',
+                href: '/marketing/subscriptions',
+                icon: 'portalSubscriptions',
+                ability: 'accounting',
+            },
+            {
+                label: 'Listing Costing',
+                href: '/marketing/costing',
+                icon: 'costing',
+                ability: 'accounting',
+            },
         ],
     },
     {
@@ -247,9 +265,18 @@ export const NAVIGATION: NavGroup[] = [
                         label: 'Legacy mappings',
                         href: '/accounting/legacy-mappings',
                     },
+                    {
+                        label: 'Dimensions',
+                        href: '/accounting/dimensions',
+                    },
                 ],
             },
-            soon('Cheques (PDC)', 'cheques', 'pdc'),
+            {
+                label: 'Cheques (PDC)',
+                href: '/transactions/pdc',
+                icon: 'cheques',
+                ability: 'pdc',
+            },
             {
                 label: 'Receivables',
                 href: '/invoices',
@@ -388,11 +415,16 @@ export const NAVIGATION: NavGroup[] = [
         id: 'corporate',
         label: 'Corporate',
         items: [
-            soon('HR & Staff Services', 'hr'),
-            soon('Report Centre', 'reportCentre'),
+            { label: 'HR & Staff Services', href: '/hr', icon: 'hr' },
+            { label: 'Report Centre', href: '/reports', icon: 'reportCentre' },
             soon('GAIM Compliance', 'gaim'),
             soon('Bulletins', 'bulletins'),
-            soon('Lead Gateway', 'leadGateway'),
+            {
+                label: 'Lead Gateway',
+                href: '/crm/lead-gateway',
+                icon: 'leadGateway',
+                ability: 'crm',
+            },
             {
                 label: 'Follow-up Automation',
                 href: '/crm/assignment#follow-up',
