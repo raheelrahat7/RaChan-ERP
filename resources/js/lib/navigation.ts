@@ -408,7 +408,7 @@ export const NAVIGATION: NavGroup[] = [
         id: 'corporate',
         label: 'Corporate',
         items: [
-            soon('HR & Staff Services', 'hr'),
+            { label: 'HR & Staff Services', href: '/hr', icon: 'hr' },
             soon('Report Centre', 'reportCentre'),
             soon('GAIM Compliance', 'gaim'),
             soon('Bulletins', 'bulletins'),
