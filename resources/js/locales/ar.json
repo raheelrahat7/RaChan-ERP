@@ -844,5 +844,9 @@
     "Matching purpose": "مطابقة الغرض",
     "Matching city": "مطابقة المدينة",
     "Matching property type": "مطابقة نوع العقار",
-    "Within budget": "ضمن الميزانية"
+    "Within budget": "ضمن الميزانية",
+    "Broker": "الوسيط",
+    "Deals": "الصفقات",
+    "No brokers yet": "لا يوجد وسطاء بعد",
+    "Deals and commission show only to owners without a restricted view.": "تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم."
 }
