@@ -848,5 +848,8 @@
     "Broker": "الوسيط",
     "Deals": "الصفقات",
     "No brokers yet": "لا يوجد وسطاء بعد",
-    "Deals and commission show only to owners without a restricted view.": "تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم."
+    "Deals and commission show only to owners without a restricted view.": "تظهر الصفقات والعمولات فقط للمالكين الذين لا تُقيَّد رؤيتهم.",
+    "Enquiry": "استفسار",
+    "Local validated": "تحقق محلي",
+    "Contracted": "متعاقد"
 }
