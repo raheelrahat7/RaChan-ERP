@@ -258,6 +258,10 @@ export const NAVIGATION: NavGroup[] = [
                         label: 'Legacy mappings',
                         href: '/accounting/legacy-mappings',
                     },
+                    {
+                        label: 'Dimensions',
+                        href: '/accounting/dimensions',
+                    },
                 ],
             },
             {

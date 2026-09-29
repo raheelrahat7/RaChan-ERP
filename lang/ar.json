@@ -960,5 +960,16 @@
     "cleared": "مقاصّ",
     "bounced": "مرتد",
     "replaced": "مستبدل",
-    "Replaced": "مستبدل"
+    "Replaced": "مستبدل",
+    "Dimensions": "الأبعاد المحاسبية",
+    "The company, branch and cost-centre hierarchy other accounting records tag against.": "التسلسل الهرمي للشركات والفروع ومراكز التكلفة الذي تُصنَّف عليه السجلات المحاسبية الأخرى.",
+    "Companies": "الشركات",
+    "New company": "شركة جديدة",
+    "No companies yet.": "لا توجد شركات بعد.",
+    "Branches": "الفروع",
+    "New branch": "فرع جديد",
+    "No branches yet.": "لا توجد فروع بعد.",
+    "Cost centres": "مراكز التكلفة",
+    "New cost centre": "مركز تكلفة جديد",
+    "No cost centres yet.": "لا توجد مراكز تكلفة بعد."
 }
