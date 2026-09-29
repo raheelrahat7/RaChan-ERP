@@ -66,6 +66,7 @@ use App\Http\Controllers\PropertyProfitabilityController;
 use App\Http\Controllers\PublicListingController;
 use App\Http\Controllers\ReadTokenController;
 use App\Http\Controllers\RealEstatePartyController;
+use App\Http\Controllers\RecordSearchController;
 use App\Http\Controllers\RentInvoiceLinkController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SidebarReportsController;
@@ -164,6 +165,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('crm/assignment/meta-pages/{page}/subscribe', [CrmAssignmentController::class, 'subscribeMetaPage'])->name('crm.assignment.meta-pages.subscribe');
     Route::post('crm/assignment/meta-imports/{import}/retry', [CrmAssignmentController::class, 'retryMetaImport'])->name('crm.assignment.meta-imports.retry');
     Route::get('search', GlobalSearchController::class)->name('search.index');
+    Route::get('api/records/search', RecordSearchController::class)->name('records.search');
     Route::get('notifications', [OrganizationNotificationController::class, 'index'])->name('notifications.index');
     Route::put('notifications/preferences', [OrganizationNotificationController::class, 'updatePreferences'])->name('notifications.preferences.update');
     Route::post('notifications/{notification}/read', [OrganizationNotificationController::class, 'markRead'])->name('notifications.read');

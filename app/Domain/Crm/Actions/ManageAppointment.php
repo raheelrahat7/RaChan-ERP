@@ -74,5 +74,8 @@ class ManageAppointment
                 throw ValidationException::withMessages([$field => 'Choose a record in this organization.']);
             }
         }
+        if (isset($input['listing_id']) && (! $actor->can('viewInventory', $org) || ! $assignee->can('viewInventory', $org))) {
+            throw ValidationException::withMessages(['listing_id' => 'Choose a listing visible to both users in this organization.']);
+        }
     }
 }

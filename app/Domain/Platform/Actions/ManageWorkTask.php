@@ -107,12 +107,12 @@ class ManageWorkTask
             $allowed = $job && $this->jobs->canView($org, $actor, $job) && $this->jobs->canView($org, $assignee, $job);
         } else {
             $table = match ($type) {
-                'reservation' => 'reservations', 'lease' => 'leases', 'sale' => 'sales_contracts', 'unit' => 'units',
+                'reservation' => 'reservations', 'lease' => 'leases', 'sale' => 'sales_contracts', 'unit' => 'units', 'listing' => 'listings',
                 default => null,
             };
             $allowed = $table && DB::table($table)->where('organization_id', $org->id)->where('id', $id)->exists()
-                && $actor->can($type === 'unit' ? 'viewInventory' : 'viewTransactions', $org)
-                && $assignee->can($type === 'unit' ? 'viewInventory' : 'viewTransactions', $org);
+                && $actor->can(in_array($type, ['unit', 'listing'], true) ? 'viewInventory' : 'viewTransactions', $org)
+                && $assignee->can(in_array($type, ['unit', 'listing'], true) ? 'viewInventory' : 'viewTransactions', $org);
         }
         if (! $allowed) {
             throw ValidationException::withMessages(['related_id' => 'This related record is not visible to both users in this organization.']);

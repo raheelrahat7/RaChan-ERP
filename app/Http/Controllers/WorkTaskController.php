@@ -65,7 +65,7 @@ class WorkTaskController extends Controller
             'priority' => ['sometimes', 'in:low,normal,high,urgent'],
             'assigned_to' => [$required, 'integer'],
             'due_at' => ['nullable', 'date'],
-            'related_type' => ['nullable', 'in:lead,reservation,lease,sale,unit,job'],
+            'related_type' => ['nullable', 'in:lead,listing,reservation,lease,sale,unit,job'],
             'related_id' => ['nullable', 'integer', 'min:1'],
         ]);
     }
