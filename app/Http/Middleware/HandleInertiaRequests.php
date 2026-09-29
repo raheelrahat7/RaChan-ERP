@@ -62,6 +62,7 @@ class HandleInertiaRequests extends Middleware
         $can = fn (string $ability): bool => $organization instanceof Organization && $user->can($ability, $organization);
 
         return [
+            'chat' => $organization instanceof Organization && $user->belongsToOrganization($organization),
             'crm' => $can('viewCrm'),
             'listings' => $can('viewInventory'),
             'leasing' => $can('viewTransactions'),

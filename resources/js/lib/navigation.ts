@@ -2,6 +2,7 @@ export type NavIcon =
     | 'home'
     | 'search'
     | 'notifications'
+    | 'chat'
     | 'leads'
     | 'contacts'
     | 'matchmaker'
@@ -103,6 +104,12 @@ export const NAVIGATION: NavGroup[] = [
                 href: '/notifications',
                 icon: 'notifications',
                 badge: 'notifications_unread',
+            },
+            {
+                label: 'Team chat',
+                href: '/chat',
+                icon: 'chat',
+                ability: 'chat',
             },
         ],
     },
