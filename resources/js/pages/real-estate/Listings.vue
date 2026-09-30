@@ -22,6 +22,7 @@ const props = defineProps<{
     units: { id: number; number: string }[];
     brokers: { id: number; name: string }[];
     canManage: boolean;
+    canManageTransactions: boolean;
     marketSegment: 'primary' | 'secondary' | null;
 }>();
 const secondaryPage = computed(() => props.marketSegment === 'secondary');
@@ -294,6 +295,21 @@ function recordInquiry(): void {
                             variant="outline"
                             @click="selectedListingId = listing.id"
                             >Record inquiry</Button
+                        >
+                        <Button
+                            v-if="
+                                canManageTransactions &&
+                                listing.status === 'active' &&
+                                (listing.purpose === 'rent' ||
+                                    listing.market_segment === 'secondary')
+                            "
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            ><Link
+                                :href="`/reservations?listing_id=${listing.id}`"
+                                >Reserve</Link
+                            ></Button
                         >
                         <Button
                             v-if="

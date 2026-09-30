@@ -4,6 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ type Reservation = {
     id: number;
     reference: string;
     unit: { id: number; number: string } | null;
+    listing: { id: number; reference: string; purpose: string } | null;
 };
 type Agreement = {
     id: number;
@@ -29,7 +31,7 @@ type Broker = { id: number; name: string };
 type Tenant = { id: number; name: string };
 type CommissionPlan = { id: number; name: string; basis: string; rate: string };
 
-defineProps<{
+const props = defineProps<{
     reservations: Reservation[];
     leases: Agreement[];
     salesContracts: Agreement[];
@@ -38,6 +40,18 @@ defineProps<{
     commissionPlans: CommissionPlan[];
     canManageTransactions: boolean;
 }>();
+const leaseReservations = computed(() =>
+    props.reservations.filter(
+        (reservation) =>
+            !reservation.listing || reservation.listing.purpose === 'rent',
+    ),
+);
+const saleReservations = computed(() =>
+    props.reservations.filter(
+        (reservation) =>
+            !reservation.listing || reservation.listing.purpose === 'sale',
+    ),
+);
 
 const leaseForm = useForm({
     reservation_id: '',
@@ -174,12 +188,15 @@ function activateSalesContract(contract: Agreement): void {
                     >
                         <option disabled value="">Reservation</option>
                         <option
-                            v-for="reservation in reservations"
+                            v-for="reservation in leaseReservations"
                             :key="reservation.id"
                             :value="String(reservation.id)"
                         >
                             {{ reservation.reference }} ·
                             {{ reservation.unit?.number }}
+                            <template v-if="reservation.listing">
+                                · {{ reservation.listing.reference }}</template
+                            >
                         </option>
                     </select>
                     <Input v-model="leaseForm.starts_on" type="date" required />
@@ -290,12 +307,15 @@ function activateSalesContract(contract: Agreement): void {
                     >
                         <option disabled value="">Reservation</option>
                         <option
-                            v-for="reservation in reservations"
+                            v-for="reservation in saleReservations"
                             :key="reservation.id"
                             :value="String(reservation.id)"
                         >
                             {{ reservation.reference }} ·
                             {{ reservation.unit?.number }}
+                            <template v-if="reservation.listing">
+                                · {{ reservation.listing.reference }}</template
+                            >
                         </option>
                     </select>
                     <Input

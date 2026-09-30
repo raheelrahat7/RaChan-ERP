@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['organization_id', 'unit_id', 'contact_id', 'reference', 'status', 'expires_at', 'notes', 'created_by'])]
+#[Fillable(['organization_id', 'unit_id', 'listing_id', 'lead_id', 'contact_id', 'reference', 'status', 'expires_at', 'notes', 'created_by'])]
 class Reservation extends Model
 {
     protected function casts(): array
@@ -30,5 +30,17 @@ class Reservation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(CrmContact::class, 'contact_id');
+    }
+
+    /** @return BelongsTo<Listing, $this> */
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(Listing::class);
+    }
+
+    /** @return BelongsTo<CrmLead, $this> */
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(CrmLead::class, 'lead_id');
     }
 }

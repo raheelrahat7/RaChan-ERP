@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Brokerage\Actions\CalculateCommission;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Leasing\Actions\ManageVacancy;
+use App\Domain\RealEstate\Services\SecondaryDealLink;
 use App\Models\Broker;
 use App\Models\CommissionPlan;
 use App\Models\Lease;
@@ -28,7 +29,7 @@ class AgreementController extends Controller
         $this->authorize('viewTransactions', $organization);
 
         return Inertia::render('transactions/Agreements', [
-            'reservations' => Reservation::where('organization_id', $organization->id)->where('status', 'active')->with('unit:id,number')->get()->map(fn (Reservation $reservation) => ['id' => $reservation->id, 'reference' => $reservation->reference, 'unit' => $reservation->unit?->only('id', 'number')]),
+            'reservations' => Reservation::where('organization_id', $organization->id)->where('status', 'active')->with(['unit:id,number', 'listing:id,reference,purpose'])->get()->map(fn (Reservation $reservation) => ['id' => $reservation->id, 'reference' => $reservation->reference, 'unit' => $reservation->unit?->only('id', 'number'), 'listing' => $reservation->listing?->only('id', 'reference', 'purpose')]),
             'leases' => Lease::where('organization_id', $organization->id)->with('tenant:id,name')->latest()->get(['id', 'reference', 'status', 'unit_id', 'broker_id', 'tenant_id', 'starts_on', 'ends_on', 'rent_amount'])->map(fn (Lease $lease) => [
                 ...$lease->only('id', 'reference', 'status', 'unit_id', 'broker_id', 'starts_on', 'ends_on', 'rent_amount'),
                 'tenant' => $lease->tenant?->only('id', 'name'),
@@ -42,13 +43,14 @@ class AgreementController extends Controller
         ]);
     }
 
-    public function storeLease(Request $request, RecordOrganizationAuditLog $audit): RedirectResponse
+    public function storeLease(Request $request, RecordOrganizationAuditLog $audit, SecondaryDealLink $dealLink): RedirectResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageTransactions', $organization);
         $input = $request->validate(['reservation_id' => ['required', 'integer'], 'tenant_id' => ['nullable', 'integer'], 'broker_id' => ['nullable', 'integer'], 'starts_on' => ['required', 'date'], 'ends_on' => ['required', 'date', 'after:starts_on'], 'rent_amount' => ['nullable', 'numeric', 'min:0']]);
         $reservation = Reservation::where('organization_id', $organization->id)->where('status', 'active')->findOrFail((int) $input['reservation_id']);
+        $dealLink->assertAgreementPurpose($reservation, 'rent');
         if ($input['broker_id'] ?? null) {
             Broker::where('organization_id', $organization->id)->findOrFail((int) $input['broker_id']);
         }
@@ -97,13 +99,14 @@ class AgreementController extends Controller
         return back();
     }
 
-    public function storeSalesContract(Request $request, RecordOrganizationAuditLog $audit): RedirectResponse
+    public function storeSalesContract(Request $request, RecordOrganizationAuditLog $audit, SecondaryDealLink $dealLink): RedirectResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageTransactions', $organization);
         $input = $request->validate(['reservation_id' => ['required', 'integer'], 'broker_id' => ['nullable', 'integer'], 'contracted_on' => ['required', 'date'], 'sale_price' => ['nullable', 'numeric', 'min:0']]);
         $reservation = Reservation::where('organization_id', $organization->id)->where('status', 'active')->findOrFail((int) $input['reservation_id']);
+        $dealLink->assertAgreementPurpose($reservation, 'sale');
         if ($input['broker_id'] ?? null) {
             Broker::where('organization_id', $organization->id)->findOrFail((int) $input['broker_id']);
         }

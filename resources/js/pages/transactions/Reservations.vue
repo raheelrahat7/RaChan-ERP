@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,18 @@ import { Input } from '@/components/ui/input';
 
 type Unit = { id: number; number: string };
 type Contact = { id: number; first_name: string; last_name: string };
+type Listing = {
+    id: number;
+    unit_id: number;
+    reference: string;
+    purpose: string;
+};
+type Lead = {
+    id: number;
+    listing_id: number;
+    first_name: string;
+    last_name: string;
+};
 type Reservation = {
     id: number;
     reference: string;
@@ -14,19 +27,51 @@ type Reservation = {
     expires_at: string;
     unit: Unit | null;
     contact: Contact | null;
+    listing: Pick<Listing, 'id' | 'reference' | 'purpose'> | null;
+    lead: Pick<Lead, 'id' | 'first_name' | 'last_name'> | null;
 };
 const props = defineProps<{
     units: Unit[];
     contacts: Contact[];
+    listings: Listing[];
+    leads: Lead[];
     reservations: Reservation[];
     canManageTransactions: boolean;
+    selectedListingId: number | null;
 }>();
+const initialListing = props.listings.find(
+    (listing) => listing.id === props.selectedListingId,
+);
 const form = useForm({
-    unit_id: '',
+    unit_id: initialListing ? String(initialListing.unit_id) : '',
+    listing_id: initialListing ? String(initialListing.id) : '',
+    lead_id: '',
     contact_id: '',
     expires_at: '',
     notes: '',
 });
+const availableLeads = computed(() =>
+    props.leads.filter((lead) => String(lead.listing_id) === form.listing_id),
+);
+function selectListing(): void {
+    const listing = props.listings.find(
+        (item) => String(item.id) === form.listing_id,
+    );
+    if (listing) form.unit_id = String(listing.unit_id);
+    form.lead_id = '';
+}
+function selectUnit(): void {
+    if (
+        !props.listings.some(
+            (item) =>
+                String(item.id) === form.listing_id &&
+                String(item.unit_id) === form.unit_id,
+        )
+    ) {
+        form.listing_id = '';
+        form.lead_id = '';
+    }
+}
 function createReservation(): void {
     form.post('/reservations', {
         preserveScroll: true,
@@ -48,9 +93,24 @@ function createReservation(): void {
                     @submit.prevent="createReservation"
                 >
                     <select
+                        v-model="form.listing_id"
+                        class="border-input h-9 rounded-md border px-3"
+                        @change="selectListing"
+                    >
+                        <option value="">No linked listing</option>
+                        <option
+                            v-for="listing in props.listings"
+                            :key="listing.id"
+                            :value="String(listing.id)"
+                        >
+                            {{ listing.reference }} · {{ listing.purpose }}
+                        </option>
+                    </select>
+                    <select
                         v-model="form.unit_id"
                         class="border-input h-9 rounded-md border px-3"
                         required
+                        @change="selectUnit"
                     >
                         <option disabled value="">Available unit</option>
                         <option
@@ -59,6 +119,20 @@ function createReservation(): void {
                             :value="String(unit.id)"
                         >
                             {{ unit.number }}
+                        </option></select
+                    ><select
+                        v-if="form.listing_id"
+                        v-model="form.lead_id"
+                        class="border-input h-9 rounded-md border px-3"
+                    >
+                        <option value="">No linked lead</option>
+                        <option
+                            v-for="lead in availableLeads"
+                            :key="lead.id"
+                            :value="String(lead.id)"
+                        >
+                            #{{ lead.id }} · {{ lead.first_name }}
+                            {{ lead.last_name }}
                         </option></select
                     ><select
                         v-model="form.contact_id"
@@ -95,7 +169,15 @@ function createReservation(): void {
                 >
                     <span
                         >{{ reservation.reference }} · Unit
-                        {{ reservation.unit?.number }}</span
+                        {{ reservation.unit?.number }}
+                        <span v-if="reservation.listing"
+                            >· {{ reservation.listing.reference }} ({{
+                                reservation.listing.purpose
+                            }})</span
+                        >
+                        <span v-if="reservation.lead"
+                            >· Lead #{{ reservation.lead.id }}</span
+                        ></span
                     ><span class="text-muted-foreground">{{
                         reservation.status
                     }}</span>

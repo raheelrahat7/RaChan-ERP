@@ -56,7 +56,7 @@ class ListingController extends Controller
 
         $listings = $market->forSegment($organization, $segment);
 
-        return Inertia::render('real-estate/Listings', ['listings' => $listings->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization)]);
+        return Inertia::render('real-estate/Listings', ['listings' => $listings->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization), 'canManageTransactions' => $request->user()->can('manageTransactions', $organization)]);
     }
 
     public function store(Request $request, ListingMarket $market): RedirectResponse
