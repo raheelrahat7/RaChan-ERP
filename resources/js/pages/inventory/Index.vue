@@ -29,7 +29,8 @@ const propertyForm = useForm({
     address_line_1: '',
 });
 const unitForm = useForm({
-    property_id: '',
+    property_id:
+        props.properties.length === 1 ? String(props.properties[0].id) : '',
     building_id: '',
     number: '',
     type: 'apartment',
@@ -47,7 +48,7 @@ function addProperty(): void {
 function addUnit(): void {
     unitForm.post('/inventory/units', {
         preserveScroll: true,
-        onSuccess: () => unitForm.reset(),
+        onSuccess: () => unitForm.reset('number', 'area', 'asking_price'),
     });
 }
 function addBuilding(): void {
@@ -79,7 +80,20 @@ function updateStatus(unit: Unit, status: string): void {
         /><Card v-if="canManageInventory"
             ><CardHeader><CardTitle>Add property</CardTitle></CardHeader
             ><CardContent
-                ><form
+                ><p
+                    v-if="properties.length && !units.length"
+                    class="text-muted-foreground mb-3 text-sm"
+                >
+                    You already have
+                    {{
+                        properties.length === 1
+                            ? `the property ${properties[0].name}`
+                            : `${properties.length} properties`
+                    }}. Add an available unit under an existing property below;
+                    you do not need to create it again.
+                </p>
+                >
+                <form
                     class="flex flex-wrap gap-3"
                     @submit.prevent="addProperty"
                 >
@@ -101,6 +115,13 @@ function updateStatus(unit: Unit, status: string): void {
                     /><Button :disabled="propertyForm.processing"
                         >Add property</Button
                     >
+                    <p
+                        v-if="propertyForm.errors.name"
+                        role="alert"
+                        class="text-destructive w-full text-sm"
+                    >
+                        {{ propertyForm.errors.name }}
+                    </p>
                 </form></CardContent
             ></Card
         ><Card v-if="canManageInventory && props.properties.length"
@@ -140,7 +161,12 @@ function updateStatus(unit: Unit, status: string): void {
         ><Card v-if="canManageInventory && props.properties.length"
             ><CardHeader><CardTitle>Add unit</CardTitle></CardHeader
             ><CardContent
-                ><form class="flex flex-wrap gap-3" @submit.prevent="addUnit">
+                ><p class="text-muted-foreground mb-3 text-sm">
+                    Choose the existing property, enter the unit number, and
+                    leave its status Available so it can be listed.
+                </p>
+                >
+                <form class="flex flex-wrap gap-3" @submit.prevent="addUnit">
                     <select
                         v-model="unitForm.property_id"
                         class="border-input h-9 rounded-md border px-3"
@@ -169,6 +195,13 @@ function updateStatus(unit: Unit, status: string): void {
                         <option value="plot">Plot</option>
                         <option value="other">Other</option></select
                     ><Button :disabled="unitForm.processing">Add unit</Button>
+                    <p
+                        v-if="Object.keys(unitForm.errors).length"
+                        role="alert"
+                        class="text-destructive w-full text-sm"
+                    >
+                        {{ Object.values(unitForm.errors).join(' ') }}
+                    </p>
                 </form></CardContent
             ></Card
         ><Card

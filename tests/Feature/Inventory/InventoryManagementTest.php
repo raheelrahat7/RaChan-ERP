@@ -26,6 +26,25 @@ class InventoryManagementTest extends TestCase
         $this->assertDatabaseHas('units', ['organization_id' => $organization->id, 'number' => 'A-101']);
     }
 
+    public function test_duplicate_property_name_returns_a_field_error_within_the_organization(): void
+    {
+        $organization = Organization::factory()->create();
+        $manager = User::factory()->create(['current_organization_id' => $organization->id]);
+        $organization->users()->attach($manager, ['role' => OrganizationRole::Manager->value]);
+        Property::create(['organization_id' => $organization->id, 'name' => 'Opus', 'type' => 'commercial']);
+
+        $this->actingAs($manager)->post(route('inventory.properties.store'), ['name' => 'Opus', 'type' => 'commercial'])
+            ->assertRedirect()->assertSessionHasErrors('name');
+        $this->assertDatabaseCount('properties', 1);
+
+        $other = Organization::factory()->create();
+        $otherManager = User::factory()->create(['current_organization_id' => $other->id]);
+        $other->users()->attach($otherManager, ['role' => OrganizationRole::Manager->value]);
+        $this->actingAs($otherManager)->post(route('inventory.properties.store'), ['name' => 'Opus', 'type' => 'commercial'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('properties', 2);
+    }
+
     public function test_a_manager_can_add_a_building_and_change_its_tenant_unit_status(): void
     {
         $organization = Organization::factory()->create();

@@ -12,6 +12,7 @@ use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -77,7 +78,12 @@ class InventoryController extends Controller
     {
         $organization = $this->organization($request);
         $this->authorize('manageInventory', $organization);
-        $property = Property::create(['organization_id' => $organization->id, ...$request->validate(['name' => ['required', 'string', 'max:255'], 'type' => ['required', 'in:residential,commercial,mixed_use,land'], 'city' => ['nullable', 'string', 'max:100'], 'address_line_1' => ['nullable', 'string', 'max:255']])]);
+        $property = Property::create(['organization_id' => $organization->id, ...$request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('properties', 'name')->where('organization_id', $organization->id)],
+            'type' => ['required', 'in:residential,commercial,mixed_use,land'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
+        ], ['name.unique' => 'A property with this name already exists in your organization. Select it when adding a unit, or choose a different property name.'])]);
         $audit->handle($organization, $request->user(), 'inventory.property.created', $property);
 
         return back();
