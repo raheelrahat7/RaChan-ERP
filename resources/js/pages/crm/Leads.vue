@@ -15,6 +15,13 @@ import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -114,6 +121,8 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
+const addLeadOpen = ref(false);
+const showFieldFilters = ref(props.filters.filters.length > 0);
 const leadView = ref<'board' | 'list'>('board');
 onMounted(() => {
     const saved = localStorage.getItem('crm-lead-view');
@@ -225,7 +234,10 @@ const activityForm = useForm({
 function createLead(): void {
     form.post('/crm/leads', {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            form.reset();
+            addLeadOpen.value = false;
+        },
     });
 }
 
@@ -277,6 +289,9 @@ function switchLeadView(view: 'board' | 'list'): void {
             title="CRM leads"
             description="Capture prospects and convert qualified leads into contacts and accounts."
         />
+        <div v-if="canManageCrm" class="flex flex-wrap gap-2">
+            <Button type="button" @click="addLeadOpen = true">Add lead</Button>
+        </div>
 
         <div aria-live="polite">
             <InputError
@@ -285,48 +300,57 @@ function switchLeadView(view: 'board' | 'list'): void {
                 :message="error"
             />
         </div>
-        <Link href="/crm/pipeline-report" class="text-sm underline"
-            >Pipeline reporting</Link
+        <nav
+            aria-label="CRM tools"
+            class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
         >
-        <Link
-            v-if="canManageHierarchy"
-            href="/crm/hierarchy"
-            class="text-sm underline"
-            >Departments and CRM access</Link
-        >
-        <Link
-            v-if="canManagePipelines"
-            href="/crm/pipelines"
-            class="text-sm underline"
-            >Manage CRM pipelines</Link
-        >
-        <Link
-            v-if="canManageHierarchy"
-            href="/crm/custom-fields"
-            class="text-sm underline"
-            >CRM field settings</Link
-        >
-        <Link
-            v-if="canManageHierarchy"
-            href="/crm/automation"
-            class="text-sm underline"
-            >Automation rules</Link
-        >
-        <Link href="/crm/assignment" class="text-sm underline"
-            >Assignment routing and check-in</Link
-        >
-        <Link
-            v-if="canManageCrm"
-            href="/crm/leads/import"
-            class="text-sm underline"
-            >Import leads</Link
-        >
-        <Link
-            v-if="canExportLeads"
-            href="/crm/leads/export"
-            class="text-sm underline"
-            >Export leads</Link
-        >
+            <Link
+                href="/crm/pipeline-report"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Pipeline reporting</Link
+            >
+            <Link
+                v-if="canManageHierarchy"
+                href="/crm/hierarchy"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Departments and CRM access</Link
+            >
+            <Link
+                v-if="canManagePipelines"
+                href="/crm/pipelines"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Manage CRM pipelines</Link
+            >
+            <Link
+                v-if="canManageHierarchy"
+                href="/crm/custom-fields"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >CRM field settings</Link
+            >
+            <Link
+                v-if="canManageHierarchy"
+                href="/crm/automation"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Automation rules</Link
+            >
+            <Link
+                href="/crm/assignment"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Assignment routing and check-in</Link
+            >
+            <Link
+                v-if="canManageCrm"
+                href="/crm/leads/import"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Import leads</Link
+            >
+            <Link
+                v-if="canExportLeads"
+                href="/crm/leads/export"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Export leads</Link
+            >
+        </nav>
         <div
             class="flex flex-wrap items-center gap-2"
             role="group"
@@ -428,12 +452,26 @@ function switchLeadView(view: 'board' | 'list'): void {
                     <p v-else class="text-muted-foreground self-end text-sm">
                         Showing leads within your access
                     </p>
-                    <Button>{{ t('Apply filters') }}</Button>
+                    <Button type="submit">{{ t('Apply filters') }}</Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        aria-controls="crm-field-filters"
+                        :aria-expanded="showFieldFilters"
+                        @click="showFieldFilters = !showFieldFilters"
+                        >Field filters{{
+                            filters.filters.length
+                                ? ` (${filters.filters.length})`
+                                : ''
+                        }}</Button
+                    >
                 </form>
-                <details class="rounded-md border p-3">
-                    <summary class="cursor-pointer font-medium">
-                        Filter field settings
-                    </summary>
+                <div
+                    v-if="showFieldFilters"
+                    id="crm-field-filters"
+                    class="rounded-md border p-3"
+                >
+                    <h3 class="font-medium">Filter by field</h3>
                     <div class="mt-3 space-y-3">
                         <Label for="find-filter-field">Find field</Label>
                         <Input
@@ -587,7 +625,7 @@ function switchLeadView(view: 'board' | 'list'): void {
                             >
                         </div>
                     </div>
-                </details>
+                </div>
                 <div
                     v-if="props.filters.q || props.filters.filters.length"
                     class="flex flex-wrap gap-2"
@@ -620,9 +658,15 @@ function switchLeadView(view: 'board' | 'list'): void {
                 </div>
             </CardContent>
         </Card>
-        <Card v-if="canManageCrm">
-            <CardHeader><CardTitle>Add lead</CardTitle></CardHeader>
-            <CardContent>
+        <Dialog v-if="canManageCrm" v-model:open="addLeadOpen">
+            <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Add lead</DialogTitle>
+                    <DialogDescription
+                        >Enter the lead details and any required custom
+                        fields.</DialogDescription
+                    >
+                </DialogHeader>
                 <form
                     class="grid gap-4 md:grid-cols-2"
                     @submit.prevent="createLead"
@@ -737,8 +781,8 @@ function switchLeadView(view: 'board' | 'list'): void {
                         >Create lead</Button
                     >
                 </form>
-            </CardContent>
-        </Card>
+            </DialogContent>
+        </Dialog>
 
         <Card v-if="canManageCrm && props.leads.length">
             <CardHeader><CardTitle>Log activity</CardTitle></CardHeader>
