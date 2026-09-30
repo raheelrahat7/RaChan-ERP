@@ -2,8 +2,8 @@
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,13 +15,16 @@ type Listing = {
     status: string;
     price: string;
     public_url: string | null;
+    market_segment: 'primary' | 'secondary' | null;
 };
 const props = defineProps<{
     listings: Listing[];
     units: { id: number; number: string }[];
     brokers: { id: number; name: string }[];
     canManage: boolean;
+    marketSegment: 'primary' | 'secondary' | null;
 }>();
+const secondaryPage = computed(() => props.marketSegment === 'secondary');
 const selectedListingId = ref<number | null>(null);
 const selectedListing = computed(() =>
     props.listings.find((listing) => listing.id === selectedListingId.value),
@@ -29,9 +32,21 @@ const selectedListing = computed(() =>
 const form = useForm({
     unit_id: '',
     broker_id: '',
-    purpose: 'rent',
+    purpose: secondaryPage.value ? 'sale' : 'rent',
+    market_segment: secondaryPage.value ? 'secondary' : '',
     price: '',
 });
+watch(
+    () => form.purpose,
+    (purpose) => {
+        form.market_segment =
+            purpose === 'rent'
+                ? 'secondary'
+                : secondaryPage.value
+                  ? 'secondary'
+                  : 'primary';
+    },
+);
 function create(): void {
     form.post('/real-estate/listings', {
         preserveScroll: true,
@@ -42,6 +57,13 @@ function updateStatus(listing: Listing, status: string): void {
     router.put(
         `/real-estate/listings/${listing.id}/status`,
         { status },
+        { preserveScroll: true },
+    );
+}
+function updateMarketSegment(listing: Listing, marketSegment: string): void {
+    router.put(
+        `/real-estate/listings/${listing.id}/market-segment`,
+        { market_segment: marketSegment },
         { preserveScroll: true },
     );
 }
@@ -66,12 +88,34 @@ function recordInquiry(): void {
 }
 </script>
 <template>
-    <Head title="Listings" />
+    <Head :title="secondaryPage ? 'Secondary Market' : 'Listings'" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <Heading
-            title="Listings"
-            description="Market available units for rent or sale."
-        /><Card v-if="canManage"
+            :title="secondaryPage ? 'Secondary Market' : 'Listings'"
+            :description="
+                secondaryPage
+                    ? 'Resale and rental listings linked to the existing property inventory and CRM.'
+                    : 'Market available units for rent or sale.'
+            "
+        />
+        <nav aria-label="Listing views" class="flex flex-wrap gap-2">
+            <Link
+                href="/real-estate/listings"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >All listings</Link
+            >
+            <Link
+                href="/real-estate/secondary-market"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Secondary market</Link
+            >
+            <Link
+                href="/real-estate/listings?market_segment=primary"
+                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
+                >Primary sales</Link
+            >
+        </nav>
+        <Card v-if="canManage"
             ><CardHeader><CardTitle>Create listing</CardTitle></CardHeader
             ><CardContent
                 ><form class="flex flex-wrap gap-3" @submit.prevent="create">
@@ -106,6 +150,15 @@ function recordInquiry(): void {
                     >
                         <option value="rent">{{ t('Rent') }}</option>
                         <option value="sale">Sale</option></select
+                    ><select
+                        v-if="form.purpose === 'sale'"
+                        v-model="form.market_segment"
+                        aria-label="Sale market segment"
+                        class="border-input h-9 rounded-md border px-3"
+                        required
+                    >
+                        <option value="primary">Primary sale</option>
+                        <option value="secondary">Resale</option></select
                     ><Input
                         v-model="form.price"
                         type="number"
@@ -115,6 +168,13 @@ function recordInquiry(): void {
                     /><Button :disabled="form.processing"
                         >Create listing</Button
                     >
+                    <p
+                        v-if="Object.keys(form.errors).length"
+                        role="alert"
+                        class="text-destructive w-full text-sm"
+                    >
+                        {{ Object.values(form.errors).join(' ') }}
+                    </p>
                 </form></CardContent
             ></Card
         ><Card v-if="canManage && selectedListing"
@@ -183,9 +243,35 @@ function recordInquiry(): void {
                     :key="listing.id"
                     class="grid gap-3 border-b pb-3 last:border-0 md:grid-cols-[1fr_auto_auto] md:items-center"
                 >
-                    <span>{{ listing.reference }} · {{ listing.purpose }}</span
+                    <span
+                        >{{ listing.reference }} · {{ listing.purpose }} ·
+                        {{
+                            listing.purpose === 'rent'
+                                ? 'Rental'
+                                : listing.market_segment === 'secondary'
+                                  ? 'Resale'
+                                  : listing.market_segment === 'primary'
+                                    ? 'Primary sale'
+                                    : 'Unclassified sale'
+                        }}</span
                     ><span>AED {{ listing.price }} · {{ listing.status }}</span>
                     <div v-if="canManage" class="flex flex-wrap gap-2">
+                        <select
+                            v-if="listing.purpose === 'sale'"
+                            :value="listing.market_segment ?? ''"
+                            class="border-input h-8 rounded-md border px-2 text-sm"
+                            aria-label="Sale market segment"
+                            @change="
+                                updateMarketSegment(
+                                    listing,
+                                    ($event.target as HTMLSelectElement).value,
+                                )
+                            "
+                        >
+                            <option disabled value="">Classify sale</option>
+                            <option value="primary">Primary</option>
+                            <option value="secondary">Resale</option>
+                        </select>
                         <select
                             :value="listing.status"
                             class="border-input h-8 rounded-md border px-2 text-sm"

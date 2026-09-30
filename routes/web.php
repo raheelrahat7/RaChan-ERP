@@ -472,6 +472,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('real-estate/people/{type}', [RealEstatePartyController::class, 'store'])->name('real-estate.people.store');
     Route::put('real-estate/people/brokers/{broker}/user', [RealEstatePartyController::class, 'mapBrokerUser'])->name('real-estate.people.brokers.user');
     Route::get('real-estate/listings', [ListingController::class, 'index'])->name('real-estate.listings.index');
+    Route::get('real-estate/secondary-market', [ListingController::class, 'secondaryMarket'])->name('real-estate.secondary-market.index');
     Route::post('real-estate/listings', [ListingController::class, 'store'])->name('real-estate.listings.store');
     Route::put('real-estate/listings/{listing}/status', [ListingController::class, 'updateStatus'])->name('real-estate.listings.status.update');
     Route::post('real-estate/listings/inquiries', [ListingController::class, 'storeInquiry'])->name('real-estate.listings.inquiries.store');

@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\RealEstate\Actions\RecordListingInquiry;
+use App\Domain\RealEstate\Services\ListingMarket;
 use App\Models\Broker;
 use App\Models\Listing;
 use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,25 +36,36 @@ class ListingController extends Controller
         return back();
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, ListingMarket $market): Response
+    {
+        $segment = $request->validate(['market_segment' => ['nullable', 'in:primary,secondary']])['market_segment'] ?? null;
+
+        return $this->renderListings($request, $segment, $market);
+    }
+
+    public function secondaryMarket(Request $request, ListingMarket $market): Response
+    {
+        return $this->renderListings($request, 'secondary', $market);
+    }
+
+    private function renderListings(Request $request, ?string $segment, ListingMarket $market): Response
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('viewCrm', $organization);
-        $segment = $request->validate(['market_segment' => ['nullable', 'in:primary,secondary']])['market_segment'] ?? null;
 
-        return Inertia::render('real-estate/Listings', ['listings' => Listing::where('organization_id', $organization->id)->when($segment, fn ($query) => $query->where('market_segment', $segment))->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization)]);
+        $listings = $market->forSegment($organization, $segment);
+
+        return Inertia::render('real-estate/Listings', ['listings' => $listings->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization)]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ListingMarket $market): RedirectResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageCrm', $organization);
         $input = $request->validate(['unit_id' => ['required', 'integer'], 'broker_id' => ['nullable', 'integer'], 'purpose' => ['required', 'in:sale,rent'], 'market_segment' => ['nullable', 'in:primary,secondary'], 'price' => ['required', 'numeric', 'min:0']]);
-        if ($input['purpose'] === 'rent' && isset($input['market_segment'])) {
-            throw ValidationException::withMessages(['market_segment' => 'Market segment applies to sale listings only.']);
-        }
+        $input['market_segment'] = $market->forNewListing($input['purpose'], $input['market_segment'] ?? null);
         Unit::where('organization_id', $organization->id)->where('status', 'available')->findOrFail((int) $input['unit_id']);
         if ($input['broker_id'] ?? null) {
             Broker::where('organization_id', $organization->id)->findOrFail((int) $input['broker_id']);

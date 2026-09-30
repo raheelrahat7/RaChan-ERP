@@ -160,7 +160,12 @@ export const NAVIGATION: NavGroup[] = [
                 icon: 'offPlan',
                 ability: 'crm',
             },
-            soon('Secondary Market', 'secondary', 'listings'),
+            {
+                label: 'Secondary Market',
+                href: '/real-estate/secondary-market',
+                icon: 'secondary',
+                ability: 'listings',
+            },
             {
                 label: 'Reservations',
                 href: '/reservations',
