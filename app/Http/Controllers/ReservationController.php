@@ -32,6 +32,8 @@ class ReservationController extends Controller
             'leads' => $request->user()->can('viewCrm', $organization) ? $visibility->scope(CrmLead::where('organization_id', $organization->id)->whereNotNull('listing_id'), $organization, $request->user())->get(['id', 'listing_id', 'first_name', 'last_name']) : [],
             'reservations' => Reservation::where('organization_id', $organization->id)->with(['unit:id,number', 'contact:id,first_name,last_name', 'listing:id,reference,purpose', 'lead:id,assigned_to,first_name,last_name'])->latest()->get()->map(fn (Reservation $reservation) => [...$reservation->only('id', 'reference', 'status', 'expires_at'), 'unit' => $reservation->unit?->only('id', 'number'), 'contact' => $reservation->contact ? $reservation->contact->only('id', 'first_name', 'last_name') : null, 'listing' => $reservation->listing?->only('id', 'reference', 'purpose'), 'lead' => $reservation->lead && $request->user()->can('viewCrm', $organization) && $visibility->canSeeLead($organization, $request->user(), $reservation->lead->assigned_to) ? $reservation->lead->only('id', 'first_name', 'last_name') : null]),
             'canManageTransactions' => $request->user()->can('manageTransactions', $organization),
+            'canManageInventory' => $request->user()->can('manageInventory', $organization),
+            'canManageCrm' => $request->user()->can('manageCrm', $organization),
         ]);
     }
 

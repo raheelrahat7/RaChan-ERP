@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,8 @@ const props = defineProps<{
     leads: Lead[];
     reservations: Reservation[];
     canManageTransactions: boolean;
+    canManageInventory: boolean;
+    canManageCrm: boolean;
     selectedListingId: number | null;
 }>();
 const initialListing = props.listings.find(
@@ -85,7 +87,43 @@ function createReservation(): void {
         <Heading
             title="Reservations"
             description="Hold available inventory while a leasing or sales transaction is prepared."
-        /><Card v-if="canManageTransactions"
+        /><Card v-if="canManageTransactions && !units.length"
+            ><CardHeader
+                ><CardTitle
+                    >No available units to reserve</CardTitle
+                ></CardHeader
+            ><CardContent class="space-y-3 text-sm"
+                ><p>
+                    Add a property and an available unit in Property inventory
+                    before creating a reservation.
+                </p>
+                <Button v-if="canManageInventory" as-child variant="outline"
+                    ><Link href="/inventory"
+                        >Create property and unit</Link
+                    ></Button
+                >
+                <p v-else>Ask an inventory manager to add an available unit.</p>
+            </CardContent></Card
+        >
+        <Card v-if="canManageTransactions && units.length && !listings.length"
+            ><CardHeader
+                ><CardTitle
+                    >No active secondary-market listings</CardTitle
+                ></CardHeader
+            ><CardContent class="space-y-3 text-sm"
+                ><p>
+                    To link a reservation to a resale or rental listing, create
+                    the listing and set its status to Active. You can still
+                    reserve an available unit below without a listing.
+                </p>
+                <Button v-if="canManageCrm" as-child variant="outline"
+                    ><Link href="/real-estate/secondary-market"
+                        >Create or activate listing</Link
+                    ></Button
+                >
+            </CardContent></Card
+        >
+        <Card v-if="canManageTransactions && units.length"
             ><CardHeader><CardTitle>Create reservation</CardTitle></CardHeader
             ><CardContent
                 ><form

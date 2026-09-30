@@ -23,6 +23,7 @@ const props = defineProps<{
     brokers: { id: number; name: string }[];
     canManage: boolean;
     canManageTransactions: boolean;
+    canManageInventory: boolean;
     marketSegment: 'primary' | 'secondary' | null;
 }>();
 const secondaryPage = computed(() => props.marketSegment === 'secondary');
@@ -116,7 +117,24 @@ function recordInquiry(): void {
                 >Primary sales</Link
             >
         </nav>
-        <Card v-if="canManage"
+        <Card v-if="canManage && !units.length"
+            ><CardHeader
+                ><CardTitle>No available units to list</CardTitle></CardHeader
+            ><CardContent class="space-y-3 text-sm"
+                ><p>
+                    Create a property and an available unit in Property
+                    inventory first. Then return here to create a resale or
+                    rental listing.
+                </p>
+                <Button v-if="canManageInventory" as-child variant="outline"
+                    ><Link href="/inventory"
+                        >Create property and unit</Link
+                    ></Button
+                >
+                <p v-else>Ask an inventory manager to add an available unit.</p>
+            </CardContent></Card
+        >
+        <Card v-if="canManage && units.length"
             ><CardHeader><CardTitle>Create listing</CardTitle></CardHeader
             ><CardContent
                 ><form class="flex flex-wrap gap-3" @submit.prevent="create">
@@ -169,6 +187,10 @@ function recordInquiry(): void {
                     /><Button :disabled="form.processing"
                         >Create listing</Button
                     >
+                    <p class="text-muted-foreground w-full text-sm">
+                        New listings start as drafts. Set the listing status to
+                        Active before reserving it.
+                    </p>
                     <p
                         v-if="Object.keys(form.errors).length"
                         role="alert"

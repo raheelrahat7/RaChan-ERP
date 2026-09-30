@@ -22,6 +22,27 @@ class SecondaryMarketTest extends TestCase
         $this->withoutVite();
     }
 
+    public function test_new_organization_receives_empty_inventory_and_permission_state(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($owner, ['role' => OrganizationRole::Owner->value]);
+
+        $this->actingAs($owner)->get(route('real-estate.secondary-market.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('real-estate/Listings')
+            ->has('units', 0)
+            ->has('listings', 0)
+            ->where('canManage', true)
+            ->where('canManageInventory', true));
+
+        $this->get(route('reservations.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('transactions/Reservations')
+            ->has('units', 0)
+            ->has('listings', 0)
+            ->where('canManageTransactions', true)
+            ->where('canManageInventory', true));
+    }
+
     public function test_secondary_market_includes_resales_and_rentals_but_excludes_primary_sales_and_other_organizations(): void
     {
         $org = Organization::factory()->create();
