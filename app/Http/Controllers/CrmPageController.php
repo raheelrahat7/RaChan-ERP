@@ -73,6 +73,14 @@ class CrmPageController extends Controller
         return Inertia::render('crm/SettingsReference', ['section' => $section]);
     }
 
+    public function selectionLists(Request $request, DealAccess $access): Response
+    {
+        $org = $this->organization($request);
+        abort_unless($access->administrator($org, $request->user()), 403);
+
+        return Inertia::render('crm/SettingsLists');
+    }
+
     public function workflows(Request $request): Response
     {
         abort_unless($request->user()->currentOrganization !== null, 404);

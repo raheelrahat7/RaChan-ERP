@@ -60,6 +60,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 href: null,
             },
             {
+                key: 'lists',
+                label: 'Selection lists',
+                icon: 'list',
+                href: '/crm/settings/lists',
+            },
+            {
                 key: 'deal-pipelines',
                 label: 'Deal pipelines',
                 icon: 'handshake',

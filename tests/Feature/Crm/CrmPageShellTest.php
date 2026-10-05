@@ -134,4 +134,17 @@ class CrmPageShellTest extends TestCase
         $this->getJson('/reference-workflows?kind=recruitment')->assertOk()->assertJsonPath('records.data.0.title', 'Sara');
         $this->getJson('/reference-workflows/'.$record['id'])->assertOk()->assertJsonCount(2, 'history.data');
     }
+
+    public function test_selection_lists_page_is_admin_only_and_options_round_trip(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($member)->get(route('crm.settings.lists'))->assertForbidden();
+        $this->actingAs($owner)->get(route('crm.settings.lists'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsLists'));
+        $id = $this->postJson('/crm/settings/options', ['list_key' => 'sources', 'name' => 'Instagram', 'position' => 1, 'active' => true])->assertSuccessful()->json('option.id');
+        $this->putJson('/crm/settings/options/'.$id, ['list_key' => 'sources', 'name' => 'Instagram', 'position' => 1, 'active' => false])->assertSuccessful();
+        $this->getJson('/crm/settings/data')->assertOk()->assertJsonPath('options.0.name', 'Instagram');
+    }
 }
