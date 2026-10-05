@@ -16,10 +16,25 @@ import type {
     LeadProductLine,
 } from '@/lib/crm-lead-products';
 
-const props = defineProps<{ leadId: number; canEdit: boolean }>();
+const props = defineProps<{
+    leadId: number;
+    leadName?: string;
+    canEdit: boolean;
+}>();
 const { t } = useLocale();
 const base = `/crm/leads/${props.leadId}/products`;
 
+const newEstimateHref = computed(
+    () =>
+        `/workflows?${new URLSearchParams({
+            kind: 'estimate',
+            lead_id: String(props.leadId),
+            new: '1',
+            title: props.leadName
+                ? `${t('Estimate')} – ${props.leadName}`
+                : t('Estimate'),
+        })}`,
+);
 const lines = ref<LeadProductLine[]>([]);
 const estimates = ref<LeadEstimate[]>([]);
 const catalog = ref<CatalogProduct[]>([]);

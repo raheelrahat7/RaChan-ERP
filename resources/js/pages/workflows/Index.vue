@@ -52,7 +52,13 @@ const { t } = useLocale();
 const page = usePage();
 const userId = computed(() => Number(page.props.auth.user.id));
 
-const kind = ref<WorkflowKind>('estimate');
+const params = new URLSearchParams(window.location.search);
+const initialKind = WORKFLOW_KINDS.find(
+    (item) => item.key === params.get('kind'),
+)?.key;
+/** Set when an estimate is started from a lead, which the backend links to it. */
+const leadId = ref(Number(params.get('lead_id')) || null);
+const kind = ref<WorkflowKind>(initialKind ?? 'estimate');
 const pipelines = ref<WorkflowPipeline[]>([]);
 const records = ref<WorkflowRecord[]>([]);
 const canConfigure = ref(false);
@@ -131,6 +137,33 @@ const createErrors = ref<Record<string, string>>({});
 const busy = ref(false);
 let key = operationKey();
 
+async function prefillFromLead(): Promise<void> {
+    if (!leadId.value) {
+        return;
+    }
+    createForm.value.title = params.get('title') ?? '';
+    try {
+        const data = await apiJson<{
+            products: {
+                name: string;
+                quantity: string | number;
+                unit_price: string | number;
+                currency: string;
+            }[];
+        }>(`/crm/leads/${leadId.value}/products`);
+        if (data.products.length) {
+            lines.value = data.products.map((product) => ({
+                description: product.name,
+                quantity: String(product.quantity),
+                unit_price: String(product.unit_price),
+            }));
+            createForm.value.currency = data.products[0].currency;
+        }
+    } catch {
+        // The estimate can still be filled in by hand.
+    }
+}
+
 function openCreate(): void {
     createForm.value = {
         title: '',
@@ -145,6 +178,7 @@ function openCreate(): void {
     createErrors.value = {};
     key = operationKey();
     createOpen.value = true;
+    void prefillFromLead();
 }
 
 function collectErrors(
@@ -187,6 +221,9 @@ async function create(): Promise<void> {
             title: form.title,
             assigned_to: userId.value,
             operation_key: key,
+            ...(kind.value === 'estimate' && leadId.value
+                ? { lead_id: leadId.value }
+                : {}),
             details,
         });
         createOpen.value = false;
@@ -257,7 +294,17 @@ watch(pipelineId, (next, previous) => {
         void load();
     }
 });
-onMounted(load);
+onMounted(async () => {
+    await load();
+    if (
+        leadId.value &&
+        params.get('new') === '1' &&
+        canCreateKind(kind.value) &&
+        pipeline.value
+    ) {
+        openCreate();
+    }
+});
 </script>
 
 <template>

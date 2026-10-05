@@ -501,6 +501,7 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
             <TabsContent value="products">
                 <CrmLeadProducts
                     :lead-id="lead.id"
+                    :lead-name="fullName"
                     :can-edit="canManageCrm && !lead.converted"
                 />
             </TabsContent>

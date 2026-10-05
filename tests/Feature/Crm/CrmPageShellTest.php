@@ -198,4 +198,16 @@ class CrmPageShellTest extends TestCase
         $this->putJson('/crm/settings/calendar', ['working_days' => [1 => ['start' => '09:00', 'end' => '18:00'], 2 => ['start' => '09:00', 'end' => '13:00']], 'holidays' => ['2026-12-02']])->assertSuccessful();
         $this->getJson('/crm/settings/calendar')->assertOk()->assertJsonPath('calendar.working_days.2.end', '13:00')->assertJsonPath('calendar.holidays.0', '2026-12-02');
     }
+
+    public function test_an_estimate_created_for_a_lead_shows_on_the_lead(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $owner->id, 'first_name' => 'Noor', 'last_name' => 'A'])->id;
+        $pipeline = $this->postJson('/reference-workflows/pipelines', ['kind' => 'estimate', 'name' => 'Quotes'])->assertSuccessful()->json('pipeline.id');
+
+        $this->postJson('/reference-workflows', ['pipeline_id' => $pipeline, 'title' => 'Estimate – Noor', 'assigned_to' => $owner->id, 'lead_id' => $lead, 'operation_key' => (string) Str::uuid(), 'details' => ['currency' => 'AED', 'lines' => [['description' => 'Survey', 'quantity' => '2', 'unit_price' => '250']]]])->assertSuccessful();
+        $this->getJson('/crm/leads/'.$lead.'/products')->assertOk()->assertJsonPath('estimates.0.title', 'Estimate – Noor');
+    }
 }
