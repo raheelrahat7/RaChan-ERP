@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
@@ -39,7 +40,7 @@ type Activity = {
     updated_at: string;
     creator: { name: string } | null;
 };
-type Tab = 'general' | 'activities' | 'history';
+type Tab = 'general' | 'activities' | 'products' | 'history';
 
 const props = defineProps<{
     lead: {
@@ -91,7 +92,7 @@ function loadHistory(history_page = 1): void {
         { preserveState: true, preserveScroll: true },
     );
 }
-const tabs: Tab[] = ['general', 'activities', 'history'];
+const tabs: Tab[] = ['general', 'activities', 'products', 'history'];
 const tab = ref<Tab>('general');
 const fullName = computed(
     () => `${props.lead.first_name} ${props.lead.last_name}`,
@@ -495,6 +496,13 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                         </div>
                     </CardContent>
                 </Card>
+            </TabsContent>
+
+            <TabsContent value="products">
+                <CrmLeadProducts
+                    :lead-id="lead.id"
+                    :can-edit="canManageCrm && !lead.converted"
+                />
             </TabsContent>
 
             <TabsContent value="history">

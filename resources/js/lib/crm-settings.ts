@@ -52,12 +52,23 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 icon: 'map',
                 href: '/crm/settings/reference/locations',
             },
-            { key: 'taxes', label: 'Taxes', icon: 'calculator', href: null },
+            {
+                key: 'taxes',
+                label: 'Taxes',
+                icon: 'calculator',
+                href: '/crm/settings/catalog/taxes',
+            },
             {
                 key: 'units',
                 label: 'Units of measurement',
                 icon: 'ruler',
-                href: null,
+                href: '/crm/settings/catalog/units',
+            },
+            {
+                key: 'products',
+                label: 'Products',
+                icon: 'store',
+                href: '/crm/settings/catalog/products',
             },
             {
                 key: 'lists',
@@ -75,13 +86,13 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 key: 'templates',
                 label: 'Contact or company details templates',
                 icon: 'file',
-                href: null,
+                href: '/crm/settings/catalog/detail-templates',
             },
             {
                 key: 'company',
                 label: 'My company details',
                 icon: 'building',
-                href: null,
+                href: '/crm/settings/catalog/company-details',
             },
         ],
     },
@@ -149,7 +160,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
         key: 'email',
         label: 'Email',
         tiles: [
-            { key: 'mailboxes', label: 'Mailboxes', icon: 'mail', href: null },
+            {
+                key: 'mailboxes',
+                label: 'Mailboxes',
+                icon: 'mail',
+                href: '/crm/settings/catalog/mailboxes',
+            },
         ],
     },
     {

@@ -81,6 +81,14 @@ class CrmPageController extends Controller
         return Inertia::render('crm/SettingsLists');
     }
 
+    public function catalogSettings(Request $request, string $section): Response
+    {
+        $this->organization($request);
+        abort_unless(in_array($section, ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products'], true), 404);
+
+        return Inertia::render('crm/SettingsCatalog', ['section' => $section]);
+    }
+
     public function workflows(Request $request): Response
     {
         abort_unless($request->user()->currentOrganization !== null, 404);

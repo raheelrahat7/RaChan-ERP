@@ -3,6 +3,7 @@
 namespace Tests\Feature\Crm;
 
 use App\Domain\Identity\Enums\OrganizationRole;
+use App\Models\CrmLead;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -146,5 +147,23 @@ class CrmPageShellTest extends TestCase
         $id = $this->postJson('/crm/settings/options', ['list_key' => 'sources', 'name' => 'Instagram', 'position' => 1, 'active' => true])->assertSuccessful()->json('option.id');
         $this->putJson('/crm/settings/options/'.$id, ['list_key' => 'sources', 'name' => 'Instagram', 'position' => 1, 'active' => false])->assertSuccessful();
         $this->getJson('/crm/settings/data')->assertOk()->assertJsonPath('options.0.name', 'Instagram');
+    }
+
+    public function test_catalog_pages_render_known_sections_and_lead_products_round_trip(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+
+        foreach (['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products'] as $section) {
+            $this->get(route('crm.settings.catalog', $section))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsCatalog')->where('section', $section));
+        }
+        $this->get('/crm/settings/catalog/nope')->assertNotFound();
+
+        $product = $this->postJson('/organization/crm-catalog/products', ['code' => 'survey', 'name' => 'Survey', 'active' => true, 'settings' => ['price' => 250, 'currency' => 'AED']])->assertSuccessful()->json('record.id');
+        $this->getJson('/organization/crm-catalog/products')->assertOk()->assertJsonPath('records.0.name', 'Survey');
+        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $owner->id, 'first_name' => 'Lina', 'last_name' => 'K'])->id;
+        $this->postJson('/crm/leads/'.$lead.'/products', ['product_id' => $product, 'quantity' => 2, 'unit_price' => 250, 'currency' => 'AED'])->assertSuccessful();
+        $this->getJson('/crm/leads/'.$lead.'/products')->assertOk()->assertJsonPath('products.0.name', 'Survey')->assertJsonStructure(['estimates']);
     }
 }
