@@ -166,4 +166,23 @@ class CrmPageShellTest extends TestCase
         $this->postJson('/crm/leads/'.$lead.'/products', ['product_id' => $product, 'quantity' => 2, 'unit_price' => 250, 'currency' => 'AED'])->assertSuccessful();
         $this->getJson('/crm/leads/'.$lead.'/products')->assertOk()->assertJsonPath('products.0.name', 'Survey')->assertJsonStructure(['estimates']);
     }
+
+    public function test_deal_automation_page_filters_and_export_work_end_to_end(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($member)->get(route('crm.deal-automation.page'))->assertForbidden();
+        $this->actingAs($owner)->get(route('crm.deal-automation.page'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/DealAutomation'));
+
+        $pipeline = $this->postJson('/crm/deals/pipelines', ['name' => 'Sales'])->assertSuccessful()->json('pipeline');
+        $stage = collect($this->getJson('/crm/deals/configuration')->json('pipelines'))->firstWhere('id', $pipeline['id'])['stages'][0]['id'];
+        $this->postJson('/crm/deals', ['title' => 'Villa 9', 'category' => 'listing', 'pipeline_id' => $pipeline['id']])->assertCreated();
+        $this->postJson('/crm/deals/automation', ['name' => 'Ping', 'pipeline_id' => $pipeline['id'], 'stage_id' => $stage, 'action' => 'notify_assignee', 'active' => true, 'delay_minutes' => 0, 'conditions' => []])->assertSuccessful();
+        $this->getJson('/crm/deals/automation')->assertOk()->assertJsonPath('rules.0.name', 'Ping');
+
+        $this->get(route('deals.index', ['pipeline_id' => $pipeline['id']]))->assertOk()->assertInertia(fn (Assert $page) => $page->has('filterFields'));
+        $this->get('/crm/deals/export?pipeline_id='.$pipeline['id'])->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
 }

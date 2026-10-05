@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { ChevronDown, Plus, Search } from '@lucide/vue';
+import { ChevronDown, Download, Filter, Plus, Search } from '@lucide/vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CrmDealBoard from '@/components/CrmDealBoard.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -42,6 +42,8 @@ const props = withDefaults(
         /** When true the server filters by search text; this view only reports what was typed. */
         serverSearch?: boolean;
         initialQuery?: string;
+        exportHref?: string | null;
+        filterCount?: number;
     }>(),
     {
         totals: undefined,
@@ -51,6 +53,8 @@ const props = withDefaults(
         linkable: false,
         serverSearch: false,
         initialQuery: '',
+        exportHref: null,
+        filterCount: 0,
     },
 );
 const pipelineId = defineModel<number>('pipelineId', { required: true });
@@ -59,6 +63,7 @@ const emit = defineEmits<{
     createFromLead: [];
     move: [deal: Deal, stageId: number | null];
     search: [query: string];
+    filters: [];
 }>();
 
 const { t } = useLocale();
@@ -216,11 +221,30 @@ const sortedRows = computed(() => {
                     :placeholder="t('Filter and search')"
                 />
             </div>
+            <Button
+                v-if="serverSearch"
+                type="button"
+                variant="outline"
+                @click="emit('filters')"
+                ><Filter class="size-4" aria-hidden="true" />{{ t('Filters')
+                }}<span
+                    v-if="filterCount"
+                    class="bg-primary text-primary-foreground ms-1 rounded-full px-1.5 text-xs"
+                    >{{ filterCount }}</span
+                ></Button
+            >
+            <Button v-if="exportHref" as-child variant="outline"
+                ><a :href="exportHref" download
+                    ><Download class="size-4" aria-hidden="true" />{{
+                        t('Export')
+                    }}</a
+                ></Button
+            >
             <div class="ms-auto flex items-center gap-3 text-sm">
-                <Link href="/crm/pipelines" class="underline">{{
+                <Link href="/crm/deal-pipelines" class="underline">{{
                     t('Pipelines and stages')
                 }}</Link>
-                <Link href="/crm/automation" class="underline">{{
+                <Link href="/crm/deal-automation" class="underline">{{
                     t('Automation rules')
                 }}</Link>
             </div>

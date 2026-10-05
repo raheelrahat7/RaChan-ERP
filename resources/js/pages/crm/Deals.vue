@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import CrmConditionEditor from '@/components/CrmConditionEditor.vue';
 import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
 import CrmDealMoveDialog from '@/components/CrmDealMoveDialog.vue';
 import CrmDealsView from '@/components/CrmDealsView.vue';
@@ -14,6 +15,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useLocale } from '@/composables/useLocale';
+import { cleanConditions, exportQuery } from '@/lib/crm-deal-filters';
+import type { Condition, FilterField } from '@/lib/crm-deal-filters';
 import { creatablePipelines, stageTotalsFromCounts } from '@/lib/crm-deals';
 import type {
     CategoryOption,
@@ -35,8 +38,10 @@ const props = defineProps<{
         pipeline_id?: number | null;
         q?: string | null;
         page?: number | null;
+        custom_filters?: Condition[];
     };
     categoryOptions: CategoryOption[];
+    filterFields?: FilterField[];
 }>();
 const { t } = useLocale();
 
@@ -50,6 +55,21 @@ const moving = ref<Deal | null>(null);
 const moveStage = ref<number | null>(null);
 const leadHelpOpen = ref(false);
 const query = ref(props.filters.q ?? '');
+const filterFields = computed(() => props.filterFields ?? []);
+const appliedFilters = computed(() =>
+    cleanConditions(filterFields.value, props.filters.custom_filters ?? []),
+);
+const filtersOpen = ref(false);
+const draft = ref<Condition[]>([]);
+const exportHref = computed(() =>
+    (pipeline.value?.permissions?.export?.length ?? 0) > 0
+        ? `/crm/deals/export?${exportQuery({
+              pipeline_id: pipelineId.value,
+              q: query.value,
+              custom_filters: appliedFilters.value,
+          })}`
+        : null,
+);
 
 const pipeline = computed(() =>
     props.pipelines.find((item) => item.id === Number(pipelineId.value)),
@@ -72,10 +92,24 @@ function visit(extra: Record<string, unknown> = {}): void {
         {
             pipeline_id: pipelineId.value,
             q: query.value || undefined,
+            custom_filters: appliedFilters.value.length
+                ? appliedFilters.value
+                : undefined,
             ...extra,
         },
         { preserveScroll: true, preserveState: true, replace: true },
     );
+}
+function openFilters(): void {
+    draft.value = structuredClone(appliedFilters.value);
+    filtersOpen.value = true;
+}
+function applyFilters(conditions: Condition[]): void {
+    filtersOpen.value = false;
+    visit({
+        custom_filters: conditions.length ? conditions : undefined,
+        page: undefined,
+    });
 }
 function reload(): void {
     router.reload({ only: ['deals', 'stageCounts', 'pipelines'] });
@@ -110,6 +144,9 @@ watch(pipelineId, (value) => {
             linkable
             server-search
             :initial-query="query"
+            :export-href="exportHref"
+            :filter-count="appliedFilters.length"
+            @filters="openFilters"
             @create="create"
             @create-from-lead="leadHelpOpen = true"
             @move="startMove"
@@ -161,6 +198,33 @@ watch(pipelineId, (value) => {
             :initial-stage-id="moveStage"
             @moved="reload"
         />
+
+        <Dialog v-model:open="filtersOpen">
+            <DialogContent class="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{{ t('Filters') }}</DialogTitle>
+                    <DialogDescription>{{
+                        t('Show only deals that match all of these conditions.')
+                    }}</DialogDescription>
+                </DialogHeader>
+                <CrmConditionEditor v-model="draft" :fields="filterFields" />
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="applyFilters([])"
+                        >{{ t('Clear') }}</Button
+                    >
+                    <Button
+                        type="button"
+                        @click="
+                            applyFilters(cleanConditions(filterFields, draft))
+                        "
+                        >{{ t('Apply') }}</Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="leadHelpOpen">
             <DialogContent>

@@ -23,6 +23,7 @@ class CrmPageController extends Controller
         $filters = $request->validate([
             'pipeline_id' => ['nullable', 'integer'], 'stage_id' => ['nullable', 'integer'], 'assigned_to' => ['nullable', 'integer'],
             'category' => ['nullable', 'string', 'max:24'], 'q' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'],
+            'custom_filters' => ['sometimes', 'array', 'max:20'],
         ]);
 
         $pipelines = collect($overview->pipelines($org, $request->user()));
@@ -48,6 +49,14 @@ class CrmPageController extends Controller
         abort_unless($access->administrator($org, $request->user()), 403);
 
         return Inertia::render('crm/DealPipelines');
+    }
+
+    public function dealAutomation(Request $request, DealAccess $access): Response
+    {
+        $org = $this->organization($request);
+        abort_unless($access->administrator($org, $request->user()), 403);
+
+        return Inertia::render('crm/DealAutomation');
     }
 
     public function permissions(Request $request, DealAccess $access): Response
