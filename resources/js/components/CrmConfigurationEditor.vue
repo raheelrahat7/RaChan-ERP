@@ -12,13 +12,17 @@ const props = defineProps<{
     kind: 'pipeline' | 'stage' | 'reason';
     pipelineId?: number;
     item?: Pipeline | Stage | LostReason;
+    defaultType?: 'normal' | 'on_hold' | 'won' | 'lost';
 }>();
 const form = useForm({
     name: props.item?.name ?? '',
     description: props.item?.description ?? '',
     active: props.item?.active ?? true,
     position: props.item && 'position' in props.item ? props.item.position : 1,
-    type: props.item && 'type' in props.item ? props.item.type : 'normal',
+    type:
+        props.item && 'type' in props.item
+            ? props.item.type
+            : (props.defaultType ?? 'normal'),
     color: props.item && 'color' in props.item ? props.item.color : '#64748b',
 });
 const prefix = `${props.kind}-${props.item?.id ?? `new-${props.pipelineId ?? 'pipeline'}`}`;
