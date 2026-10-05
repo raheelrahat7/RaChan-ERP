@@ -48,7 +48,7 @@ class CrmPageShellTest extends TestCase
 
         $json = $this->getJson('/crm/deals?pipeline_id='.$second)->assertOk()->json();
         $this->get(route('deals.index', ['pipeline_id' => $second]))->assertInertia(fn (Assert $page) => $page
-            ->where('deals.data.0.id', $json['deals']['data'][0]['id'])->where('filters.pipeline_id', $second)->etc());
+            ->where('deals.data.0.id', $json['deals']['data'][0]['id'])->where('filters.pipeline_id', (string) $second)->etc());
         $this->assertNotNull($page);
     }
 
