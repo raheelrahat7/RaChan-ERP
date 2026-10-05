@@ -20,8 +20,18 @@ type Listing = {
 const props = defineProps<{
     listings: Listing[];
     units: { id: number; number: string }[];
-    properties: { id: number; name: string; type: string; city: string | null }[];
-    buildings: { id: number; property_id: number; name: string; floors: number | null }[];
+    properties: {
+        id: number;
+        name: string;
+        type: string;
+        city: string | null;
+    }[];
+    buildings: {
+        id: number;
+        property_id: number;
+        name: string;
+        floors: number | null;
+    }[];
     brokers: { id: number; name: string }[];
     canManage: boolean;
     canManageTransactions: boolean;
@@ -36,7 +46,8 @@ const selectedListing = computed(() =>
 const form = useForm({
     inventory_mode: props.canManageInventory ? 'new_unit' : 'existing_unit',
     unit_id: '',
-    property_id: props.properties.length === 1 ? String(props.properties[0].id) : '',
+    property_id:
+        props.properties.length === 1 ? String(props.properties[0].id) : '',
     property_name: '',
     property_type: 'residential',
     property_city: '',
@@ -52,16 +63,25 @@ const form = useForm({
     price: '',
 });
 const buildingMode = ref<'none' | 'existing' | 'new'>('none');
-const availableBuildings = computed(() => props.buildings.filter((building) => String(building.property_id) === form.property_id));
-watch(() => form.property_id, () => {
-    form.building_id = '';
-    form.building_name = '';
-    form.floor = '';
-    buildingMode.value = 'none';
-});
+const availableBuildings = computed(() =>
+    props.buildings.filter(
+        (building) => String(building.property_id) === form.property_id,
+    ),
+);
+watch(
+    () => form.property_id,
+    () => {
+        form.building_id = '';
+        form.building_name = '';
+        form.building_floors = '';
+        form.floor = '';
+        buildingMode.value = 'none';
+    },
+);
 watch(buildingMode, () => {
     form.building_id = '';
     form.building_name = '';
+    form.building_floors = '';
     form.floor = '';
 });
 watch(
@@ -79,7 +99,21 @@ function create(): void {
     form.post('/real-estate/listings', {
         preserveScroll: true,
         onSuccess: () => {
-            form.reset('unit_id', 'unit_number', 'building_name', 'floor', 'price');
+            form.reset(
+                'unit_id',
+                'property_id',
+                'property_name',
+                'property_type',
+                'property_city',
+                'building_id',
+                'building_name',
+                'building_floors',
+                'unit_number',
+                'unit_type',
+                'floor',
+                'price',
+            );
+            buildingMode.value = 'none';
         },
     });
 }
@@ -160,102 +194,213 @@ function recordInquiry(): void {
         <Card v-if="canManage && (canManageInventory || units.length)"
             ><CardHeader><CardTitle>Create listing</CardTitle></CardHeader
             ><CardContent
-                ><form class="grid gap-4 sm:grid-cols-2" @submit.prevent="create">
-                    <label class="space-y-1 text-sm sm:col-span-2">Inventory
-                        <select v-model="form.inventory_mode" class="border-input h-9 w-full rounded-md border px-3">
-                            <option v-if="units.length" value="existing_unit">Use an existing available unit</option>
-                            <option v-if="canManageInventory" value="new_unit">Add a property/unit with this listing</option>
+                ><form
+                    class="grid gap-4 sm:grid-cols-2"
+                    @submit.prevent="create"
+                >
+                    <label class="space-y-1 text-sm sm:col-span-2"
+                        >Inventory
+                        <select
+                            v-model="form.inventory_mode"
+                            class="border-input h-9 w-full rounded-md border px-3"
+                        >
+                            <option v-if="units.length" value="existing_unit">
+                                Use an existing available unit
+                            </option>
+                            <option v-if="canManageInventory" value="new_unit">
+                                Add a property/unit with this listing
+                            </option>
                         </select>
                     </label>
                     <template v-if="form.inventory_mode === 'new_unit'">
-                        <label class="space-y-1 text-sm">Property
-                            <select v-model="form.property_id" class="border-input h-9 w-full rounded-md border px-3">
+                        <label class="space-y-1 text-sm"
+                            >Property
+                            <select
+                                v-model="form.property_id"
+                                class="border-input h-9 w-full rounded-md border px-3"
+                            >
                                 <option value="">Add new property</option>
-                                <option v-for="property in properties" :key="property.id" :value="String(property.id)">{{ property.name }}</option>
+                                <option
+                                    v-for="property in properties"
+                                    :key="property.id"
+                                    :value="String(property.id)"
+                                >
+                                    {{ property.name }}
+                                </option>
                             </select>
                         </label>
                         <template v-if="!form.property_id">
-                            <label class="space-y-1 text-sm">Property name<Input v-model="form.property_name" required /></label>
-                            <label class="space-y-1 text-sm">Property type
-                                <select v-model="form.property_type" class="border-input h-9 w-full rounded-md border px-3">
-                                    <option value="residential">Residential</option><option value="commercial">Commercial</option><option value="mixed_use">Mixed use</option><option value="land">Land</option>
+                            <label class="space-y-1 text-sm"
+                                >Property name<Input
+                                    v-model="form.property_name"
+                                    required
+                            /></label>
+                            <label class="space-y-1 text-sm"
+                                >Property type
+                                <select
+                                    v-model="form.property_type"
+                                    class="border-input h-9 w-full rounded-md border px-3"
+                                >
+                                    <option value="residential">
+                                        Residential
+                                    </option>
+                                    <option value="commercial">
+                                        Commercial
+                                    </option>
+                                    <option value="mixed_use">Mixed use</option>
+                                    <option value="land">Land</option>
                                 </select>
                             </label>
-                            <label class="space-y-1 text-sm">City<Input v-model="form.property_city" /></label>
+                            <label class="space-y-1 text-sm"
+                                >City<Input v-model="form.property_city"
+                            /></label>
                         </template>
-                        <label class="space-y-1 text-sm">Building
-                            <select v-model="buildingMode" class="border-input h-9 w-full rounded-md border px-3">
+                        <label class="space-y-1 text-sm"
+                            >Building
+                            <select
+                                v-model="buildingMode"
+                                class="border-input h-9 w-full rounded-md border px-3"
+                            >
                                 <option value="none">No building</option>
-                                <option v-if="availableBuildings.length" value="existing">Use existing building</option>
+                                <option
+                                    v-if="availableBuildings.length"
+                                    value="existing"
+                                >
+                                    Use existing building
+                                </option>
                                 <option value="new">Add new building</option>
                             </select>
                         </label>
-                        <label v-if="buildingMode === 'existing'" class="space-y-1 text-sm">Existing building
-                            <select v-model="form.building_id" class="border-input h-9 w-full rounded-md border px-3" required>
-                                <option disabled value="">Choose building</option>
-                                <option v-for="building in availableBuildings" :key="building.id" :value="String(building.id)">{{ building.name }}</option>
+                        <label
+                            v-if="buildingMode === 'existing'"
+                            class="space-y-1 text-sm"
+                            >Existing building
+                            <select
+                                v-model="form.building_id"
+                                class="border-input h-9 w-full rounded-md border px-3"
+                                required
+                            >
+                                <option disabled value="">
+                                    Choose building
+                                </option>
+                                <option
+                                    v-for="building in availableBuildings"
+                                    :key="building.id"
+                                    :value="String(building.id)"
+                                >
+                                    {{ building.name }}
+                                </option>
                             </select>
                         </label>
                         <template v-if="buildingMode === 'new'">
-                            <label class="space-y-1 text-sm">Building name<Input v-model="form.building_name" required /></label>
-                            <label class="space-y-1 text-sm">Number of floors (optional)<Input v-model="form.building_floors" type="number" min="1" max="999" /></label>
+                            <label class="space-y-1 text-sm"
+                                >Building name<Input
+                                    v-model="form.building_name"
+                                    required
+                            /></label>
+                            <label class="space-y-1 text-sm"
+                                >Number of floors (optional)<Input
+                                    v-model="form.building_floors"
+                                    type="number"
+                                    min="1"
+                                    max="999"
+                            /></label>
                         </template>
-                        <label v-if="buildingMode !== 'none'" class="space-y-1 text-sm">Unit floor (optional)<Input v-model="form.floor" placeholder="G or 1" /></label>
-                        <label class="space-y-1 text-sm">Unit number<Input v-model="form.unit_number" required /></label>
-                        <label class="space-y-1 text-sm">Unit type
-                            <select v-model="form.unit_type" class="border-input h-9 w-full rounded-md border px-3">
-                                <option value="apartment">Apartment</option><option value="office">Office</option><option value="retail">Retail</option><option value="warehouse">Warehouse</option><option value="plot">Plot</option><option value="other">Other</option>
+                        <label
+                            v-if="buildingMode !== 'none'"
+                            class="space-y-1 text-sm"
+                            >Unit floor (optional)<Input
+                                v-model="form.floor"
+                                placeholder="G or 1"
+                        /></label>
+                        <label class="space-y-1 text-sm"
+                            >Unit number<Input
+                                v-model="form.unit_number"
+                                required
+                        /></label>
+                        <label class="space-y-1 text-sm"
+                            >Unit type
+                            <select
+                                v-model="form.unit_type"
+                                class="border-input h-9 w-full rounded-md border px-3"
+                            >
+                                <option value="apartment">Apartment</option>
+                                <option value="office">Office</option>
+                                <option value="retail">Retail</option>
+                                <option value="warehouse">Warehouse</option>
+                                <option value="plot">Plot</option>
+                                <option value="other">Other</option>
                             </select>
                         </label>
                     </template>
-                    <label v-else class="space-y-1 text-sm">Available unit
-                    <select
-                        v-model="form.unit_id"
-                        class="border-input h-9 w-full rounded-md border px-3"
-                        required
-                    >
-                        <option disabled value="">{{ t('Unit') }}</option>
-                        <option
-                            v-for="unit in units"
-                            :key="unit.id"
-                            :value="String(unit.id)"
+                    <label v-else class="space-y-1 text-sm"
+                        >Available unit
+                        <select
+                            v-model="form.unit_id"
+                            class="border-input h-9 w-full rounded-md border px-3"
+                            required
                         >
-                            {{ unit.number }}
-                        </option></select></label>
-                    <label class="space-y-1 text-sm">Broker (optional)<select
-                        v-model="form.broker_id"
-                        class="border-input h-9 w-full rounded-md border px-3"
+                            <option disabled value="">{{ t('Unit') }}</option>
+                            <option
+                                v-for="unit in units"
+                                :key="unit.id"
+                                :value="String(unit.id)"
+                            >
+                                {{ unit.number }}
+                            </option>
+                        </select></label
                     >
-                        <option value="">No broker</option>
-                        <option
-                            v-for="broker in brokers"
-                            :key="broker.id"
-                            :value="String(broker.id)"
+                    <label class="space-y-1 text-sm"
+                        >Broker (optional)<select
+                            v-model="form.broker_id"
+                            class="border-input h-9 w-full rounded-md border px-3"
                         >
-                            {{ broker.name }}
-                        </option></select></label>
-                    <label class="space-y-1 text-sm">Listing purpose<select
-                        v-model="form.purpose"
-                        class="border-input h-9 w-full rounded-md border px-3"
+                            <option value="">No broker</option>
+                            <option
+                                v-for="broker in brokers"
+                                :key="broker.id"
+                                :value="String(broker.id)"
+                            >
+                                {{ broker.name }}
+                            </option>
+                        </select></label
                     >
-                        <option value="rent">{{ t('Rent') }}</option>
-                        <option value="sale">Sale</option></select></label>
-                    <label v-if="form.purpose === 'sale'" class="space-y-1 text-sm">Sale market<select
+                    <label class="space-y-1 text-sm"
+                        >Listing purpose<select
+                            v-model="form.purpose"
+                            class="border-input h-9 w-full rounded-md border px-3"
+                        >
+                            <option value="rent">{{ t('Rent') }}</option>
+                            <option value="sale">Sale</option>
+                        </select></label
+                    >
+                    <label
                         v-if="form.purpose === 'sale'"
-                        v-model="form.market_segment"
-                        aria-label="Sale market segment"
-                        class="border-input h-9 w-full rounded-md border px-3"
-                        required
+                        class="space-y-1 text-sm"
+                        >Sale market<select
+                            v-if="form.purpose === 'sale'"
+                            v-model="form.market_segment"
+                            aria-label="Sale market segment"
+                            class="border-input h-9 w-full rounded-md border px-3"
+                            required
+                        >
+                            <option value="primary">Primary sale</option>
+                            <option value="secondary">Resale</option>
+                        </select></label
                     >
-                        <option value="primary">Primary sale</option>
-                        <option value="secondary">Resale</option></select></label>
-                    <label class="space-y-1 text-sm">Asking price (AED)<Input
-                        v-model="form.price"
-                        type="number"
-                        min="0"
-                        placeholder="AED price"
-                        required
-                    /></label><div class="flex items-end"><Button :disabled="form.processing" type="submit">Create listing</Button></div>
+                    <label class="space-y-1 text-sm"
+                        >Asking price (AED)<Input
+                            v-model="form.price"
+                            type="number"
+                            min="0"
+                            placeholder="AED price"
+                            required
+                    /></label>
+                    <div class="flex items-end">
+                        <Button :disabled="form.processing" type="submit"
+                            >Create listing</Button
+                        >
+                    </div>
                     <p class="text-muted-foreground w-full text-sm">
                         New listings start as drafts. Set the listing status to
                         Active before reserving it.

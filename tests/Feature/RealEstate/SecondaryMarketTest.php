@@ -67,6 +67,25 @@ class SecondaryMarketTest extends TestCase
         $this->assertSame(1, Listing::count());
     }
 
+    public function test_invalid_floor_rolls_back_all_new_listing_inventory(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($owner, ['role' => OrganizationRole::Owner->value]);
+
+        $this->actingAs($owner)->post(route('real-estate.listings.store'), [
+            'inventory_mode' => 'new_unit', 'property_name' => 'Rollback Tower', 'property_type' => 'residential',
+            'building_name' => 'Rollback Building', 'building_floors' => 2, 'floor' => '3',
+            'unit_number' => '301', 'unit_type' => 'apartment', 'purpose' => 'rent', 'price' => 1000,
+        ])->assertSessionHasErrors('floor');
+
+        $this->assertDatabaseMissing('properties', ['organization_id' => $org->id, 'name' => 'Rollback Tower']);
+        $this->assertDatabaseMissing('buildings', ['organization_id' => $org->id, 'name' => 'Rollback Building']);
+        $this->assertDatabaseMissing('units', ['organization_id' => $org->id]);
+        $this->assertDatabaseMissing('listings', ['organization_id' => $org->id]);
+        $this->assertDatabaseMissing('audit_logs', ['organization_id' => $org->id, 'event' => 'listing.created']);
+    }
+
     public function test_listing_creating_new_inventory_requires_inventory_permission(): void
     {
         $org = Organization::factory()->create();
