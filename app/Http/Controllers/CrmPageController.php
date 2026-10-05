@@ -59,6 +59,14 @@ class CrmPageController extends Controller
         return Inertia::render('crm/DealAutomation');
     }
 
+    public function workingCalendar(Request $request, DealAccess $access): Response
+    {
+        $org = $this->organization($request);
+        abort_unless($access->administrator($org, $request->user()), 403);
+
+        return Inertia::render('crm/WorkingCalendar');
+    }
+
     public function permissions(Request $request, DealAccess $access): Response
     {
         $org = $this->organization($request);

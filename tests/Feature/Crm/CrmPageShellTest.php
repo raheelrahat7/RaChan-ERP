@@ -185,4 +185,17 @@ class CrmPageShellTest extends TestCase
         $this->get(route('deals.index', ['pipeline_id' => $pipeline['id']]))->assertOk()->assertInertia(fn (Assert $page) => $page->has('filterFields'));
         $this->get('/crm/deals/export?pipeline_id='.$pipeline['id'])->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
+
+    public function test_working_calendar_page_and_endpoint_round_trip(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($member)->get(route('crm.settings.calendar.page'))->assertForbidden();
+        $this->actingAs($owner)->get(route('crm.settings.calendar.page'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/WorkingCalendar'));
+        $this->getJson('/crm/settings/calendar')->assertOk()->assertJsonPath('calendar', null);
+        $this->putJson('/crm/settings/calendar', ['working_days' => [1 => ['start' => '09:00', 'end' => '18:00'], 2 => ['start' => '09:00', 'end' => '13:00']], 'holidays' => ['2026-12-02']])->assertSuccessful();
+        $this->getJson('/crm/settings/calendar')->assertOk()->assertJsonPath('calendar.working_days.2.end', '13:00')->assertJsonPath('calendar.holidays.0', '2026-12-02');
+    }
 }

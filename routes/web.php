@@ -518,6 +518,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/permissions', [CrmPageController::class, 'permissions'])->name('crm.permissions');
     Route::get('crm/deal-pipelines', [CrmPageController::class, 'dealPipelines'])->name('crm.deal-pipelines.page');
     Route::get('crm/deal-automation', [CrmPageController::class, 'dealAutomation'])->name('crm.deal-automation.page');
+    Route::get('crm/settings/working-calendar', [CrmPageController::class, 'workingCalendar'])->name('crm.settings.calendar.page');
     Route::get('crm/settings', [CrmPageController::class, 'settings'])->name('crm.settings');
     Route::get('crm/settings/reference/{section}', [CrmPageController::class, 'referenceSettings'])->name('crm.settings.reference');
     Route::get('crm/settings/lists', [CrmPageController::class, 'selectionLists'])->name('crm.settings.lists');

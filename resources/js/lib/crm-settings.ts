@@ -71,6 +71,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 href: '/crm/settings/catalog/products',
             },
             {
+                key: 'calendar',
+                label: 'Working calendar',
+                icon: 'calendar',
+                href: '/crm/settings/working-calendar',
+            },
+            {
                 key: 'lists',
                 label: 'Selection lists',
                 icon: 'list',
