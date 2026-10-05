@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import CrmFieldFormSheet from '@/components/CrmFieldFormSheet.vue';
 import type { FieldRecord } from '@/components/CrmFieldFormSheet.vue';
 import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
-import { Badge } from '@/components/ui/badge';
 import { useLocale } from '@/composables/useLocale';
+import { apiJson } from '@/lib/crm-api';
 import type { DataTableColumn, RowKey } from '@/lib/data-table';
 
 const props = defineProps<{ fields: FieldRecord[]; types: string[] }>();
@@ -22,15 +22,27 @@ type FieldRow = {
     status: string;
 };
 const ENTITIES = [
-    { key: 'lead', label: 'Lead', connected: true },
-    { key: 'contact', label: 'Contact', connected: false },
-    { key: 'company', label: 'Company', connected: false },
-    { key: 'deal', label: 'Deal', connected: false },
+    { key: 'lead', label: 'Lead' },
+    { key: 'contact', label: 'Contact' },
+    { key: 'company', label: 'Company' },
+    { key: 'deal', label: 'Deal' },
 ];
+const entity = ref(
+    ENTITIES.find(
+        (item) =>
+            item.key ===
+            new URLSearchParams(window.location.search).get('entity'),
+    )?.key ?? 'lead',
+);
+const loaded = ref<FieldRecord[]>([]);
+const loadError = ref('');
+const current = computed<FieldRecord[]>(() =>
+    entity.value === 'lead' ? props.fields : loaded.value,
+);
 const sheetOpen = ref(false);
 const editing = ref<FieldRecord | null>(null);
 const rows = computed<FieldRow[]>(() =>
-    props.fields.map((field) => ({
+    current.value.map((field) => ({
         id: field.id,
         sort_order: field.sort_order ?? 0,
         name: field.name,
@@ -52,8 +64,35 @@ const columns = computed<DataTableColumn<FieldRow>[]>(() => [
 ]);
 
 function byId(id: RowKey): FieldRecord | undefined {
-    return props.fields.find((field) => field.id === id);
+    return current.value.find((field) => field.id === id);
 }
+async function refresh(): Promise<void> {
+    if (entity.value === 'lead') {
+        return;
+    }
+    try {
+        const data = await apiJson<{ fields: FieldRecord[] }>(
+            `/crm/settings/fields?entity=${entity.value}`,
+        );
+        loaded.value = data.fields;
+        loadError.value = '';
+    } catch {
+        loadError.value = t('Could not load these fields.');
+    }
+}
+async function pick(key: string): Promise<void> {
+    entity.value = key;
+    loaded.value = [];
+    window.history.replaceState(
+        null,
+        '',
+        key === 'lead'
+            ? '/crm/custom-fields'
+            : `/crm/custom-fields?entity=${key}`,
+    );
+    await refresh();
+}
+onMounted(refresh);
 function add(): void {
     editing.value = null;
     sheetOpen.value = true;
@@ -72,12 +111,13 @@ function archive(keys: RowKey[]): void {
     if (
         targets.length &&
         confirm(
-            `${t('Archive')} ${targets.map((field) => field.name).join(', ')}? ${t('Saved lead values will be preserved.')}`,
+            `${t('Archive')} ${targets.map((field) => field.name).join(', ')}? ${t('Saved values will be preserved.')}`,
         )
     ) {
         for (const field of targets) {
             router.delete(`/crm/custom-fields/${field.id}`, {
                 preserveScroll: true,
+                onSuccess: () => void refresh(),
             });
         }
     }
@@ -89,23 +129,21 @@ function archive(keys: RowKey[]): void {
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <nav :aria-label="t('Field types')" class="flex flex-wrap gap-2">
-                <template v-for="entity in ENTITIES" :key="entity.key">
-                    <span
-                        v-if="entity.connected"
-                        class="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium"
-                        aria-current="page"
-                        >{{ t(entity.label) }}</span
-                    >
-                    <span
-                        v-else
-                        class="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-sm"
-                        aria-disabled="true"
-                        >{{ t(entity.label)
-                        }}<Badge variant="outline">{{
-                            t('Not connected yet')
-                        }}</Badge></span
-                    >
-                </template>
+                <button
+                    v-for="item in ENTITIES"
+                    :key="item.key"
+                    type="button"
+                    class="rounded-md px-3 py-1.5 text-sm font-medium"
+                    :class="
+                        item.key === entity
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-muted border'
+                    "
+                    :aria-current="item.key === entity ? 'page' : undefined"
+                    @click="pick(item.key)"
+                >
+                    {{ t(item.label) }}
+                </button>
             </nav>
             <div class="flex gap-3 text-sm">
                 <Link href="/crm/leads" class="underline">{{
@@ -114,8 +152,11 @@ function archive(keys: RowKey[]): void {
             </div>
         </div>
 
+        <p v-if="loadError" role="alert" class="text-destructive text-sm">
+            {{ loadError }}
+        </p>
         <CrmSettingsTable
-            title="Fields: Lead"
+            :title="`${t('Fields')}: ${t(ENTITIES.find((item) => item.key === entity)?.label ?? 'Lead')}`"
             :columns="columns"
             :rows="rows"
             :row-key="(row) => row.id"
@@ -140,7 +181,7 @@ function archive(keys: RowKey[]): void {
         <p class="text-muted-foreground text-xs">
             {{
                 t(
-                    'Select a field to edit it. Delete archives a field and keeps the values saved on existing leads.',
+                    'Select a field to edit it. Delete archives a field and keeps the values saved on existing records.',
                 )
             }}
         </p>
@@ -149,6 +190,8 @@ function archive(keys: RowKey[]): void {
             v-model:open="sheetOpen"
             :field="editing"
             :types="types"
+            :entity="entity"
+            @saved="refresh"
         />
     </div>
 </template>

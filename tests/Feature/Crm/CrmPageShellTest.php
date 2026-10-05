@@ -95,4 +95,16 @@ class CrmPageShellTest extends TestCase
         $this->get('/crm/settings/reference/unknown')->assertNotFound();
         $this->getJson('/organization/reference-settings/currencies')->assertOk()->assertJsonStructure(['records']);
     }
+
+    public function test_field_list_serves_every_entity_through_the_shared_endpoints(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+
+        foreach (['contact', 'company', 'deal'] as $entity) {
+            $this->actingAs($owner)->post('/crm/custom-fields', ['entity' => $entity, 'name' => 'Passport '.$entity, 'key' => 'passport', 'type' => 'text'])->assertRedirect();
+            $this->getJson('/crm/settings/fields?entity='.$entity)->assertOk()->assertJsonPath('fields.0.key', 'passport')->assertJsonCount(1, 'fields');
+        }
+        $this->getJson('/crm/settings/fields')->assertOk()->assertJsonCount(0, 'fields');
+    }
 }

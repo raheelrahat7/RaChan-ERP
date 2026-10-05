@@ -41,7 +41,15 @@ const ROLES: FieldRole[] = [
     'member',
     'viewer',
 ];
-const props = defineProps<{ field: FieldRecord | null; types: string[] }>();
+const props = withDefaults(
+    defineProps<{
+        field: FieldRecord | null;
+        types: string[];
+        entity?: string;
+    }>(),
+    { entity: 'lead' },
+);
+const emit = defineEmits<{ saved: [] }>();
 const open = defineModel<boolean>('open', { required: true });
 
 const { t } = useLocale();
@@ -101,6 +109,7 @@ function toggleRole(kind: 'view_roles' | 'edit_roles', role: FieldRole): void {
 }
 function save(): void {
     form.transform((data) => ({
+        entity: props.entity,
         name: data.name,
         key: data.key,
         type: data.type,
@@ -116,7 +125,10 @@ function save(): void {
     }));
     const options = {
         preserveScroll: true,
-        onSuccess: () => (open.value = false),
+        onSuccess: () => {
+            open.value = false;
+            emit('saved');
+        },
     };
     if (props.field) {
         form.put(`/crm/custom-fields/${props.field.id}`, options);
