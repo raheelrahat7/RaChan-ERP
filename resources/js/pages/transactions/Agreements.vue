@@ -279,6 +279,7 @@ function renew(row: Row): void {
         </Card>
 
         <CrmSettingsTable
+            :show-title="false"
             :title="tab === 'leases' ? 'Leases' : 'Sales contracts'"
             :columns="columns"
             :rows="rows"

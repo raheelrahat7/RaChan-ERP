@@ -240,6 +240,7 @@ function applyFilter(filter: string): void {
         </p>
 
         <CrmSettingsTable
+            :show-title="false"
             title="Maintenance requests"
             :columns="columns"
             :rows="rows"

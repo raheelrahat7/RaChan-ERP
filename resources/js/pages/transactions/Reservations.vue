@@ -202,6 +202,7 @@ function createReservation(): void {
         </p>
 
         <CrmSettingsTable
+            :show-title="false"
             title="Reservations"
             :columns="columns"
             :rows="rows"

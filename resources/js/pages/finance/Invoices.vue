@@ -179,6 +179,7 @@ const invoiceOf = (id: number): Invoice | undefined =>
         />
 
         <CrmSettingsTable
+            :show-title="false"
             title="Invoices"
             :columns="columns"
             :rows="rows"

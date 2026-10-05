@@ -195,6 +195,7 @@ function pay(bill: Bill): void {
         </PageHeader>
 
         <CrmSettingsTable
+            :show-title="false"
             title="Vendor bills"
             :columns="columns"
             :rows="rows"

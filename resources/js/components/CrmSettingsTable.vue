@@ -19,8 +19,16 @@ const props = withDefaults(
         canEdit?: boolean;
         addLabel?: string;
         selectable?: boolean;
+        /** Hide the visible heading when the page already has one; the table keeps its caption. */
+        showTitle?: boolean;
     }>(),
-    { searchable: false, canEdit: false, addLabel: 'Add', selectable: true },
+    {
+        searchable: false,
+        canEdit: false,
+        addLabel: 'Add',
+        selectable: true,
+        showTitle: true,
+    },
 );
 const emit = defineEmits<{
     add: [];
@@ -73,7 +81,7 @@ void slots;
     <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-3">
             <h1
-                v-if="title"
+                v-if="title && showTitle"
                 class="font-display text-3xl leading-tight font-medium"
             >
                 {{ t(title) }}

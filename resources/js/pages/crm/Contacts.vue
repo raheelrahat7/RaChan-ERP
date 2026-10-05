@@ -79,6 +79,7 @@ function createContact(): void {
             description="Manage the people and organizations in your pipeline."
         />
         <CrmSettingsTable
+            :show-title="false"
             title="Contacts"
             :columns="columns"
             :rows="rows"
