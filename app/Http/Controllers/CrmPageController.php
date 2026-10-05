@@ -65,6 +65,14 @@ class CrmPageController extends Controller
         return Inertia::render('crm/Settings');
     }
 
+    public function referenceSettings(Request $request, string $section): Response
+    {
+        $this->organization($request);
+        abort_unless(in_array($section, ['currency', 'locations', 'num-documents', 'num-invoices'], true), 404);
+
+        return Inertia::render('crm/SettingsReference', ['section' => $section]);
+    }
+
     private function organization(Request $request): Organization
     {
         $org = $request->user()->currentOrganization;

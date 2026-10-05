@@ -82,4 +82,17 @@ class CrmPageShellTest extends TestCase
         auth()->logout();
         $this->get(route('deals.index'))->assertRedirect(route('login'));
     }
+
+    public function test_reference_settings_pages_render_known_sections_only(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+
+        foreach (['currency', 'locations', 'num-documents', 'num-invoices'] as $section) {
+            $this->actingAs($owner)->get(route('crm.settings.reference', $section))->assertOk()
+                ->assertInertia(fn (Assert $page) => $page->component('crm/SettingsReference')->where('section', $section));
+        }
+        $this->get('/crm/settings/reference/unknown')->assertNotFound();
+        $this->getJson('/organization/reference-settings/currencies')->assertOk()->assertJsonStructure(['records']);
+    }
 }
