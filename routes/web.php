@@ -114,6 +114,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('chat/group', [InternalChatController::class, 'group'])->middleware('throttle:20,1')->name('chat.group');
     Route::get('chat/rooms/{room}/messages', [InternalChatController::class, 'messages'])->middleware('throttle:120,1')->name('chat.messages');
     Route::post('chat/rooms/{room}/messages', [InternalChatController::class, 'send'])->middleware('throttle:60,1')->name('chat.send');
+    Route::post('chat/rooms/{room}/read', [InternalChatController::class, 'read'])->middleware('throttle:240,1')->name('chat.read');
+    Route::post('chat/rooms/{room}/attachments', [InternalChatController::class, 'attach'])->middleware('throttle:30,1')->name('chat.attach');
+    Route::get('chat/attachments/{attachment}', [InternalChatController::class, 'attachment'])->middleware('throttle:240,1')->name('chat.attachments.show');
     Route::get('chat/rooms/{room}/call', [InternalChatController::class, 'activeCall'])->middleware('throttle:120,1')->name('chat.calls.active');
     Route::post('chat/rooms/{room}/call', [InternalChatController::class, 'startCall'])->middleware('throttle:20,1')->name('chat.calls.start');
     Route::get('chat/calls/{call}/signals', [InternalChatController::class, 'signals'])->middleware('throttle:300,1')->name('chat.calls.signals');

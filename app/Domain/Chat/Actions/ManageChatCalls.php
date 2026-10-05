@@ -13,12 +13,14 @@ class ManageChatCalls
 {
     public function __construct(private ManageInternalChat $chat, private RecordOrganizationAuditLog $audit) {}
 
-    public function start(Organization $org, User $actor, int $roomId): object
+    public function start(Organization $org, User $actor, int $roomId, string $kind = 'audio'): object
     {
         $room = $this->chat->room($org, $actor, $roomId);
         abort_unless(data_get($room, 'kind') === 'direct', 422);
 
-        return DB::transaction(function () use ($org, $actor, $roomId): object {
+        abort_unless(in_array($kind, ['audio', 'video'], true), 422);
+
+        return DB::transaction(function () use ($org, $actor, $roomId, $kind): object {
             DB::table('internal_chat_rooms')->where('id', $roomId)->lockForUpdate()->firstOrFail();
             $this->expire($roomId);
             if (DB::table('internal_chat_calls')->where('room_id', $roomId)->whereIn('status', ['ringing', 'active'])->exists()) {
@@ -28,9 +30,9 @@ class ManageChatCalls
             abort_unless($recipientId !== null && $org->users()->whereKey($recipientId)->exists(), 422);
             $id = DB::table('internal_chat_calls')->insertGetId([
                 'organization_id' => $org->id, 'room_id' => $roomId, 'initiator_id' => $actor->id,
-                'recipient_id' => $recipientId, 'status' => 'ringing', 'created_at' => now(), 'updated_at' => now(),
+                'recipient_id' => $recipientId, 'status' => 'ringing', 'kind' => $kind, 'created_at' => now(), 'updated_at' => now(),
             ]);
-            $this->audit->handle($org, $actor, 'chat.call.started', $org, ['call_id' => $id, 'room_id' => $roomId]);
+            $this->audit->handle($org, $actor, 'chat.call.started', $org, ['call_id' => $id, 'room_id' => $roomId, 'kind' => $kind]);
 
             return DB::table('internal_chat_calls')->where('id', $id)->first();
         });

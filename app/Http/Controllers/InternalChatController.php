@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Chat\Actions\ManageChatAttachments;
 use App\Domain\Chat\Actions\ManageChatCalls;
 use App\Domain\Chat\Actions\ManageInternalChat;
 use App\Domain\Chat\Queries\ExportChats;
 use App\Domain\Identity\Enums\OrganizationRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,6 +39,7 @@ class InternalChatController extends Controller
         return Inertia::render('chat/Index', [
             'rooms' => $rooms, 'activeRoomId' => $roomId,
             'messages' => $chat->messages($org, $request->user(), $roomId),
+            'viewedBy' => $chat->viewedBy($org, $request->user(), $roomId),
             'members' => $org->users()->orderBy('name')->get(['users.id', 'users.name']),
             'currentUserId' => $request->user()->id,
             'canExportChats' => $canExport,
@@ -61,16 +64,47 @@ class InternalChatController extends Controller
 
     public function messages(Request $request, int $room, ManageInternalChat $chat): JsonResponse
     {
-        $data = $request->validate(['after' => ['nullable', 'integer', 'min:0'], 'before' => ['nullable', 'integer', 'min:1']]);
+        $data = $request->validate(['after' => ['nullable', 'integer', 'min:0'], 'before' => ['nullable', 'integer', 'min:1'], 'q' => ['nullable', 'string', 'max:100']]);
+        $org = $chat->organization($request->user());
 
-        return response()->json(['messages' => $chat->messages($chat->organization($request->user()), $request->user(), $room, $data['after'] ?? null, $data['before'] ?? null)]);
+        return response()->json([
+            'messages' => $chat->messages($org, $request->user(), $room, $data['after'] ?? null, $data['before'] ?? null, $data['q'] ?? null),
+            'viewed_by' => $chat->viewedBy($org, $request->user(), $room),
+        ]);
     }
 
     public function send(Request $request, int $room, ManageInternalChat $chat): JsonResponse
     {
-        $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
+        $data = $request->validate(['body' => ['required', 'string', 'max:5000'], 'mentions' => ['sometimes', 'array', 'max:20'], 'mentions.*' => ['integer', 'distinct']]);
 
-        return response()->json(['message' => $chat->send($chat->organization($request->user()), $request->user(), $room, $data['body'])]);
+        return response()->json(['message' => $chat->send($chat->organization($request->user()), $request->user(), $room, $data['body'], $data['mentions'] ?? [])]);
+    }
+
+    public function read(Request $request, int $room, ManageInternalChat $chat): JsonResponse
+    {
+        $data = $request->validate(['message_id' => ['required', 'integer', 'min:1']]);
+        $chat->markRead($chat->organization($request->user()), $request->user(), $room, $data['message_id']);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function attach(Request $request, int $room, ManageInternalChat $chat, ManageChatAttachments $attachments): JsonResponse
+    {
+        $data = $request->validate([
+            'files' => ['required', 'array'], 'body' => ['nullable', 'string', 'max:5000'],
+            'mentions' => ['sometimes', 'array', 'max:20'], 'mentions.*' => ['integer', 'distinct'],
+            'voice' => ['sometimes', 'boolean'], 'duration' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        return response()->json(['message' => $attachments->send(
+            $chat->organization($request->user()), $request->user(), $room, array_values(Arr::wrap($request->file('files', []))), (string) ($data['body'] ?? ''),
+            $data['mentions'] ?? [], (bool) ($data['voice'] ?? false), isset($data['duration']) ? (int) $data['duration'] : null,
+        )]);
+    }
+
+    public function attachment(Request $request, int $attachment, ManageInternalChat $chat, ManageChatAttachments $attachments): StreamedResponse
+    {
+        return $attachments->download($chat->organization($request->user()), $request->user(), $attachment);
     }
 
     public function activeCall(Request $request, int $room, ManageInternalChat $chat, ManageChatCalls $calls): JsonResponse
@@ -80,7 +114,9 @@ class InternalChatController extends Controller
 
     public function startCall(Request $request, int $room, ManageInternalChat $chat, ManageChatCalls $calls): JsonResponse
     {
-        return response()->json(['call' => $calls->start($chat->organization($request->user()), $request->user(), $room)]);
+        $data = $request->validate(['kind' => ['sometimes', 'in:audio,video']]);
+
+        return response()->json(['call' => $calls->start($chat->organization($request->user()), $request->user(), $room, $data['kind'] ?? 'audio')]);
     }
 
     public function signals(Request $request, int $call, ManageInternalChat $chat, ManageChatCalls $calls): JsonResponse
