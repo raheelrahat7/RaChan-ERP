@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Crm\Queries\LeadSummaryExport;
 use App\Domain\Finance\Queries\InvoiceSummaryExport;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Queries\MaintenanceExport;
 use App\Domain\RealEstate\Queries\InventoryExport;
 use Illuminate\Http\Request;
@@ -23,6 +24,9 @@ class OperationsExportController extends Controller
             default => abort(404),
         };
         $this->authorize($permission, $organization);
+        if ($report === 'inventory') {
+            abort_unless($request->user()->hasOrganizationPermission($organization, OrganizationPermission::ExportInventory), 403);
+        }
         $rows = match ($report) {
             'maintenance' => $maintenance->rows($organization, $request->user()),
             'inventory' => $inventory->rows($organization),

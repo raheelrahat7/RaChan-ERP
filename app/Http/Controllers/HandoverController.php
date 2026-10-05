@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Documents\Services\DocumentAccess;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Leasing\Actions\AttachHandoverEvidence;
 use App\Domain\Leasing\Actions\ManageVacancy;
 use App\Domain\Leasing\Actions\RecordHandoverInspection;
@@ -37,7 +39,7 @@ class HandoverController extends Controller
                 'inspectionItems' => $handover->inspectionItems->map(fn ($item) => [
                     ...$item->only('id', 'area', 'condition', 'notes', 'created_at'),
                     'recorder' => $item->recorder?->name,
-                    'documents' => $item->documents->map->only('id', 'name', 'mime_type', 'size'),
+                    'documents' => ($request->user()->hasOrganizationPermission($organization, OrganizationPermission::ViewDocuments) ? $item->documents : collect())->map->only('id', 'name', 'mime_type', 'size'),
                 ]),
             ];
         }
@@ -144,6 +146,7 @@ class HandoverController extends Controller
         abort_unless($organization && $document->organization_id === $organization->id, 404);
         $this->authorize('viewTransactions', $organization);
         abort_unless($document->documentable instanceof HandoverInspectionItem, 404);
+        app(DocumentAccess::class)->authorize($organization, $request->user(), $document);
         abort_unless(Storage::disk('local')->exists($document->path), 404);
 
         return Storage::disk('local')->download($document->path, $document->name);

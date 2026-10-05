@@ -20,6 +20,11 @@ class OrganizationPolicy
         return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageOrganization);
     }
 
+    public function manageSettings(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageSettings);
+    }
+
     public function manageMembers(User $user, Organization $organization): bool
     {
         return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageMembers);

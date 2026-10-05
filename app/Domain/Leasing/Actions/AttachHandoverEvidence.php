@@ -3,12 +3,14 @@
 namespace App\Domain\Leasing\Actions;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Leasing\Models\HandoverInspectionItem;
 use App\Models\Document;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class AttachHandoverEvidence
@@ -17,6 +19,9 @@ class AttachHandoverEvidence
 
     public function handle(Organization $organization, User $actor, HandoverInspectionItem $item, UploadedFile $file): Document
     {
+        abort_unless($item->organization_id === $organization->id, 404);
+        Gate::forUser($actor)->authorize('manageTransactions', $organization);
+        abort_unless($actor->hasOrganizationPermission($organization, OrganizationPermission::ManageDocuments), 403);
         $path = $file->store("organizations/{$organization->id}/handover-inspections/{$item->id}", 'local');
         abort_if($path === false, 500, 'The inspection photo could not be stored.');
 

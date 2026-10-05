@@ -2,6 +2,7 @@
 
 namespace App\Domain\Operations\Queries;
 
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Models\JobCostLine;
 use App\Domain\Operations\Models\JobSlaCycle;
 use App\Domain\Operations\Services\JobCardAccess;
@@ -27,7 +28,7 @@ class JobCardDetails
             'jobNotes' => fn ($query) => $query->where('organization_id', $organization->id)->with('author:id,name')->orderBy('id'),
             'jobTasks' => fn ($query) => $query->where('organization_id', $organization->id)->orderBy('id'),
             'jobCostLines' => fn ($query) => $query->where('organization_id', $organization->id)->with('recorder:id,name')->orderBy('id'),
-            'documents' => fn ($query) => $query->where('organization_id', $organization->id)->select(['id', 'organization_id', 'documentable_id', 'documentable_type', 'name', 'mime_type', 'size', 'created_at'])->orderBy('id'),
+            'documents' => fn ($query) => $query->where('organization_id', $organization->id)->when(! $actor->hasOrganizationPermission($organization, OrganizationPermission::ViewDocuments), fn ($q) => $q->whereRaw('1 = 0'))->select(['id', 'organization_id', 'documentable_id', 'documentable_type', 'name', 'mime_type', 'size', 'created_at'])->orderBy('id'),
         ]);
         $labor = $job->jobCostLines->whereNull('voided_at')->where('category', 'labor')->sum(fn (JobCostLine $line): int => $this->amounts->hundredths($line->amount));
         $material = $job->jobCostLines->whereNull('voided_at')->where('category', 'material')->sum(fn (JobCostLine $line): int => $this->amounts->hundredths($line->amount));

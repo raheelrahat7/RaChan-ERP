@@ -3,6 +3,7 @@
 namespace App\Domain\Operations\Actions;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Models\StockMovement;
 use App\Domain\Operations\Models\StockReceiptCost;
 use App\Domain\Operations\Services\JobCostAmount;
@@ -21,6 +22,7 @@ class RecordStockReceiptCost
     public function handle(Organization $organization, User $actor, StockMovement $movement, array $input): StockReceiptCost
     {
         Gate::forUser($actor)->authorize('manageOperations', $organization);
+        abort_unless($actor->hasOrganizationPermission($organization, OrganizationPermission::ManageInventoryCosts), 403);
         Validator::make($input, ['amount' => ['required', 'string', 'regex:/^\d{1,9}(\.\d{1,2})?$/'], 'currency' => ['required', 'regex:/^[A-Z]{3}$/'], 'reason' => ['required', 'string', 'max:2000']])->validate();
         $reason = trim($input['reason']);
         if ($reason === '') {

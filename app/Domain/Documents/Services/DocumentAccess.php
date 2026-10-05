@@ -2,6 +2,7 @@
 
 namespace App\Domain\Documents\Services;
 
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Leasing\Models\HandoverInspectionItem;
 use App\Domain\Operations\Services\JobCardAccess;
 use App\Models\Document;
@@ -11,6 +12,7 @@ use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
 class DocumentAccess
@@ -49,6 +51,23 @@ class DocumentAccess
         } else {
             abort(404);
         }
+        abort_unless($actor->hasOrganizationPermission($org, $write ? OrganizationPermission::ManageDocuments : OrganizationPermission::ViewDocuments), 403);
+    }
+
+    /** @return Builder<Document> */
+    public function query(Organization $org, User $actor): Builder
+    {
+        return Document::where('organization_id', $org->id)->when(! $actor->hasOrganizationPermission($org, OrganizationPermission::ViewDocuments), fn ($query) => $query->whereRaw('1 = 0'))->where(function ($query) use ($org, $actor): void {
+            $query->whereRaw('1 = 0');
+            if ($actor->can('viewInventory', $org)) {
+                $query->orWhere(fn ($q) => $q->where('documentable_type', (new Property)->getMorphClass())->whereIn('documentable_id', Property::where('organization_id', $org->id)->select('id')));
+                $query->orWhere(fn ($q) => $q->where('documentable_type', (new Unit)->getMorphClass())->whereIn('documentable_id', Unit::where('organization_id', $org->id)->select('id')));
+            }
+            if ($actor->can('viewTransactions', $org)) {
+                $query->orWhere(fn ($q) => $q->where('documentable_type', (new HandoverInspectionItem)->getMorphClass())->whereIn('documentable_id', HandoverInspectionItem::where('organization_id', $org->id)->select('id')));
+            }
+            $query->orWhere(fn ($q) => $q->where('documentable_type', (new MaintenanceRequest)->getMorphClass())->whereIn('documentable_id', $this->jobs->scope(MaintenanceRequest::query(), $org, $actor)->select('id')));
+        });
     }
 
     public function mimes(Document $document): string

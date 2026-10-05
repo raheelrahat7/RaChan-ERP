@@ -2,6 +2,7 @@
 
 use App\Domain\Crm\Actions\EscalateOverdueFollowUps;
 use App\Domain\Crm\Actions\ExecuteAutomationRule;
+use App\Domain\Crm\Actions\ManageDealAutomation;
 use App\Domain\Crm\Actions\RetryHeldLeads;
 use App\Domain\Crm\Actions\SendFollowUpReminders;
 use App\Domain\Notifications\Actions\GenerateDailyNotifications;
@@ -84,3 +85,11 @@ Artisan::command('crm:run-due-automation', function (ExecuteAutomationRule $auto
     return $result['failed'] === 0 ? 0 : 1;
 })->purpose('Execute bounded internal CRM automation with stale-event and replay protection');
 Schedule::command('crm:run-due-automation')->everyMinute()->withoutOverlapping()->onOneServer();
+
+Artisan::command('crm:run-due-deal-automation', function (ManageDealAutomation $automation) {
+    $result = $automation->due();
+    $this->info('Processed '.$result['processed'].' deal automation executions; '.$result['failed'].' failed.');
+
+    return $result['failed'] === 0 ? 0 : 1;
+})->purpose('Execute bounded internal deal automation with stale-event and replay protection');
+Schedule::command('crm:run-due-deal-automation')->everyMinute()->withoutOverlapping()->onOneServer();

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Identity\Enums\OrganizationRole;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Domain\Identity\Services\SectionAccess;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -77,7 +78,8 @@ class User extends Authenticatable implements PasskeyUser
     {
         $role = $this->organizations()->whereKey($organization)->first()?->pivot->getAttribute('role');
 
-        return $role !== null && OrganizationRole::from($role)->grants($permission);
+        return $role !== null && OrganizationRole::from($role)->grants($permission)
+            && app(SectionAccess::class)->enabled($organization, $this, $permission, $role);
     }
 
     public function hasOrganizationRole(Organization $organization, OrganizationRole $role): bool

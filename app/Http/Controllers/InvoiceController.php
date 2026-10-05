@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Domain\Accounting\Actions\AccountingLedger;
 use App\Domain\Accounting\Actions\PostMappedFinanceJournal;
+use App\Domain\Finance\Actions\CreateInvoiceDraft;
 use App\Domain\Finance\Services\InvoiceBalance;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\Invoice;
-use App\Models\InvoiceLine;
 use App\Models\JournalEntry;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
@@ -67,13 +67,7 @@ class InvoiceController extends Controller
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
         $this->authorize('manageFinance', $org);
-        $input = $request->validate(['description' => ['required', 'string', 'max:255'], 'quantity' => ['required', 'numeric', 'min:0.01'], 'unit_price' => ['required', 'numeric', 'min:0.01'], 'due_on' => ['required', 'date'], 'accounting_treatment' => ['required', 'in:revenue,refundable_deposit'], 'vat_treatment' => [Rule::requiredIf($org->vat_enabled), 'nullable', 'in:standard,zero_rated,exempt,out_of_scope']]);
-        $subtotal = round($input['quantity'] * $input['unit_price'], 2);
-        $vatRate = $org->vat_enabled && $input['vat_treatment'] === 'standard' ? 5 : 0;
-        $vatAmount = round($subtotal * $vatRate / 100, 2);
-        $invoice = Invoice::create(['organization_id' => $org->id, 'reference' => 'INV-'.Str::upper(Str::random(8)), 'due_on' => $input['due_on'], 'subtotal' => $subtotal, 'total' => $subtotal + $vatAmount, 'accounting_treatment' => $input['accounting_treatment'], 'vat_treatment' => $org->vat_enabled ? $input['vat_treatment'] : null, 'vat_rate' => $org->vat_enabled ? $vatRate : null, 'vat_amount' => $org->vat_enabled ? $vatAmount : null]);
-        InvoiceLine::create(['invoice_id' => $invoice->id, 'description' => $input['description'], 'quantity' => $input['quantity'], 'unit_price' => $input['unit_price'], 'line_total' => $subtotal]);
-        $audit->handle($org, $request->user(), 'finance.invoice.created', $invoice);
+        app(CreateInvoiceDraft::class)->handle($org, $request->user(), $request->all());
 
         return back();
     }

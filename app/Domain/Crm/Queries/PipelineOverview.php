@@ -5,6 +5,7 @@ namespace App\Domain\Crm\Queries;
 use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Models\CustomFieldValue;
 use App\Domain\Crm\Models\Pipeline;
+use App\Domain\Crm\Services\DealAccess;
 use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Crm\Services\StageEntryRules;
 use App\Models\CrmLead;
@@ -67,7 +68,7 @@ class PipelineOverview
         $query->when($stageId, fn ($q) => $q->where('current_stage_id', $stageId));
         $total = (clone $query)->count();
         $page = max(1, (int) ($filters['page'] ?? 1));
-        $leadRows = $query->with(['assignee:id,name', 'listing:id,reference', 'stage', 'history.actor:id,name'])->latest()->offset(($page - 1) * 50)->limit(50)->get();
+        $leadRows = $query->with(['assignee:id,name', 'listing:id,reference', 'stage', 'history.actor:id,name', 'deal.pipeline'])->latest()->offset(($page - 1) * 50)->limit(50)->get();
         $fieldIds = array_map(fn ($field) => $field->id, $fields);
         $fieldKeys = collect($fields)->pluck('key', 'id');
         $customValues = CustomFieldValue::where('organization_id', $org->id)
@@ -80,6 +81,8 @@ class PipelineOverview
                 'transitionOptions' => $this->transitionOptions($pipeline, $lead, $role),
                 'conversionBlockedReason' => $lead->converted_at ? null : (! $pipeline->active ? 'The pipeline is inactive.' : ($lead->stage->type === 'lost' ? 'Reopen this lost lead before converting it.' : (! $won ? 'Configure an active Won stage before converting leads.' : implode(' ', $rules->reasons($lead, $lead->stage->type === 'won' && $lead->stage->active ? $lead->stage : $won, $role, ! ($lead->stage->type === 'won' && $lead->stage->active)))))),
                 'converted' => $lead->converted_at !== null,
+                'linkedDeal' => $actor ? app(DealAccess::class)->linkedLeadDeal($org, $actor, $lead) : null,
+                'qualifiedForDeal' => $lead->stage->active && $lead->stage->type === 'won' && $pipeline->active,
                 'assigned_to' => $lead->assigned_to,
                 'assignee' => $lead->assignee?->only('id', 'name'),
                 'custom_fields' => collect($customValues->get($lead->id, []))->mapWithKeys(fn ($value) => [$fieldKeys[$value->field_id] => $value->value])->all(),

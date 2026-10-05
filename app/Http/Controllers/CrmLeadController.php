@@ -13,6 +13,7 @@ use App\Domain\Crm\Queries\LeadActivityBoard;
 use App\Domain\Crm\Queries\LeadFilters;
 use App\Domain\Crm\Queries\LeadTimeline;
 use App\Domain\Crm\Queries\PipelineOverview;
+use App\Domain\Crm\Services\DealAccess;
 use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\CrmActivity;
@@ -80,6 +81,8 @@ class CrmLeadController extends Controller
 
         return Inertia::render('crm/LeadShow', [
             'pipeline' => $pipeline,
+            'linkedDeal' => app(DealAccess::class)->linkedLeadDeal($org, $request->user(), $lead),
+            'qualifiedForDeal' => $lead->stage->active && $lead->stage->type === 'won' && $pipeline->active,
             'transitionOptions' => $overview->transitionOptions($pipeline, $lead, $role),
             'canManageCrm' => $request->user()->can('manageCrm', $org),
             'members' => $visibility->restricted($org, $request->user()) ? $org->users()->whereIn('users.id', $visibility->assigneeIds($org, $request->user()))->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']) : $org->users()->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']),

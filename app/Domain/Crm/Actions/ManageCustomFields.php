@@ -4,6 +4,7 @@ namespace App\Domain\Crm\Actions;
 
 use App\Domain\Crm\Models\CustomField;
 use App\Domain\Crm\Models\CustomFieldValue;
+use App\Domain\Crm\Models\RecordFieldValue;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\CrmLead;
@@ -29,6 +30,10 @@ class ManageCustomFields
         $this->configure($org, $actor);
         $values = Validator::make($input, [
             'name' => ['required', 'string', 'max:120'],
+            'entity' => ['sometimes', Rule::in(['lead', 'deal', 'contact', 'company'])],
+            'tooltip' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'show_in_filter' => ['sometimes', 'boolean'],
+            'show_in_list' => ['sometimes', 'boolean'],
             'key' => [$field ? 'sometimes' : 'required', 'alpha_dash:ascii', 'max:80'],
             'type' => [$field ? 'sometimes' : 'required', 'in:'.implode(',', self::TYPES)],
             'options' => ['nullable', 'array', 'max:100'],
@@ -46,12 +51,17 @@ class ManageCustomFields
             if (isset($values['key']) && $values['key'] !== $field->key) {
                 throw ValidationException::withMessages(['key' => 'The internal key cannot change; rename the field label instead.']);
             }
-            if (isset($values['type']) && $values['type'] !== $field->type && CustomFieldValue::where('field_id', $field->id)->exists()) {
+            if (isset($values['type']) && $values['type'] !== $field->type && (CustomFieldValue::where('field_id', $field->id)->exists() || RecordFieldValue::where('field_id', $field->id)->exists())) {
                 throw ValidationException::withMessages(['type' => 'A field with saved values cannot change type.']);
             }
         }
+        $entity = $values['entity'] ?? ($field ? $field->entity : 'lead');
+        if ($field && $entity !== $field->entity) {
+            throw ValidationException::withMessages(['entity' => 'A field cannot move to another entity.']);
+        }
+        $values['entity'] = $entity;
         $key = strtolower((string) ($values['key'] ?? $field?->key));
-        if (in_array($key, self::BUILTIN, true) || CustomField::where('organization_id', $org->id)->where('key', $key)->when($field, fn ($q) => $q->whereKeyNot($field->id))->exists()) {
+        if (in_array($key, self::BUILTIN, true) || CustomField::where('organization_id', $org->id)->where('entity', $entity)->where('key', $key)->when($field, fn ($q) => $q->whereKeyNot($field->id))->exists()) {
             throw ValidationException::withMessages(['key' => 'Choose a unique key that does not replace a built-in field.']);
         }
         $type = $values['type'] ?? $field?->type;
@@ -89,11 +99,11 @@ class ManageCustomFields
     }
 
     /** @return array<int, CustomField> */
-    public function visible(Organization $org, User $actor, bool $editable = false): array
+    public function visible(Organization $org, User $actor, bool $editable = false, string $entity = 'lead'): array
     {
         $role = $this->role($org, $actor);
 
-        return CustomField::where('organization_id', $org->id)->where('active', true)->orderBy('sort_order')->orderBy('id')->get()
+        return CustomField::where('organization_id', $org->id)->where('entity', $entity)->where('active', true)->orderBy('sort_order')->orderBy('id')->get()
             ->filter(fn (CustomField $field) => $this->allowed($field, $role, $editable))->values()->all();
     }
 
@@ -146,7 +156,7 @@ class ManageCustomFields
         }
     }
 
-    private function normalize(Organization $org, CustomField $field, mixed $value): mixed
+    public function normalize(Organization $org, CustomField $field, mixed $value): mixed
     {
         if ($value === null || $value === '') {
             return null;

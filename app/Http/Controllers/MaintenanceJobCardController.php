@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Documents\Services\DocumentAccess;
 use App\Domain\Operations\Actions\ManageJobCard;
 use App\Domain\Operations\Actions\ManageJobCompletion;
 use App\Domain\Operations\Models\JobCostLine;
@@ -100,6 +101,7 @@ class MaintenanceJobCardController extends Controller
         $organization = $this->organization($request);
         $access->authorizeView($organization, $request->user(), $maintenanceRequest);
         abort_unless($document->organization_id === $organization->id && $document->documentable_type === $maintenanceRequest->getMorphClass() && $document->documentable_id === $maintenanceRequest->id, 404);
+        app(DocumentAccess::class)->authorize($organization, $request->user(), $document);
         abort_unless(Storage::disk('local')->exists($document->path), 404);
 
         return Storage::disk('local')->download($document->path, $document->name);

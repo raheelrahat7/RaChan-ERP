@@ -3,6 +3,7 @@
 namespace App\Domain\Operations\Actions;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Models\JobCostLine;
 use App\Domain\Operations\Models\JobNote;
 use App\Domain\Operations\Models\JobTask;
@@ -94,6 +95,7 @@ class ManageJobCard
     public function evidence(Organization $organization, User $actor, MaintenanceRequest $job, UploadedFile $file): Document
     {
         $this->access->authorizeView($organization, $actor, $job);
+        abort_unless($actor->hasOrganizationPermission($organization, OrganizationPermission::ManageDocuments), 403);
         Validator::make(['file' => $file], ['file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp']])->validate();
         $path = $file->store("organizations/{$organization->id}/maintenance/{$job->id}", 'local');
         abort_if($path === false, 500, __('The evidence could not be stored.'));

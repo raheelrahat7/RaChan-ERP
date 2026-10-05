@@ -19,7 +19,7 @@ class CrmCustomFieldController extends Controller
         abort_unless($request->user()->hasOrganizationRole($org, OrganizationRole::Owner) || $request->user()->hasOrganizationRole($org, OrganizationRole::Administrator), 403);
 
         return Inertia::render('crm/CustomFields', [
-            'fields' => CustomField::where('organization_id', $org->id)->orderBy('sort_order')->orderBy('id')->get(),
+            'fields' => CustomField::where('organization_id', $org->id)->where('entity', 'lead')->orderBy('sort_order')->orderBy('id')->get(),
             'types' => ManageCustomFields::TYPES,
         ]);
     }

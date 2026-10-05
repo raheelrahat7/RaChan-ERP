@@ -11,7 +11,7 @@ use LogicException;
 
 class LocalOutboundProvider implements OutboundProvider
 {
-    public const CAPABILITIES = ['payment', 'accounting_export', 'email', 'whatsapp', 'property_portal', 'signature'];
+    public const CAPABILITIES = ['sms', 'payment', 'accounting_export', 'email', 'whatsapp', 'property_portal', 'signature'];
 
     public function validate(ProviderPacket $packet): array
     {
@@ -19,6 +19,7 @@ class LocalOutboundProvider implements OutboundProvider
         $rules = match ($packet->capability) {
             'payment' => ['invoice_id' => ['required', 'integer', 'min:1'], 'reference' => ['required', 'string', 'max:100'], 'amount' => ['required', 'regex:/^[0-9]{1,12}\\.[0-9]{2}$/D'], 'currency' => ['required', 'regex:/^[A-Z]{3}$/D']],
             'accounting_export' => ['reference' => ['required', 'string', 'max:100'], 'currency' => ['required', 'regex:/^[A-Z]{3}$/D'], 'posted_on' => ['required', 'date_format:Y-m-d'], 'lines' => ['required', 'array', 'min:2', 'max:500'], 'lines.*' => ['required', 'array:account_code,debit,credit'], 'lines.*.account_code' => ['required', 'string', 'max:50'], 'lines.*.debit' => ['required', 'regex:/^[0-9]{1,12}\\.[0-9]{2}$/D'], 'lines.*.credit' => ['required', 'regex:/^[0-9]{1,12}\\.[0-9]{2}$/D']],
+            'sms' => ['to' => ['required', 'regex:/^\\+[1-9][0-9]{7,14}$/D'], 'text' => ['required', 'string', 'max:1600']],
             'email' => ['to' => ['required', 'email', 'max:255'], 'subject' => ['required', 'string', 'max:255'], 'text' => ['required', 'string', 'max:10000']],
             'whatsapp' => ['to' => ['required', 'regex:/^\\+[1-9][0-9]{7,14}$/D'], 'template' => ['required', 'regex:/^[a-z][a-z0-9_]{0,99}$/D'], 'language' => ['required', 'in:en,ar'], 'parameters' => ['present', 'array', 'max:20'], 'parameters.*' => ['required', 'string', 'max:500']],
             'property_portal' => ['listing_id' => ['required', 'integer', 'min:1'], 'reference' => ['required', 'string', 'max:100'], 'purpose' => ['required', 'in:rent,sale'], 'price' => ['required', 'regex:/^[0-9]{1,12}\\.[0-9]{2}$/D'], 'currency' => ['required', 'regex:/^[A-Z]{3}$/D'], 'title' => ['required', 'string', 'max:255']],

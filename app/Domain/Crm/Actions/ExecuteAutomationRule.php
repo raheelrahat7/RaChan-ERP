@@ -103,7 +103,7 @@ class ExecuteAutomationRule
             return true;
         }
         if (str_starts_with($rule->condition_field, 'custom:')) {
-            $field = CustomField::where('organization_id', $lead->organization_id)->where('key', substr($rule->condition_field, 7))->where('active', true)->first();
+            $field = CustomField::where('organization_id', $lead->organization_id)->where('entity', 'lead')->where('key', substr($rule->condition_field, 7))->where('active', true)->first();
             if (! $field) {
                 return false;
             }

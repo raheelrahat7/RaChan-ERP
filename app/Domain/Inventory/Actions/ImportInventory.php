@@ -3,6 +3,7 @@
 namespace App\Domain\Inventory\Actions;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Inventory\Models\InventoryImportBatch;
 use App\Models\Organization;
 use App\Models\Property;
@@ -24,6 +25,7 @@ class ImportInventory
     public function preview(Organization $org, User $actor, string $kind, UploadedFile $file): InventoryImportBatch
     {
         Gate::forUser($actor)->authorize('manageInventory', $org);
+        abort_unless($actor->hasOrganizationPermission($org, OrganizationPermission::ImportInventory), 403);
         Validator::make(['kind' => $kind, 'file' => $file], ['kind' => ['required', Rule::in(array_keys(self::HEADERS))], 'file' => ['required', 'file', 'max:1024', 'extensions:csv']])->validate();
         $raw = file_get_contents($file->getRealPath());
         if ($raw === false || ! mb_check_encoding($raw, 'UTF-8') || str_contains($raw, "\0")) {
@@ -104,6 +106,7 @@ class ImportInventory
     public function commit(Organization $org, User $actor, int $id): InventoryImportBatch
     {
         Gate::forUser($actor)->authorize('manageInventory', $org);
+        abort_unless($actor->hasOrganizationPermission($org, OrganizationPermission::ImportInventory), 403);
 
         return DB::transaction(function () use ($org, $actor, $id): InventoryImportBatch {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();

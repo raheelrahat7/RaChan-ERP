@@ -3,6 +3,7 @@
 namespace App\Domain\Operations\Actions;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Models\SparePart;
 use App\Domain\Operations\Models\StockBalance;
 use App\Domain\Operations\Models\StockMovement;
@@ -25,6 +26,7 @@ class ManageSpareParts
     public function catalogue(Organization $organization, User $actor, array $input, bool $store = false): Model
     {
         Gate::forUser($actor)->authorize('manageOperations', $organization);
+        abort_unless($actor->hasOrganizationPermission($organization, OrganizationPermission::ManageInventoryCatalogue), 403);
         $values = ['code' => strtoupper(trim((string) $input['code'])), 'name' => trim((string) $input['name'])];
         $rules = ['code' => ['required', 'regex:/^[A-Z0-9_-]{1,50}$/'], 'name' => ['required', 'string', 'max:255']];
         if (! $store) {

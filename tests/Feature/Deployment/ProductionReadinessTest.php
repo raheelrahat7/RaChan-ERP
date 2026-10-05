@@ -30,6 +30,7 @@ class ProductionReadinessTest extends TestCase
             'queue.default' => 'redis',
             'cache.default' => 'redis',
             'mail.default' => 'smtp',
+            'chat.virus_scan.driver' => 'clamav',
         ]);
 
         $this->artisan('release:check')

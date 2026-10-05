@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Documents\Services\DocumentAccess;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\RealEstate\Queries\BuildingSkyline;
 use App\Models\Building;
@@ -42,7 +43,7 @@ class InventoryController extends Controller
             'buildings' => $property->buildings()->with('units:id,building_id,number,floor,type,status')->get(),
             'skylines' => $skyline->forProperty($organization, $property, $request->user()->can('viewFinance', $organization)),
             'units' => $property->units()->whereNull('building_id')->get(['id', 'number', 'floor', 'type', 'status']),
-            'documents' => $property->documents()->latest()->get(['id', 'name', 'mime_type', 'size']),
+            'documents' => $property->documents()->whereIn('id', app(DocumentAccess::class)->query($organization, $request->user())->select('id'))->latest()->get(['id', 'name', 'mime_type', 'size']),
             'owners' => $property->owners()->orderBy('name')->get(['owners.id', 'name', 'email', 'phone']),
             'availableOwners' => Owner::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']),
             'canManageInventory' => $request->user()->can('manageInventory', $organization),
@@ -69,7 +70,7 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory/Unit', [
             'unit' => $unit->load(['property:id,name', 'building:id,name'])->only('id', 'number', 'floor', 'type', 'status', 'area', 'area_unit', 'asking_price', 'currency', 'property', 'building'),
-            'documents' => $unit->documents()->latest()->get(['id', 'name', 'mime_type', 'size']),
+            'documents' => $unit->documents()->whereIn('id', app(DocumentAccess::class)->query($organization, $request->user())->select('id'))->latest()->get(['id', 'name', 'mime_type', 'size']),
             'canManageInventory' => $request->user()->can('manageInventory', $organization),
         ]);
     }

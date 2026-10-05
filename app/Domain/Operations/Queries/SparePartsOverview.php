@@ -2,6 +2,7 @@
 
 namespace App\Domain\Operations\Queries;
 
+use App\Domain\Identity\Enums\OrganizationPermission;
 use App\Domain\Operations\Models\SparePart;
 use App\Domain\Operations\Models\StockBalance;
 use App\Domain\Operations\Models\StockMovement;
@@ -29,7 +30,7 @@ class SparePartsOverview
             }
         }
 
-        $valuation = $this->valuation->for($organization);
+        $valuation = $actor->hasOrganizationPermission($organization, OrganizationPermission::ViewInventoryCosts) ? $this->valuation->for($organization) : [];
 
         return [
             'parts' => SparePart::where('organization_id', $organization->id)->orderBy('code')->get(),
