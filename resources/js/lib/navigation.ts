@@ -403,6 +403,7 @@ export const NAVIGATION: NavGroup[] = [
         label: 'Workflow',
         items: [
             { label: 'Approvals', href: '/approvals', icon: 'approvals' },
+            { label: 'Workflow Boards', href: '/workflows', icon: 'approvals' },
             { label: 'Tasks', href: '/tasks', icon: 'tasks' },
             {
                 label: 'Meetings & Viewings',

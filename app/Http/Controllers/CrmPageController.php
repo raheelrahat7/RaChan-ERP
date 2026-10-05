@@ -73,6 +73,22 @@ class CrmPageController extends Controller
         return Inertia::render('crm/SettingsReference', ['section' => $section]);
     }
 
+    public function workflows(Request $request): Response
+    {
+        abort_unless($request->user()->currentOrganization !== null, 404);
+
+        return Inertia::render('workflows/Index');
+    }
+
+    public function workflowPipelines(Request $request): Response
+    {
+        $org = $request->user()->currentOrganization;
+        abort_unless($org !== null, 404);
+        $this->authorize('manageSettings', $org);
+
+        return Inertia::render('workflows/Pipelines');
+    }
+
     private function organization(Request $request): Organization
     {
         $org = $request->user()->currentOrganization;

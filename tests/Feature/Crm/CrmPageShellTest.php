@@ -6,6 +6,7 @@ use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -106,5 +107,31 @@ class CrmPageShellTest extends TestCase
             $this->getJson('/crm/settings/fields?entity='.$entity)->assertOk()->assertJsonPath('fields.0.key', 'passport')->assertJsonCount(1, 'fields');
         }
         $this->getJson('/crm/settings/fields')->assertOk()->assertJsonCount(0, 'fields');
+    }
+
+    public function test_workflow_pages_render_and_pipeline_management_needs_settings_access(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($owner)->get(route('workflows.index'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('workflows/Index'));
+        $this->get(route('workflows.pipelines'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('workflows/Pipelines'));
+        $this->actingAs($member)->get(route('workflows.pipelines'))->assertForbidden();
+    }
+
+    public function test_reference_workflow_endpoints_support_the_board_flow(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+
+        $pipeline = $this->postJson('/reference-workflows/pipelines', ['kind' => 'recruitment', 'name' => 'Hiring'])->assertSuccessful()->json('pipeline');
+        $this->assertCount(3, $pipeline['stages']);
+        $record = $this->postJson('/reference-workflows', ['pipeline_id' => $pipeline['id'], 'title' => 'Sara', 'assigned_to' => $owner->id, 'operation_key' => (string) Str::uuid(), 'details' => ['name' => 'Sara', 'job_title' => 'Agent']])->assertSuccessful()->json('record');
+        $success = collect($pipeline['stages'])->firstWhere('type', 'success');
+        $this->putJson('/reference-workflows/'.$record['id'].'/stage', ['stage_id' => $success['id'], 'expected_version' => $this->getJson('/reference-workflows/'.$record['id'])->json('record.version')])->assertSuccessful();
+        $this->getJson('/reference-workflows?kind=recruitment')->assertOk()->assertJsonPath('records.data.0.title', 'Sara');
+        $this->getJson('/reference-workflows/'.$record['id'])->assertOk()->assertJsonCount(2, 'history.data');
     }
 }

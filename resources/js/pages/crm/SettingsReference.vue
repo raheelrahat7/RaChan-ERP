@@ -23,9 +23,10 @@ import {
     isActive,
     numberPreview,
     parentOptions,
+    rebaseRates,
     sectionRows,
 } from '@/lib/crm-reference';
-import type { ReferenceRecord } from '@/lib/crm-reference';
+import type { ReferenceRecord, RebaseRate } from '@/lib/crm-reference';
 import type { DataTableColumn } from '@/lib/data-table';
 
 type Row = ReferenceRecord & { flags: string; parent: string; preview: string };
@@ -228,6 +229,77 @@ function editSelected(keys: (string | number)[]): void {
     }
 }
 
+// Rebase ---------------------------------------------------------------
+const rebaseOpen = ref(false);
+const rebaseBase = ref('');
+const rebaseList = ref<RebaseRate[]>([]);
+const rebaseError = ref('');
+const activeCurrencies = computed(() => records.value.filter(isActive));
+
+function openRebase(): void {
+    const current = records.value.find(
+        (row) => row.is_base === 1 || row.is_base === true,
+    );
+    rebaseBase.value = String(
+        current?.code ?? activeCurrencies.value[0]?.code ?? '',
+    );
+    rebaseList.value = rebaseRates(records.value, rebaseBase.value);
+    rebaseError.value = '';
+    rebaseOpen.value = true;
+}
+
+function pickBase(): void {
+    rebaseList.value = rebaseRates(
+        records.value.map((row) => ({
+            ...row,
+            exchange_rate:
+                rebaseList.value.find((rate) => rate.code === row.code)
+                    ?.exchange_rate ?? row.exchange_rate,
+            face_value:
+                rebaseList.value.find((rate) => rate.code === row.code)
+                    ?.face_value ?? row.face_value,
+        })),
+        rebaseBase.value,
+    );
+}
+
+async function rebase(): Promise<void> {
+    busy.value = true;
+    rebaseError.value = '';
+    try {
+        await apiJson(
+            '/organization/reference-settings/currencies/rebase',
+            'POST',
+            {
+                base_code: rebaseBase.value,
+                rates: rebaseList.value,
+            },
+        );
+        rebaseOpen.value = false;
+        message.value = t('Saved.');
+        await load();
+    } catch (failure) {
+        rebaseError.value = Object.values(
+            collectErrors(failure, t('Could not save.')),
+        )[0];
+    } finally {
+        busy.value = false;
+    }
+}
+
+function collectErrors(
+    failure: unknown,
+    fallback: string,
+): Record<string, string> {
+    if (failure instanceof ApiError) {
+        const fields = failure.fieldErrors();
+
+        return Object.keys(fields).length ? fields : { form: failure.message };
+    }
+
+    return { form: fallback };
+}
+
 onMounted(load);
 </script>
 
@@ -272,9 +344,91 @@ onMounted(load);
                 >
             </template>
         </CrmSettingsTable>
+        <div
+            v-if="config.kind === 'currencies' && !loadError"
+            class="flex items-center gap-3 text-sm"
+        >
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                :disabled="!activeCurrencies.length"
+                @click="openRebase"
+                >{{ t('Change base currency') }}</Button
+            >
+            <span class="text-muted-foreground">{{
+                t('Supply every rate against the new base in one step.')
+            }}</span>
+        </div>
         <p v-if="loading" class="text-muted-foreground text-sm">
             {{ t('Loading…') }}
         </p>
+
+        <Dialog v-model:open="rebaseOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{{ t('Change base currency') }}</DialogTitle>
+                    <DialogDescription>{{
+                        t(
+                            'The base currency has rate 1. Enter how much of each other currency equals the face value in the new base.',
+                        )
+                    }}</DialogDescription>
+                </DialogHeader>
+                <form class="space-y-3" @submit.prevent="rebase">
+                    <InputError :message="rebaseError" />
+                    <div class="space-y-1">
+                        <Label for="rb-base">{{
+                            t('New base currency')
+                        }}</Label>
+                        <select
+                            id="rb-base"
+                            v-model="rebaseBase"
+                            class="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                            @change="pickBase"
+                        >
+                            <option
+                                v-for="row in activeCurrencies"
+                                :key="row.id"
+                                :value="String(row.code)"
+                            >
+                                {{ row.code }} — {{ row.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div
+                        v-for="rate in rebaseList"
+                        :key="rate.code"
+                        class="grid grid-cols-[4rem_1fr_6rem] items-center gap-2 text-sm"
+                    >
+                        <span class="font-medium">{{ rate.code }}</span>
+                        <Input
+                            v-model="rate.exchange_rate"
+                            inputmode="decimal"
+                            :disabled="rate.code === rebaseBase"
+                            :aria-label="`${rate.code} ${t('Rate')}`"
+                        />
+                        <Input
+                            v-model.number="rate.face_value"
+                            type="number"
+                            min="1"
+                            :disabled="rate.code === rebaseBase"
+                            :aria-label="`${rate.code} ${t('Face value')}`"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="rebaseOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button type="submit" :disabled="busy">{{
+                            t('Save')
+                        }}</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="open">
             <DialogContent>

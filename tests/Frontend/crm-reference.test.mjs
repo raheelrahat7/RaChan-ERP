@@ -5,6 +5,7 @@ import {
     formDefaults,
     numberPreview,
     parentOptions,
+    rebaseRates,
     sectionRows,
 } from '../../resources/js/lib/crm-reference.ts';
 
@@ -75,4 +76,32 @@ await test('locations offer only active parents of the right type', () => {
 await test('number preview pads and optionally adds the year', () => {
     assert.equal(numberPreview('INV', 5, 42, true, 2026), 'INV-2026-00042');
     assert.equal(numberPreview('DOC', 3, 7, false, 2026), 'DOC-007');
+});
+
+await test('rebase pins the new base to one and keeps other rates', () => {
+    const rates = rebaseRates(
+        [
+            {
+                id: 1,
+                code: 'AED',
+                exchange_rate: '1.0000000000',
+                face_value: 1,
+                active: 1,
+            },
+            {
+                id: 2,
+                code: 'USD',
+                exchange_rate: '3.6725000000',
+                face_value: 1,
+                active: 1,
+            },
+        ],
+        'USD',
+    );
+    assert.deepEqual(rates[1], {
+        code: 'USD',
+        exchange_rate: '1',
+        face_value: 1,
+    });
+    assert.equal(rates[0].exchange_rate, '1.0000000000');
 });

@@ -137,3 +137,31 @@ export function numberPreview(
         .filter((part) => part !== '')
         .join('-');
 }
+
+export type RebaseRate = {
+    code: string;
+    exchange_rate: string;
+    face_value: number;
+};
+
+/** One editable rate per currency; the chosen base is pinned to 1 / 1. */
+export function rebaseRates(
+    currencies: ReferenceRecord[],
+    baseCode: string,
+): RebaseRate[] {
+    return currencies.map((row) => {
+        const code = String(row.code);
+
+        return code === baseCode
+            ? { code, exchange_rate: '1', face_value: 1 }
+            : {
+                  code,
+                  exchange_rate:
+                      typeof row.exchange_rate === 'string' ||
+                      typeof row.exchange_rate === 'number'
+                          ? String(row.exchange_rate)
+                          : '1',
+                  face_value: Number(row.face_value ?? 1),
+              };
+    });
+}

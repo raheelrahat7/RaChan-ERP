@@ -460,6 +460,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/deal-pipelines', [CrmPageController::class, 'dealPipelines'])->name('crm.deal-pipelines.page');
     Route::get('crm/settings', [CrmPageController::class, 'settings'])->name('crm.settings');
     Route::get('crm/settings/reference/{section}', [CrmPageController::class, 'referenceSettings'])->name('crm.settings.reference');
+    Route::get('workflows', [CrmPageController::class, 'workflows'])->name('workflows.index');
+    Route::get('workflows/pipelines', [CrmPageController::class, 'workflowPipelines'])->name('workflows.pipelines');
     Route::get('crm/leads/preferences', [CrmLeadPreferenceController::class, 'index'])->name('crm.leads.preferences.index');
     Route::post('crm/leads/preferences', [CrmLeadPreferenceController::class, 'store'])->name('crm.leads.preferences.store');
     Route::delete('crm/leads/preferences/{preset}', [CrmLeadPreferenceController::class, 'destroy'])->name('crm.leads.preferences.destroy');
