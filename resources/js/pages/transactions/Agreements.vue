@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
 
 type Reservation = {
     id: number;
@@ -25,11 +35,21 @@ type Agreement = {
     tenant: { id: number; name: string } | null;
     ends_on: string;
     rent_amount: string | null;
+    sale_price?: string | null;
     is_expiring: boolean;
 };
 type Broker = { id: number; name: string };
 type Tenant = { id: number; name: string };
 type CommissionPlan = { id: number; name: string; basis: string; rate: string };
+type Row = {
+    id: number;
+    reference: string;
+    party: string;
+    ends_on: string;
+    amount: string;
+    status: string;
+    actions: string;
+};
 
 const props = defineProps<{
     reservations: Reservation[];
@@ -40,6 +60,24 @@ const props = defineProps<{
     commissionPlans: CommissionPlan[];
     canManageTransactions: boolean;
 }>();
+const { t } = useLocale();
+const selectClass =
+    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
+
+const tab = ref<'leases' | 'sales'>('leases');
+const sheet = ref<'lease' | 'sales' | null>(null);
+const sheetOpen = computed({
+    get: () => sheet.value !== null,
+    set: (value: boolean) => {
+        if (!value) {
+            sheet.value = null;
+        }
+    },
+});
+const commissionPlanId = ref('');
+const renewalEndsOn = ref('');
+const renewalRentAmount = ref('');
+
 const leaseReservations = computed(() =>
     props.reservations.filter(
         (reservation) =>
@@ -67,34 +105,76 @@ const salesForm = useForm({
     sale_price: '',
     broker_id: '',
 });
-const commissionPlanId = ref('');
-const renewalEndsOn = ref('');
-const renewalRentAmount = ref('');
+
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'reference', label: t('Reference'), sortable: true },
+    ...(tab.value === 'leases'
+        ? [{ key: 'party' as const, label: t('Tenant') }]
+        : []),
+    ...(tab.value === 'leases'
+        ? [{ key: 'ends_on' as const, label: t('Ends on'), sortable: true }]
+        : []),
+    {
+        key: 'amount',
+        label: tab.value === 'leases' ? t('Rent') : t('Sale price'),
+    },
+    { key: 'status', label: t('Status') },
+    { key: 'actions', label: '' },
+]);
+const rows = computed<Row[]>(() =>
+    (tab.value === 'leases' ? props.leases : props.salesContracts).map(
+        (item) => ({
+            id: item.id,
+            reference: item.reference,
+            party: item.tenant?.name ?? '',
+            ends_on: item.ends_on ?? '',
+            amount: item.rent_amount ?? item.sale_price ?? '',
+            status: item.status,
+            actions: '',
+        }),
+    ),
+);
+const agreementOf = (id: number): Agreement | undefined =>
+    (tab.value === 'leases' ? props.leases : props.salesContracts).find(
+        (item) => item.id === id,
+    );
+const isExpiring = (id: number): boolean =>
+    tab.value === 'leases' && agreementOf(id)?.is_expiring === true;
 
 function createLease(): void {
     leaseForm.post('/agreements/leases', {
         preserveScroll: true,
-        onSuccess: () => leaseForm.reset(),
+        onSuccess: () => {
+            leaseForm.reset();
+            sheet.value = null;
+        },
     });
 }
-
-function activateLease(lease: Agreement): void {
-    if (confirm(`Activate ${lease.reference}?`)) {
+function createSalesContract(): void {
+    salesForm.post('/agreements/sales-contracts', {
+        preserveScroll: true,
+        onSuccess: () => {
+            salesForm.reset();
+            sheet.value = null;
+        },
+    });
+}
+function activate(row: Row): void {
+    const path = tab.value === 'leases' ? 'leases' : 'sales-contracts';
+    if (confirm(`${t('Activate')} ${row.reference}?`)) {
         router.post(
-            `/agreements/leases/${lease.id}/activate`,
+            `/agreements/${path}/${row.id}/activate`,
             { commission_plan_id: commissionPlanId.value || null },
             { preserveScroll: true },
         );
     }
 }
-
-function renewLease(lease: Agreement): void {
+function renew(row: Row): void {
     if (!renewalEndsOn.value) {
         return;
     }
-
     router.post(
-        `/agreements/leases/${lease.id}/renew`,
+        `/agreements/leases/${row.id}/renew`,
         {
             ends_on: renewalEndsOn.value,
             rent_amount: renewalRentAmount.value || null,
@@ -102,284 +182,354 @@ function renewLease(lease: Agreement): void {
         { preserveScroll: true },
     );
 }
-
-function createSalesContract(): void {
-    salesForm.post('/agreements/sales-contracts', {
-        preserveScroll: true,
-        onSuccess: () => salesForm.reset(),
-    });
-}
-
-function activateSalesContract(contract: Agreement): void {
-    if (confirm(`Activate ${contract.reference}?`)) {
-        router.post(
-            `/agreements/sales-contracts/${contract.id}/activate`,
-            { commission_plan_id: commissionPlanId.value || null },
-            { preserveScroll: true },
-        );
-    }
-}
 </script>
 
 <template>
-    <Head title="Agreements" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Agreements')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Agreements"
             description="Create and activate lease and sale agreements from active reservations."
-        />
-        <Link href="/lease-compliance" class="text-sm underline"
-            >Manage lease compliance</Link
         >
+            <template #actions>
+                <Link href="/lease-compliance" class="text-sm underline">{{
+                    t('Manage lease compliance')
+                }}</Link>
+            </template>
+        </PageHeader>
 
-        <Card v-if="canManageTransactions">
-            <CardHeader
-                ><CardTitle>Activation commission plan</CardTitle></CardHeader
+        <nav :aria-label="t('Agreement types')" class="flex gap-2">
+            <button
+                v-for="item in [
+                    { key: 'leases', label: 'Leases' },
+                    { key: 'sales', label: 'Sales contracts' },
+                ] as const"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
             >
-            <CardContent>
-                <select
-                    v-model="commissionPlanId"
-                    class="border-input h-9 rounded-md border px-3"
-                >
-                    <option value="">No commission</option>
-                    <option
-                        v-for="plan in commissionPlans"
-                        :key="plan.id"
-                        :value="String(plan.id)"
+                {{ t(item.label) }}
+            </button>
+        </nav>
+
+        <Card v-if="canManageTransactions">
+            <CardContent class="flex flex-wrap items-end gap-4">
+                <div class="space-y-1">
+                    <Label for="ag-plan">{{
+                        t('Activation commission plan')
+                    }}</Label>
+                    <select
+                        id="ag-plan"
+                        v-model="commissionPlanId"
+                        :class="selectClass"
                     >
-                        {{ plan.name }} ·
+                        <option value="">{{ t('No commission') }}</option>
+                        <option
+                            v-for="plan in commissionPlans"
+                            :key="plan.id"
+                            :value="String(plan.id)"
+                        >
+                            {{ plan.name }} ·
+                            {{
+                                plan.basis === 'fixed'
+                                    ? `AED ${plan.rate}`
+                                    : `${plan.rate}%`
+                            }}
+                        </option>
+                    </select>
+                </div>
+                <template v-if="tab === 'leases'">
+                    <div class="space-y-1">
+                        <Label for="ag-renew-end">{{
+                            t('Renewal ends on')
+                        }}</Label>
+                        <Input
+                            id="ag-renew-end"
+                            v-model="renewalEndsOn"
+                            type="date"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="ag-renew-rent">{{
+                            t('New rent (optional)')
+                        }}</Label>
+                        <Input
+                            id="ag-renew-rent"
+                            v-model="renewalRentAmount"
+                            type="number"
+                            min="0"
+                        />
+                    </div>
+                    <p class="text-muted-foreground pb-2 text-sm">
                         {{
-                            plan.basis === 'fixed'
-                                ? `AED ${plan.rate}`
-                                : `${plan.rate}%`
+                            t(
+                                'Set terms, then select Renew on an active lease.',
+                            )
                         }}
-                    </option>
-                </select>
+                    </p>
+                </template>
             </CardContent>
         </Card>
 
-        <Card v-if="canManageTransactions">
-            <CardHeader><CardTitle>Renewal terms</CardTitle></CardHeader>
-            <CardContent class="flex flex-wrap gap-3">
-                <Input v-model="renewalEndsOn" type="date" />
-                <Input
-                    v-model="renewalRentAmount"
-                    type="number"
-                    min="0"
-                    placeholder="New rent (optional)"
-                />
-                <p class="text-muted-foreground self-center text-sm">
-                    Set terms, then select Renew on an active lease.
-                </p>
-            </CardContent>
-        </Card>
+        <CrmSettingsTable
+            :title="tab === 'leases' ? 'Leases' : 'Sales contracts'"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.reference"
+            :add-label="tab === 'leases' ? 'Create lease' : 'Create contract'"
+            :selectable="false"
+            searchable
+            :can-edit="canManageTransactions"
+            @add="sheet = tab === 'leases' ? 'lease' : 'sales'"
+        >
+            <template #cell-reference="{ row }">
+                {{ row.reference }}
+                <Badge
+                    v-if="isExpiring(row.id)"
+                    variant="outline"
+                    class="ms-2"
+                    >{{ t('Expiring') }}</Badge
+                >
+            </template>
+            <template #cell-status="{ row }">
+                <Badge variant="secondary">{{ row.status }}</Badge>
+            </template>
+            <template #cell-actions="{ row }">
+                <div
+                    v-if="canManageTransactions"
+                    class="flex justify-end gap-2"
+                >
+                    <Button
+                        v-if="row.status === 'draft'"
+                        size="sm"
+                        @click="activate(row)"
+                        >{{ t('Activate') }}</Button
+                    >
+                    <Button
+                        v-if="tab === 'leases' && row.status === 'active'"
+                        size="sm"
+                        variant="outline"
+                        :disabled="!renewalEndsOn"
+                        @click="renew(row)"
+                        >{{ t('Renew') }}</Button
+                    >
+                </div>
+            </template>
+        </CrmSettingsTable>
 
-        <Card v-if="canManageTransactions">
-            <CardHeader><CardTitle>Create draft lease</CardTitle></CardHeader>
-            <CardContent>
+        <Sheet v-model:open="sheetOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        sheet === 'lease'
+                            ? t('Create draft lease')
+                            : t('Create draft sales contract')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t('Drafts are created from an active reservation.')
+                    }}</SheetDescription>
+                </SheetHeader>
                 <form
-                    class="flex flex-wrap gap-3"
+                    v-if="sheet === 'lease'"
+                    id="agreement-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
                     @submit.prevent="createLease"
                 >
-                    <select
-                        v-model="leaseForm.reservation_id"
-                        class="border-input h-9 rounded-md border px-3"
-                        required
-                    >
-                        <option disabled value="">Reservation</option>
-                        <option
-                            v-for="reservation in leaseReservations"
-                            :key="reservation.id"
-                            :value="String(reservation.id)"
+                    <div class="space-y-1">
+                        <Label for="lf-res">{{ t('Reservation') }}</Label>
+                        <select
+                            id="lf-res"
+                            v-model="leaseForm.reservation_id"
+                            :class="selectClass"
+                            required
                         >
-                            {{ reservation.reference }} ·
-                            {{ reservation.unit?.number }}
-                            <template v-if="reservation.listing">
-                                · {{ reservation.listing.reference }}</template
+                            <option disabled value="">—</option>
+                            <option
+                                v-for="reservation in leaseReservations"
+                                :key="reservation.id"
+                                :value="String(reservation.id)"
                             >
-                        </option>
-                    </select>
-                    <Input v-model="leaseForm.starts_on" type="date" required />
-                    <Input v-model="leaseForm.ends_on" type="date" required />
-                    <Input
-                        v-model="leaseForm.rent_amount"
-                        type="number"
-                        min="0"
-                        placeholder="Rent amount"
-                    />
-                    <select
-                        v-model="leaseForm.tenant_id"
-                        class="border-input h-9 rounded-md border px-3"
-                    >
-                        <option value="">No tenant profile</option>
-                        <option
-                            v-for="tenant in tenants"
-                            :key="tenant.id"
-                            :value="String(tenant.id)"
-                        >
-                            {{ tenant.name }}
-                        </option>
-                    </select>
-                    <select
-                        v-model="leaseForm.broker_id"
-                        class="border-input h-9 rounded-md border px-3"
-                    >
-                        <option value="">No broker</option>
-                        <option
-                            v-for="broker in brokers"
-                            :key="broker.id"
-                            :value="String(broker.id)"
-                        >
-                            {{ broker.name }}
-                        </option>
-                    </select>
-                    <Button :disabled="leaseForm.processing"
-                        >Create lease</Button
-                    >
-                </form>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader
-                ><CardTitle>{{ t('Leases') }}</CardTitle></CardHeader
-            >
-            <CardContent class="space-y-3">
-                <p v-if="!leases.length" class="text-muted-foreground text-sm">
-                    No leases yet.
-                </p>
-                <div
-                    v-for="lease in leases"
-                    :key="lease.id"
-                    class="flex items-center justify-between border-b pb-3 last:border-0"
-                >
-                    <span>
-                        {{ lease.reference }}
-                        <span v-if="lease.tenant" class="text-muted-foreground"
-                            >· {{ lease.tenant.name }}</span
-                        >
-                        <span v-if="lease.is_expiring" class="text-amber-600"
-                            >· expiring {{ lease.ends_on }}</span
-                        >
-                    </span>
-                    <div class="flex items-center gap-3">
-                        <span class="text-muted-foreground">{{
-                            lease.status
-                        }}</span>
-                        <Button
-                            v-if="
-                                canManageTransactions &&
-                                lease.status === 'draft'
-                            "
-                            size="sm"
-                            @click="activateLease(lease)"
-                            >Activate</Button
-                        >
-                        <Button
-                            v-if="
-                                canManageTransactions &&
-                                lease.status === 'active'
-                            "
-                            size="sm"
-                            variant="outline"
-                            :disabled="!renewalEndsOn"
-                            @click="renewLease(lease)"
-                            >Renew</Button
-                        >
+                                {{ reservation.reference }} ·
+                                {{ reservation.unit?.number
+                                }}<template v-if="reservation.listing">
+                                    ·
+                                    {{
+                                        reservation.listing.reference
+                                    }}</template
+                                >
+                            </option>
+                        </select>
+                        <InputError
+                            :message="leaseForm.errors.reservation_id"
+                        />
                     </div>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card v-if="canManageTransactions">
-            <CardHeader
-                ><CardTitle>Create draft sales contract</CardTitle></CardHeader
-            >
-            <CardContent>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <Label for="lf-start">{{ t('Starts on') }}</Label
+                            ><Input
+                                id="lf-start"
+                                v-model="leaseForm.starts_on"
+                                type="date"
+                                required
+                            /><InputError
+                                :message="leaseForm.errors.starts_on"
+                            />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="lf-end">{{ t('Ends on') }}</Label
+                            ><Input
+                                id="lf-end"
+                                v-model="leaseForm.ends_on"
+                                type="date"
+                                required
+                            /><InputError :message="leaseForm.errors.ends_on" />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="lf-rent">{{ t('Rent') }}</Label
+                        ><Input
+                            id="lf-rent"
+                            v-model="leaseForm.rent_amount"
+                            type="number"
+                            min="0"
+                        /><InputError :message="leaseForm.errors.rent_amount" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="lf-tenant">{{ t('Tenant') }}</Label>
+                        <select
+                            id="lf-tenant"
+                            v-model="leaseForm.tenant_id"
+                            :class="selectClass"
+                        >
+                            <option value="">
+                                {{ t('No tenant profile') }}
+                            </option>
+                            <option
+                                v-for="tenant in tenants"
+                                :key="tenant.id"
+                                :value="String(tenant.id)"
+                            >
+                                {{ tenant.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="lf-broker">{{ t('Broker') }}</Label>
+                        <select
+                            id="lf-broker"
+                            v-model="leaseForm.broker_id"
+                            :class="selectClass"
+                        >
+                            <option value="">{{ t('No broker') }}</option>
+                            <option
+                                v-for="broker in brokers"
+                                :key="broker.id"
+                                :value="String(broker.id)"
+                            >
+                                {{ broker.name }}
+                            </option>
+                        </select>
+                    </div>
+                </form>
                 <form
-                    class="flex flex-wrap gap-3"
+                    v-else-if="sheet === 'sales'"
+                    id="agreement-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
                     @submit.prevent="createSalesContract"
                 >
-                    <select
-                        v-model="salesForm.reservation_id"
-                        class="border-input h-9 rounded-md border px-3"
-                        required
-                    >
-                        <option disabled value="">Reservation</option>
-                        <option
-                            v-for="reservation in saleReservations"
-                            :key="reservation.id"
-                            :value="String(reservation.id)"
+                    <div class="space-y-1">
+                        <Label for="sf-res">{{ t('Reservation') }}</Label>
+                        <select
+                            id="sf-res"
+                            v-model="salesForm.reservation_id"
+                            :class="selectClass"
+                            required
                         >
-                            {{ reservation.reference }} ·
-                            {{ reservation.unit?.number }}
-                            <template v-if="reservation.listing">
-                                · {{ reservation.listing.reference }}</template
+                            <option disabled value="">—</option>
+                            <option
+                                v-for="reservation in saleReservations"
+                                :key="reservation.id"
+                                :value="String(reservation.id)"
                             >
-                        </option>
-                    </select>
-                    <Input
-                        v-model="salesForm.contracted_on"
-                        type="date"
-                        required
-                    />
-                    <Input
-                        v-model="salesForm.sale_price"
-                        type="number"
-                        min="0"
-                        placeholder="Sale price"
-                    />
-                    <select
-                        v-model="salesForm.broker_id"
-                        class="border-input h-9 rounded-md border px-3"
-                    >
-                        <option value="">No broker</option>
-                        <option
-                            v-for="broker in brokers"
-                            :key="broker.id"
-                            :value="String(broker.id)"
-                        >
-                            {{ broker.name }}
-                        </option>
-                    </select>
-                    <Button :disabled="salesForm.processing"
-                        >Create contract</Button
-                    >
-                </form>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle>Sales contracts</CardTitle></CardHeader>
-            <CardContent class="space-y-3">
-                <p
-                    v-if="!salesContracts.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No sales contracts yet.
-                </p>
-                <div
-                    v-for="contract in salesContracts"
-                    :key="contract.id"
-                    class="flex items-center justify-between border-b pb-3 last:border-0"
-                >
-                    <span>{{ contract.reference }}</span>
-                    <div class="flex items-center gap-3">
-                        <span class="text-muted-foreground">{{
-                            contract.status
-                        }}</span>
-                        <Button
-                            v-if="
-                                canManageTransactions &&
-                                contract.status === 'draft'
-                            "
-                            size="sm"
-                            @click="activateSalesContract(contract)"
-                            >Activate</Button
-                        >
+                                {{ reservation.reference }} ·
+                                {{ reservation.unit?.number
+                                }}<template v-if="reservation.listing">
+                                    ·
+                                    {{
+                                        reservation.listing.reference
+                                    }}</template
+                                >
+                            </option>
+                        </select>
+                        <InputError
+                            :message="salesForm.errors.reservation_id"
+                        />
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                    <div class="space-y-1">
+                        <Label for="sf-date">{{ t('Contract date') }}</Label
+                        ><Input
+                            id="sf-date"
+                            v-model="salesForm.contracted_on"
+                            type="date"
+                            required
+                        /><InputError
+                            :message="salesForm.errors.contracted_on"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="sf-price">{{ t('Sale price') }}</Label
+                        ><Input
+                            id="sf-price"
+                            v-model="salesForm.sale_price"
+                            type="number"
+                            min="0"
+                        /><InputError :message="salesForm.errors.sale_price" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="sf-broker">{{ t('Broker') }}</Label>
+                        <select
+                            id="sf-broker"
+                            v-model="salesForm.broker_id"
+                            :class="selectClass"
+                        >
+                            <option value="">{{ t('No broker') }}</option>
+                            <option
+                                v-for="broker in brokers"
+                                :key="broker.id"
+                                :value="String(broker.id)"
+                            >
+                                {{ broker.name }}
+                            </option>
+                        </select>
+                    </div>
+                </form>
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="agreement-form"
+                        :disabled="leaseForm.processing || salesForm.processing"
+                        >{{
+                            sheet === 'lease'
+                                ? t('Create lease')
+                                : t('Create contract')
+                        }}</Button
+                    >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="sheet = null"
+                        >{{ t('Cancel') }}</Button
+                    >
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>

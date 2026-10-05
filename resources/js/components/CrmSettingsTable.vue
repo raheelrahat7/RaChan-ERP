@@ -18,8 +18,9 @@ const props = withDefaults(
         searchable?: boolean;
         canEdit?: boolean;
         addLabel?: string;
+        selectable?: boolean;
     }>(),
-    { searchable: false, canEdit: false, addLabel: 'Add' },
+    { searchable: false, canEdit: false, addLabel: 'Add', selectable: true },
 );
 const emit = defineEmits<{
     add: [];
@@ -100,7 +101,7 @@ void slots;
             :rows="visible"
             :row-key="rowKey"
             :row-label="rowLabel"
-            selectable
+            :selectable="selectable"
             :caption="t(title)"
             :empty-title="t('Nothing here yet')"
         >
@@ -136,9 +137,10 @@ void slots;
                     class="flex flex-wrap items-center justify-between gap-3 border-t p-3 text-xs"
                 >
                     <span
-                        >{{ t('Selected') }}: {{ selected.length }} /
-                        {{ visible.length }} · {{ t('Total') }}:
-                        {{ sorted.length }}</span
+                        ><template v-if="selectable"
+                            >{{ t('Selected') }}: {{ selected.length }} /
+                            {{ visible.length }} · </template
+                        >{{ t('Total') }}: {{ sorted.length }}</span
                     >
                     <span class="flex items-center gap-2">
                         <Button
