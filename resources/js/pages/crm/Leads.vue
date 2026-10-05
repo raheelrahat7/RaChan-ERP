@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { FollowUp, ServerActivityBoard } from '@/lib/crm-activity-views';
+import type { FilterPreset } from '@/lib/crm-filter-presets';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { reactive, computed, onMounted, ref } from 'vue';
+import { reactive, computed, onMounted, ref, watch } from 'vue';
 import CrmLeadDetailsEditor from '@/components/CrmLeadDetailsEditor.vue';
 import CustomLeadFields from '@/components/CustomLeadFields.vue';
 import CrmPipelineBoard from '@/components/CrmPipelineBoard.vue';
@@ -109,6 +111,11 @@ const props = defineProps<{
         page: number;
     };
     filterCatalog: FilterField[];
+    activityBoard: ServerActivityBoard;
+    leadPreferences: {
+        selected_field_keys: string[] | null;
+        presets: FilterPreset[];
+    };
     filteredTotal: number;
     canManagePipelines: boolean;
     canManageHierarchy: boolean;
@@ -186,6 +193,73 @@ const addLeadOpen = ref(false);
 type LeadView = 'board' | 'list' | 'activities' | 'calendar';
 const leadViews: LeadView[] = ['board', 'list', 'activities', 'calendar'];
 const leadView = ref<LeadView>('board');
+const calendarActivities = ref<FollowUp[]>([]);
+const calendarLoading = ref(false);
+const calendarError = ref('');
+watch(
+    [leadView, () => props.filters, () => props.followUps],
+    async (_, __, onCleanup) => {
+        if (leadView.value !== 'calendar') return;
+        const controller = new AbortController();
+        onCleanup(() => controller.abort());
+        calendarLoading.value = true;
+        calendarError.value = '';
+        calendarActivities.value = [];
+        const items: FollowUp[] = [];
+        try {
+            let activityPage = 1;
+            let lastPage = 1;
+            do {
+                const query = new URLSearchParams();
+                for (const key of [
+                    'pipeline_id',
+                    'stage_id',
+                    'assignee_id',
+                    'q',
+                ] as const) {
+                    const value = props.filters[key];
+                    if (value != null) query.set(key, String(value));
+                }
+                props.filters.filters.forEach((clause, index) => {
+                    Object.entries(clause).forEach(([key, value]) =>
+                        query.set(`filters[${index}][${key}]`, value),
+                    );
+                });
+                query.set('activity_page', String(activityPage));
+                const response = await fetch(`/crm/activities?${query}`, {
+                    headers: { Accept: 'application/json' },
+                    signal: controller.signal,
+                });
+                if (!response.ok)
+                    throw new Error('Unable to load calendar activities.');
+                const result = await response.json();
+                lastPage = result.activities.last_page;
+                for (const activity of result.activities.data) {
+                    if (
+                        activity.completed_at === null &&
+                        activity.due_at &&
+                        activity.subject
+                    )
+                        items.push({
+                            ...activity,
+                            lead: activity.subject,
+                            is_overdue: false,
+                        });
+                }
+                activityPage++;
+            } while (activityPage <= lastPage);
+            calendarActivities.value = items;
+        } catch (error) {
+            if (!controller.signal.aborted)
+                calendarError.value =
+                    error instanceof Error
+                        ? error.message
+                        : 'Unable to load calendar activities.';
+        } finally {
+            if (!controller.signal.aborted) calendarLoading.value = false;
+        }
+    },
+);
 onMounted(() => {
     const saved = localStorage.getItem('crm-lead-view');
     if (leadViews.includes(saved as LeadView))
@@ -210,6 +284,13 @@ function filterLeads(resetStage = false): void {
     if (resetStage) filters.stage_id = null;
     filters.page = 1;
     router.get('/crm/leads', { ...filters }, { preserveScroll: true });
+}
+function changeActivityPage(activity_page: number): void {
+    router.get(
+        '/crm/leads',
+        { ...props.filters, activity_page },
+        { preserveScroll: true, preserveState: true },
+    );
 }
 function changePage(page: number): void {
     router.get(
@@ -292,6 +373,7 @@ function switchLeadView(view: LeadView): void {
                 :model-value="filters"
                 class="min-w-64"
                 :catalog="filterCatalog"
+                :preferences="leadPreferences"
                 :pipelines="pipelines"
                 :members="members"
                 :assignee-scoped="assigneeScoped"
@@ -474,14 +556,27 @@ function switchLeadView(view: LeadView): void {
             />
             <CrmLeadActivitiesBoard
                 v-if="leadView === 'activities'"
-                :follow-ups="followUps"
-                :leads="leads"
-                :can-complete="canManageCrm"
-                @complete="completeFollowUp"
+                :board="activityBoard"
+                @page="changeActivityPage"
             />
+            <p v-if="leadView === 'calendar' && calendarLoading" role="status">
+                {{ t('Loading activities…') }}
+            </p>
+            <p
+                v-if="leadView === 'calendar' && calendarError"
+                role="alert"
+                class="text-destructive"
+            >
+                {{ calendarError }}
+            </p>
             <CrmLeadCalendar
-                v-if="leadView === 'calendar'"
-                :follow-ups="followUps"
+                v-if="
+                    leadView === 'calendar' &&
+                    !calendarLoading &&
+                    !calendarError
+                "
+                :follow-ups="calendarActivities"
+                :timezone="activityBoard.timezone"
             />
             <p
                 v-if="leadView === 'board' && canManageCrm"

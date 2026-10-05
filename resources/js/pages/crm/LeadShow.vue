@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import CrmLeadActivityEditor from '@/components/CrmLeadActivityEditor.vue';
 import CrmLeadStageBar from '@/components/CrmLeadStageBar.vue';
 import DateText from '@/components/DateText.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,6 +33,7 @@ type Activity = {
     due_at: string | null;
     completed_at: string | null;
     created_at: string;
+    updated_at: string;
     creator: { name: string } | null;
 };
 type Tab = 'general' | 'activities' | 'history';
@@ -61,11 +65,27 @@ const props = defineProps<{
     members: { id: number; name: string }[];
     customFields: Field[];
     timeline: Entry[];
+    historyFilters: { history_q?: string; history_event?: string };
+    historyPagination: { total: number; page: number; per_page: number };
     activities: Activity[];
     canExportActivities: boolean;
+    timezone: string;
 }>();
 
 const { t } = useLocale();
+const historyQuery = ref(props.historyFilters.history_q ?? '');
+const historyEvent = ref(props.historyFilters.history_event ?? '');
+function loadHistory(history_page = 1): void {
+    router.get(
+        `/crm/leads/${props.lead.id}`,
+        {
+            history_q: historyQuery.value,
+            history_event: historyEvent.value,
+            history_page,
+        },
+        { preserveState: true, preserveScroll: true },
+    );
+}
 const tabs: Tab[] = ['general', 'activities', 'history'];
 const tab = ref<Tab>('general');
 const fullName = computed(
@@ -137,7 +157,11 @@ function fromHash(): void {
         tab.value = hash;
     }
 }
-onMounted(fromHash);
+onMounted(() => {
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
+});
+onUnmounted(() => window.removeEventListener('hashchange', fromHash));
 watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 </script>
 
@@ -413,6 +437,15 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                                         with-time
                                 /></template>
                             </p>
+                            <CrmLeadActivityEditor
+                                v-if="
+                                    canManageCrm &&
+                                    !lead.converted &&
+                                    !activity.completed_at
+                                "
+                                :activity="activity"
+                                :timezone="timezone"
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -424,6 +457,24 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                         ><CardTitle>{{ t('History') }}</CardTitle></CardHeader
                     >
                     <CardContent class="overflow-x-auto">
+                        <form
+                            class="mb-4 flex flex-wrap gap-2"
+                            @submit.prevent="loadHistory()"
+                        >
+                            <Input
+                                v-model="historyQuery"
+                                aria-label="Search history"
+                                placeholder="Search events or people"
+                                class="max-w-sm"
+                            />
+                            <Input
+                                v-model="historyEvent"
+                                aria-label="Event type"
+                                placeholder="Event key (optional)"
+                                class="max-w-sm"
+                            />
+                            <Button type="submit">{{ t('Search') }}</Button>
+                        </form>
                         <p
                             v-if="!timeline.length"
                             class="text-muted-foreground text-sm"
@@ -468,12 +519,28 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                                 </tr>
                             </tbody>
                         </table>
-                        <p
-                            v-if="timeline.length === 100"
-                            class="text-muted-foreground mt-3 text-xs"
-                        >
-                            {{ t('Showing the 100 most recent events.') }}
-                        </p>
+                        <div class="mt-4 flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                :disabled="historyPagination.page <= 1"
+                                @click="loadHistory(historyPagination.page - 1)"
+                                >{{ t('Previous') }}</Button
+                            >
+                            <span class="text-muted-foreground text-sm"
+                                >{{ historyPagination.total }}
+                                {{ t('events') }}</span
+                            >
+                            <Button
+                                variant="outline"
+                                :disabled="
+                                    historyPagination.page *
+                                        historyPagination.per_page >=
+                                    historyPagination.total
+                                "
+                                @click="loadHistory(historyPagination.page + 1)"
+                                >{{ t('Next') }}</Button
+                            >
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>

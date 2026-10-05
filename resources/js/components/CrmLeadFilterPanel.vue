@@ -21,11 +21,6 @@ import { useLocale } from '@/composables/useLocale';
 import {
     builtinPresets,
     defaultFieldKeys,
-    deletePreset,
-    loadFieldSelection,
-    loadPresets,
-    saveFieldSelection,
-    savePreset,
     visibleFieldKeys,
 } from '@/lib/crm-filter-presets';
 import type { FilterClause, FilterPreset } from '@/lib/crm-filter-presets';
@@ -54,6 +49,10 @@ const props = defineProps<{
     assigneeScoped: boolean;
     limitedVisibility: boolean;
     userId: number | null;
+    preferences: {
+        selected_field_keys: string[] | null;
+        presets: FilterPreset[];
+    };
 }>();
 const model = defineModel<Model>({ required: true });
 const emit = defineEmits<{ apply: [resetStage: boolean]; reset: [] }>();
@@ -67,13 +66,52 @@ const pendingSelection = ref<string[]>([]);
 const findSetting = ref('');
 const presets = ref<FilterPreset[]>([]);
 const presetName = ref('');
-const storage = (): Storage | null => {
+const saving = ref(false);
+const saveError = ref('');
+async function persist(
+    path: string,
+    method: string,
+    data?: unknown,
+): Promise<boolean> {
+    if (saving.value) return false;
+    saving.value = true;
+    saveError.value = '';
     try {
-        return window.localStorage;
-    } catch {
-        return null;
+        const cookie = document.cookie
+            .split('; ')
+            .find((item) => item.startsWith('XSRF-TOKEN='));
+        const response = await fetch(path, {
+            method,
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': cookie
+                    ? decodeURIComponent(cookie.slice(11))
+                    : '',
+            },
+            ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+        });
+        const result = await response.json();
+        if (!response.ok)
+            throw new Error(
+                (Object.values(result.errors ?? {}).flat()[0] as string) ??
+                    result.message ??
+                    'Unable to save preferences.',
+            );
+        selection.value = result.selected_field_keys;
+        presets.value = result.presets;
+        return true;
+    } catch (error) {
+        saveError.value =
+            error instanceof Error
+                ? error.message
+                : 'Unable to save preferences.';
+        return false;
+    } finally {
+        saving.value = false;
     }
-};
+}
 
 const shownKeys = computed(() =>
     visibleFieldKeys(props.catalog, selection.value),
@@ -207,23 +245,33 @@ function removeChip(index: number): void {
     emit('apply', false);
 }
 function usePreset(preset: FilterPreset): void {
-    model.value.q = preset.state.q;
-    model.value.assignee_id = preset.state.assignee_id;
-    model.value.filters = structuredClone(preset.state.filters);
+    model.value.q = preset.state.q ?? '';
+    if (preset.state.pipeline_id != null)
+        model.value.pipeline_id = preset.state.pipeline_id;
+    model.value.stage_id = preset.state.stage_id ?? null;
+    model.value.assignee_id = preset.state.assignee_id ?? null;
+    model.value.filters = structuredClone(preset.state.filters ?? []);
     syncDraft();
     apply();
 }
-function saveCurrent(): void {
+async function saveCurrent(): Promise<void> {
     commitDraft();
-    presets.value = savePreset(storage(), presetName.value, {
-        q: model.value.q,
-        assignee_id: model.value.assignee_id,
-        filters: model.value.filters,
-    });
-    presetName.value = '';
+    if (
+        await persist('/crm/leads/preferences', 'POST', {
+            name: presetName.value.trim(),
+            state: {
+                q: model.value.q,
+                pipeline_id: model.value.pipeline_id,
+                stage_id: model.value.stage_id,
+                assignee_id: model.value.assignee_id,
+                filters: model.value.filters,
+            },
+        })
+    )
+        presetName.value = '';
 }
-function removePreset(id: string): void {
-    presets.value = deletePreset(storage(), id);
+async function removePreset(id: string): Promise<void> {
+    await persist(`/crm/leads/preferences/${encodeURIComponent(id)}`, 'DELETE');
 }
 function openSettings(): void {
     commitDraft();
@@ -238,20 +286,30 @@ function toggleSetting(key: string, checked: boolean | 'indeterminate'): void {
             ? [...pendingSelection.value, key]
             : pendingSelection.value.filter((item) => item !== key);
 }
-function applySettings(): void {
-    selection.value = [...pendingSelection.value];
-    saveFieldSelection(storage(), selection.value);
-    settingsOpen.value = false;
+async function applySettings(): Promise<void> {
+    if (
+        await persist('/crm/leads/preferences', 'POST', {
+            selected_field_keys: pendingSelection.value,
+        })
+    )
+        settingsOpen.value = false;
 }
 function resetSettings(): void {
     pendingSelection.value = defaultFieldKeys(props.catalog);
 }
 
 onMounted(() => {
-    selection.value = loadFieldSelection(storage());
-    presets.value = loadPresets(storage());
+    selection.value = props.preferences.selected_field_keys;
+    presets.value = props.preferences.presets;
     syncDraft();
 });
+watch(
+    () => props.preferences,
+    (value) => {
+        selection.value = value.selected_field_keys;
+        presets.value = value.presets;
+    },
+);
 watch(open, (isOpen) => {
     if (isOpen) {
         syncDraft();
@@ -261,6 +319,9 @@ watch(open, (isOpen) => {
 
 <template>
     <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <p v-if="saveError" role="alert" class="text-destructive text-sm">
+            {{ saveError }}
+        </p>
         <div class="flex gap-2">
             <form
                 class="relative min-w-0 flex-1"
@@ -348,12 +409,16 @@ watch(open, (isOpen) => {
                                     type="submit"
                                     size="sm"
                                     variant="outline"
-                                    :disabled="!presetName.trim()"
+                                    :disabled="saving || !presetName.trim()"
                                     >{{ t('Save') }}</Button
                                 >
                             </form>
                             <p class="text-muted-foreground mt-2 text-xs">
-                                {{ t('Presets are saved in this browser.') }}
+                                {{
+                                    t(
+                                        'Saved filters are private to your account and organization.',
+                                    )
+                                }}
                             </p>
                         </div>
                         <div class="space-y-3 overflow-y-auto p-4">
@@ -569,6 +634,13 @@ watch(open, (isOpen) => {
 
         <Dialog v-model:open="settingsOpen">
             <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto">
+                <p
+                    v-if="saveError"
+                    role="alert"
+                    class="text-destructive text-sm"
+                >
+                    {{ saveError }}
+                </p>
                 <DialogHeader>
                     <DialogTitle>{{ t('Filter field settings') }}</DialogTitle>
                     <DialogDescription>{{
@@ -635,9 +707,12 @@ watch(open, (isOpen) => {
                             @click="settingsOpen = false"
                             >{{ t('Cancel') }}</Button
                         >
-                        <Button type="button" @click="applySettings">{{
-                            t('Apply')
-                        }}</Button>
+                        <Button
+                            type="button"
+                            :disabled="saving"
+                            @click="applySettings"
+                            >{{ t('Apply') }}</Button
+                        >
                     </div>
                 </div>
             </DialogContent>

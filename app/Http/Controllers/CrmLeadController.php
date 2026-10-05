@@ -88,6 +88,7 @@ class CrmLeadController extends Controller
             'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'required' => $field->required, 'options' => $field->options ?? [], 'value' => $values->get($field->id)?->value], $visible),
             'timeline' => $timeline->for($org, $request->user(), $lead, $historyFilters),
             'historyFilters' => $historyFilters,
+            'timezone' => $org->timezone,
             'historyPagination' => $timeline->pagination($org, $lead, $historyFilters),
             'canExportActivities' => $exports->canExport($org, $request->user()),
             'activities' => $lead->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest()->limit(50)->get(['id', 'organization_id', 'subject_type', 'subject_id', 'created_by', 'type', 'notes', 'due_at', 'completed_at', 'created_at', 'updated_at']),

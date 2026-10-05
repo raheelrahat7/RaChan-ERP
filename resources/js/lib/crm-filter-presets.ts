@@ -5,6 +5,8 @@ export type FilterClause = {
     to?: string;
 };
 export type FilterState = {
+    pipeline_id?: number | null;
+    stage_id?: number | null;
     q: string;
     assignee_id: number | null;
     filters: FilterClause[];

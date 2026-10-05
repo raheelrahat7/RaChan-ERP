@@ -7,20 +7,20 @@ import { useLocale } from '@/composables/useLocale';
 import {
     calendarWeeks,
     dayKey,
+    zonedDayKey,
     followUpsByDay,
 } from '@/lib/crm-activity-views';
 import type { FollowUp } from '@/lib/crm-activity-views';
 
-const props = defineProps<{ followUps: FollowUp[] }>();
+const props = defineProps<{ followUps: FollowUp[]; timezone: string }>();
 const { t, locale } = useLocale();
-const cursor = ref(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-);
+const todayKey = zonedDayKey(new Date(), props.timezone);
+const [todayYear, todayMonth] = todayKey.split('-').map(Number);
+const cursor = ref(new Date(todayYear, todayMonth - 1, 1));
 const weeks = computed(() =>
     calendarWeeks(cursor.value.getFullYear(), cursor.value.getMonth()),
 );
-const byDay = computed(() => followUpsByDay(props.followUps));
-const todayKey = dayKey(new Date());
+const byDay = computed(() => followUpsByDay(props.followUps, props.timezone));
 const title = computed(() =>
     new Intl.DateTimeFormat(locale.value, {
         month: 'long',
@@ -123,8 +123,8 @@ function inMonth(day: Date): boolean {
                             class="block truncate rounded px-1 py-0.5 text-xs hover:underline"
                             :class="
                                 item.is_overdue
-                                    ? 'bg-destructive/15 text-destructive'
-                                    : 'bg-primary/10 text-primary'
+                                    ? 'bg-destructive/15 text-foreground'
+                                    : 'bg-primary/10 text-foreground'
                             "
                             :title="`${item.type}${item.notes ? ' · ' + item.notes : ''}`"
                             >{{ item.lead?.first_name }}

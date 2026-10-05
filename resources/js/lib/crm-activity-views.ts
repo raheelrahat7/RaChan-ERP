@@ -139,7 +139,10 @@ export function dayKey(date: Date): string {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export function followUpsByDay(followUps: FollowUp[]): Map<string, FollowUp[]> {
+export function followUpsByDay(
+    followUps: FollowUp[],
+    timezone?: string,
+): Map<string, FollowUp[]> {
     const map = new Map<string, FollowUp[]>();
     for (const followUp of followUps) {
         if (!followUp.due_at) {
@@ -149,9 +152,58 @@ export function followUpsByDay(followUps: FollowUp[]): Map<string, FollowUp[]> {
         if (Number.isNaN(due.getTime())) {
             continue;
         }
-        const key = dayKey(due);
+        const key = timezone ? zonedDayKey(due, timezone) : dayKey(due);
         map.set(key, [...(map.get(key) ?? []), followUp]);
     }
 
     return map;
+}
+
+export type ServerActivityBoard = {
+    timezone: string;
+    as_of: string;
+    lanes: {
+        key: string;
+        total: number;
+        page: number;
+        per_page: number;
+        leads: {
+            id: number;
+            first_name: string;
+            last_name: string;
+            next_due_at: string | null;
+            assignee: { id: number; name: string } | null;
+        }[];
+    }[];
+};
+
+export function zonedDayKey(date: Date, timezone: string): string {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).formatToParts(date);
+    const value = (type: string): string =>
+        parts.find((part) => part.type === type)?.value ?? '';
+    return `${value('year')}-${value('month')}-${value('day')}`;
+}
+
+export function activityDateInput(
+    value: string | null,
+    timezone: string,
+): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        hourCycle: 'h23',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    }).formatToParts(date);
+    const part = (type: string): string =>
+        parts.find((item) => item.type === type)?.value ?? '';
+    return `${zonedDayKey(date, timezone)}T${part('hour')}:${part('minute')}:${part('second')}`;
 }

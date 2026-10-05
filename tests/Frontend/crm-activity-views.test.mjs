@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
     activityColumns,
+    activityDateInput,
+    zonedDayKey,
     bucketFor,
     calendarWeeks,
     dayKey,
@@ -71,4 +73,22 @@ await test('follow-ups group by local day', () => {
     ]);
     assert.equal(map.get('2026-10-14').length, 2);
     assert.equal(map.size, 1);
+});
+
+await test('calendar and activity editor use organization dates across midnight and daylight saving', () => {
+    const due = new Date('2026-10-05T23:30:00Z');
+    assert.equal(zonedDayKey(due, 'Asia/Karachi'), '2026-10-06');
+    const grouped = followUpsByDay([make(91, due)], 'Asia/Karachi');
+    assert.equal(grouped.get('2026-10-06')[0].id, 91);
+    assert.equal(grouped.has('2026-10-05'), false);
+    assert.equal(
+        activityDateInput(due.toISOString(), 'Asia/Karachi'),
+        '2026-10-06T04:30:00',
+    );
+    assert.equal(
+        activityDateInput('2026-03-08T07:30:00Z', 'America/New_York'),
+        '2026-03-08T03:30:00',
+    );
+    assert.equal(activityDateInput(null, 'Asia/Karachi'), '');
+    assert.equal(activityDateInput('invalid', 'Asia/Karachi'), '');
 });
