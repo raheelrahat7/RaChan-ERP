@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,13 +48,16 @@ function apply(): void {
 <template>
     <Head title="Outstanding balances" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Outstanding balances"
             description="Open invoice and vendor bill balances reconstructed from payments and credit notes recorded through the selected date."
-        />
-        <Link href="/accounting" class="text-sm underline"
-            >Back to accounting</Link
         >
+            <template #actions>
+                <Link href="/accounting" class="text-sm underline">{{
+                    t('Back to accounting')
+                }}</Link>
+            </template>
+        </PageHeader>
         <Card
             ><CardContent class="pt-6"
                 ><form
