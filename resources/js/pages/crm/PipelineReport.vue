@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { reactive } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,11 +76,16 @@ function percent(value: number | null): string {
 <template>
     <Head title="CRM pipeline reporting" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="CRM pipeline reporting"
             description="Review pipeline outcomes, customer conversion, stage movements and recorded stage time."
-        />
-        <Link href="/crm/leads" class="text-sm underline">Back to leads</Link>
+        >
+            <template #actions>
+                <Link href="/crm/leads" class="text-sm underline">{{
+                    t('Back to leads')
+                }}</Link>
+            </template>
+        </PageHeader>
         <div aria-live="polite">
             <InputError
                 v-for="(error, field) in page.props.errors"

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLocale } from '@/composables/useLocale';
+
+const { t } = useLocale();
 
 type Column = { key: string; label: string; group: string };
 const props = defineProps<{
@@ -38,11 +41,16 @@ function setGrant(userId: number, allowed: boolean): void {
 <template>
     <Head title="Export leads" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Export leads"
             description="Choose exactly which CRM data to include in your CSV."
-        />
-        <Link href="/crm/leads" class="text-sm underline">Back to leads</Link>
+        >
+            <template #actions>
+                <Link href="/crm/leads" class="text-sm underline">{{
+                    t('Back to leads')
+                }}</Link>
+            </template>
+        </PageHeader>
         <Card
             ><CardHeader><CardTitle>Columns to export</CardTitle></CardHeader
             ><CardContent class="space-y-6">

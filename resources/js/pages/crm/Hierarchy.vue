@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { reactive } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,13 +79,16 @@ const scopeName = (item: Grant) =>
 <template>
     <Head title="Departments and CRM access" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Departments and CRM access"
             description="Organize members and grant extra lead visibility to individuals."
-        />
-        <Link href="/crm/leads" class="text-sm underline"
-            >Back to CRM leads</Link
         >
+            <template #actions>
+                <Link href="/crm/leads" class="text-sm underline">{{
+                    t('Back to CRM leads')
+                }}</Link>
+            </template>
+        </PageHeader>
         <div aria-live="polite">
             <InputError
                 v-for="(error, field) in page.props.errors"
