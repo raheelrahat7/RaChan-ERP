@@ -4,6 +4,7 @@ import {
     boardColumns,
     canMoveOnBoard,
     canDropOnStage,
+    readableOn,
 } from '../../resources/js/lib/crm-pipeline-board.ts';
 const initial = { id: 1, name: 'Start', type: 'normal', active: true };
 const lost = { id: 2, name: 'Closed', type: 'lost', active: true };
@@ -100,4 +101,10 @@ await test('server-supplied rule explanations prevent restricted drops', () => {
         ),
         true,
     );
+});
+
+await test('stage header text stays readable on light and dark colors', () => {
+    assert.equal(readableOn('#fff59d'), '#1f1a17');
+    assert.equal(readableOn('#3a3a3a'), '#ffffff');
+    assert.equal(readableOn('not-a-color'), '#1f1a17');
 });

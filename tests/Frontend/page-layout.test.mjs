@@ -10,6 +10,9 @@ const root = fileURLToPath(
 const EXCLUDED =
     /\/(auth|settings|portal|public)\/|Welcome\.vue$|Styleguide\.vue$/;
 
+// Wide boards (kanban, calendar) fill the viewport; they keep the shared padding.
+const FULL_WIDTH = new Set(['crm/Leads.vue']);
+
 function pages(dir) {
     return readdirSync(dir).flatMap((name) => {
         const path = join(dir, name);
@@ -34,14 +37,18 @@ await test('every ERP page uses the same centred container width and padding', (
             path.slice(root.length + 1),
             rootContainer(readFileSync(path, 'utf8')),
         ])
-        .filter(
-            ([, classes]) =>
-                classes === null ||
-                !/\bmx-auto\b/.test(classes) ||
-                !/\bw-full\b/.test(classes) ||
-                !/\bmax-w-7xl\b/.test(classes) ||
-                /\bmax-w-(?!7xl)\w+/.test(classes) ||
-                !/\bmd:p-6\b/.test(classes),
+        .filter(([page, classes]) =>
+            FULL_WIDTH.has(page)
+                ? classes === null ||
+                  !/\bw-full\b/.test(classes) ||
+                  /\b(mx-auto|max-w-\w+)\b/.test(classes) ||
+                  !/\bmd:p-6\b/.test(classes)
+                : classes === null ||
+                  !/\bmx-auto\b/.test(classes) ||
+                  !/\bw-full\b/.test(classes) ||
+                  !/\bmax-w-7xl\b/.test(classes) ||
+                  /\bmax-w-(?!7xl)\w+/.test(classes) ||
+                  !/\bmd:p-6\b/.test(classes),
         );
     assert.deepEqual(offenders, []);
 });

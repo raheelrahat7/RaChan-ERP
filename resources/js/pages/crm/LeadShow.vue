@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, onMounted, ref, watch } from 'vue';
+import CrmLeadStageBar from '@/components/CrmLeadStageBar.vue';
+import DateText from '@/components/DateText.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useLocale } from '@/composables/useLocale';
+import type { Pipeline, TransitionOption } from '@/types/crm-pipeline';
 
 type Entry = {
     id: number;
@@ -28,9 +32,15 @@ type Activity = {
     created_at: string;
     creator: { name: string } | null;
 };
+type Tab = 'general' | 'activities' | 'history';
+
 const props = defineProps<{
     lead: {
         id: number;
+        pipeline_id: number;
+        current_stage_id: number;
+        converted: boolean;
+        assigned_to: number | null;
         first_name: string;
         last_name: string;
         email: string | null;
@@ -45,12 +55,75 @@ const props = defineProps<{
         created_at: string;
         updated_at: string;
     };
+    pipeline: Pipeline;
+    transitionOptions: TransitionOption[];
+    canManageCrm: boolean;
+    members: { id: number; name: string }[];
     customFields: Field[];
     timeline: Entry[];
     activities: Activity[];
     canExportActivities: boolean;
 }>();
-const tab = ref<'details' | 'activities' | 'history'>('details');
+
+const { t } = useLocale();
+const tabs: Tab[] = ['general', 'activities', 'history'];
+const tab = ref<Tab>('general');
+const fullName = computed(
+    () => `${props.lead.first_name} ${props.lead.last_name}`,
+);
+const details = computed(() => [
+    {
+        label: 'Email',
+        value: props.lead.email,
+        href: props.lead.email ? `mailto:${props.lead.email}` : null,
+    },
+    {
+        label: 'Phone',
+        value: props.lead.phone,
+        href: props.lead.phone ? `tel:${props.lead.phone}` : null,
+    },
+    { label: 'Company', value: props.lead.company, href: null },
+    { label: 'City', value: props.lead.city, href: null },
+    { label: 'Source', value: props.lead.source, href: null },
+    {
+        label: 'Responsible person',
+        value: props.lead.assignee?.name ?? null,
+        href: null,
+    },
+]);
+const feed = computed(() =>
+    [
+        ...props.activities.map((activity) => ({
+            key: `a${activity.id}`,
+            kind: 'activity' as const,
+            at: activity.created_at,
+            actor: activity.creator?.name ?? 'System',
+            title: activity.type,
+            body: activity.notes,
+            due: activity.due_at,
+            done: activity.completed_at !== null,
+        })),
+        ...props.timeline.map((entry) => ({
+            key: `h${entry.id}`,
+            kind: 'history' as const,
+            at: entry.at,
+            actor: entry.actor,
+            title: entry.detail,
+            body: null,
+            due: null,
+            done: false,
+        })),
+    ].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')),
+);
+
+function assign(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    router.put(
+        `/crm/leads/${props.lead.id}/assignment`,
+        { assigned_to: value ? Number(value) : null },
+        { preserveScroll: true },
+    );
+}
 function display(value: Field['value']): string {
     return Array.isArray(value)
         ? value.join(', ')
@@ -58,156 +131,352 @@ function display(value: Field['value']): string {
           ? '—'
           : String(value);
 }
+function fromHash(): void {
+    const hash = window.location.hash.slice(1) as Tab;
+    if (tabs.includes(hash)) {
+        tab.value = hash;
+    }
+}
+onMounted(fromHash);
+watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 </script>
+
 <template>
-    <Head :title="`${lead.first_name} ${lead.last_name}`" />
+    <Head :title="fullName" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Link href="/crm/leads" class="text-sm underline">Back to leads</Link>
-        <Heading
-            :title="`${lead.first_name} ${lead.last_name}`"
-            description="Lead details, activities and history"
-        />
-        <div class="flex flex-wrap gap-2">
-            <Badge
-                v-if="lead.stage"
-                variant="secondary"
-                :style="{ borderColor: lead.stage.color }"
-                >{{ lead.stage.name }}</Badge
-            ><Badge variant="outline">{{ lead.status }}</Badge
-            ><span class="text-muted-foreground self-center text-sm"
-                >Responsible: {{ lead.assignee?.name ?? 'Unassigned' }}</span
-            >
-        </div>
-        <div class="flex gap-2" role="tablist" aria-label="Lead sections">
-            <Button
-                v-for="section in ['details', 'activities', 'history'] as const"
-                :key="section"
-                type="button"
-                role="tab"
-                :aria-selected="tab === section"
-                :variant="tab === section ? 'default' : 'outline'"
-                class="capitalize"
-                @click="tab = section"
-                >{{ section }}</Button
-            >
-        </div>
-        <div v-if="tab === 'details'" class="grid gap-6 lg:grid-cols-2">
-            <Card
-                ><CardHeader><CardTitle>General</CardTitle></CardHeader
-                ><CardContent class="grid gap-3 sm:grid-cols-2"
-                    ><div
-                        v-for="item in [
-                            { label: 'Email', value: lead.email },
-                            { label: 'Phone', value: lead.phone },
-                            { label: 'Company', value: lead.company },
-                            { label: 'City', value: lead.city },
-                            { label: 'Source', value: lead.source },
-                            { label: 'Created', value: lead.created_at },
-                            { label: 'Modified', value: lead.updated_at },
-                            { label: 'Notes', value: lead.notes },
-                        ]"
-                        :key="item.label"
+        <PageHeader :title="fullName" :eyebrow="t('Lead')" :translate="false">
+            <template #meta>
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                    <Badge
+                        v-if="lead.stage"
+                        variant="secondary"
+                        :style="{ borderColor: lead.stage.color }"
                     >
-                        <p class="text-muted-foreground text-xs">
-                            {{ item.label }}
-                        </p>
-                        <p class="text-sm break-words">
-                            {{ item.value || '—' }}
-                        </p>
-                    </div></CardContent
-                ></Card
-            >
-            <Card
-                ><CardHeader><CardTitle>Custom fields</CardTitle></CardHeader
-                ><CardContent class="grid gap-3 sm:grid-cols-2"
-                    ><p
-                        v-if="!customFields.length"
-                        class="text-muted-foreground text-sm"
-                    >
-                        No additional fields are visible to you.
-                    </p>
-                    <div v-for="field in customFields" :key="field.key">
-                        <p class="text-muted-foreground text-xs">
-                            {{ field.name }}
-                        </p>
-                        <p class="text-sm break-words">
-                            {{ display(field.value) }}
-                        </p>
-                    </div></CardContent
-                ></Card
-            >
-        </div>
-        <Card v-if="tab === 'activities'"
-            ><CardHeader
-                class="flex flex-row items-center justify-between gap-3"
-                ><CardTitle>Activities and comments</CardTitle
-                ><a
-                    v-if="canExportActivities"
-                    :href="`/crm/leads/export/activities?lead_id=${lead.id}`"
-                    class="text-sm underline"
-                    >Download this lead</a
-                ></CardHeader
-            ><CardContent class="space-y-3"
-                ><p
-                    v-if="!activities.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No activities yet.
-                </p>
-                <div
-                    v-for="activity in activities"
-                    :key="activity.id"
-                    class="border-b pb-3 last:border-0"
-                >
-                    <p class="font-medium capitalize">
-                        {{ activity.type }}
-                        <span
-                            v-if="activity.completed_at"
-                            class="text-muted-foreground text-xs"
-                            >· completed</span
+                        {{ lead.stage.name }}
+                    </Badge>
+                    <Badge variant="outline">{{ lead.status }}</Badge>
+                    <label
+                        v-if="canManageCrm && !lead.converted && members.length"
+                        class="text-muted-foreground flex items-center gap-2"
+                        >{{ t('Responsible person') }}:
+                        <select
+                            :value="lead.assigned_to ?? ''"
+                            class="border-input bg-background text-foreground h-8 rounded-md border px-2 text-sm"
+                            @change="assign($event)"
                         >
-                    </p>
-                    <p
-                        v-if="activity.notes"
-                        class="text-sm whitespace-pre-wrap"
-                    >
-                        {{ activity.notes }}
-                    </p>
-                    <p class="text-muted-foreground text-xs">
-                        {{ activity.creator?.name ?? 'System' }} ·
-                        {{ activity.created_at
-                        }}<span v-if="activity.due_at">
-                            · due {{ activity.due_at }}</span
-                        >
-                    </p>
-                </div></CardContent
-            ></Card
-        >
-        <Card v-if="tab === 'history'"
-            ><CardHeader><CardTitle>History</CardTitle></CardHeader
-            ><CardContent class="space-y-0"
-                ><p
-                    v-if="!timeline.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No history yet.
-                </p>
-                <div
-                    v-for="entry in timeline"
-                    :key="entry.id"
-                    class="grid gap-2 border-b py-3 text-sm last:border-0 sm:grid-cols-[170px_140px_1fr]"
-                >
-                    <time class="text-muted-foreground">{{ entry.at }}</time
-                    ><span>{{ entry.actor }}</span
-                    ><span>{{ entry.detail }}</span>
+                            <option value="">{{ t('Unassigned') }}</option>
+                            <option
+                                v-for="member in members"
+                                :key="member.id"
+                                :value="member.id"
+                            >
+                                {{ member.name }}
+                            </option>
+                        </select>
+                    </label>
+                    <span v-else class="text-muted-foreground">
+                        {{ t('Responsible person') }}:
+                        {{ lead.assignee?.name ?? t('Unassigned') }}
+                    </span>
                 </div>
-                <p
-                    v-if="timeline.length === 100"
-                    class="text-muted-foreground mt-3 text-xs"
+            </template>
+            <template #actions>
+                <Link href="/crm/leads" class="text-sm underline">
+                    {{ t('Back to leads') }}
+                </Link>
+            </template>
+        </PageHeader>
+
+        <CrmLeadStageBar
+            :lead-id="lead.id"
+            :pipeline="pipeline"
+            :current-stage-id="lead.current_stage_id"
+            :transition-options="transitionOptions"
+            :can-move="canManageCrm && !lead.converted"
+        />
+
+        <Tabs v-model="tab" class="gap-4">
+            <TabsList :aria-label="t('Lead sections')">
+                <TabsTrigger
+                    v-for="section in tabs"
+                    :key="section"
+                    :value="section"
+                    class="capitalize"
                 >
-                    Showing the 100 most recent events.
-                </p></CardContent
-            ></Card
-        >
+                    {{ t(section) }}
+                </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+                value="general"
+                class="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]"
+            >
+                <div class="flex flex-col gap-6">
+                    <Card>
+                        <CardHeader
+                            ><CardTitle>{{
+                                t('General')
+                            }}</CardTitle></CardHeader
+                        >
+                        <CardContent class="grid gap-4 sm:grid-cols-2">
+                            <div v-for="item in details" :key="item.label">
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t(item.label) }}
+                                </p>
+                                <a
+                                    v-if="item.href && item.value"
+                                    :href="item.href"
+                                    class="text-primary text-sm break-words underline-offset-2 hover:underline"
+                                    >{{ item.value }}</a
+                                >
+                                <p v-else class="text-sm break-words">
+                                    {{ item.value || '—' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Created') }}
+                                </p>
+                                <DateText
+                                    :value="lead.created_at"
+                                    with-time
+                                    class="text-sm"
+                                />
+                            </div>
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Modified') }}
+                                </p>
+                                <DateText
+                                    :value="lead.updated_at"
+                                    with-time
+                                    class="text-sm"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader
+                            ><CardTitle>{{
+                                t('Custom fields')
+                            }}</CardTitle></CardHeader
+                        >
+                        <CardContent class="grid gap-4 sm:grid-cols-2">
+                            <p
+                                v-if="!customFields.length"
+                                class="text-muted-foreground text-sm sm:col-span-2"
+                            >
+                                {{
+                                    t(
+                                        'No additional fields are visible to you.',
+                                    )
+                                }}
+                            </p>
+                            <div v-for="field in customFields" :key="field.key">
+                                <p class="text-muted-foreground text-xs">
+                                    {{ field.name }}
+                                </p>
+                                <p class="text-sm break-words">
+                                    {{ display(field.value) }}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card v-if="lead.notes">
+                        <CardHeader
+                            ><CardTitle>{{ t('Notes') }}</CardTitle></CardHeader
+                        >
+                        <CardContent
+                            ><p class="text-sm whitespace-pre-wrap">
+                                {{ lead.notes }}
+                            </p></CardContent
+                        >
+                    </Card>
+                </div>
+
+                <Card class="h-fit">
+                    <CardHeader
+                        ><CardTitle>{{ t('Activity') }}</CardTitle></CardHeader
+                    >
+                    <CardContent>
+                        <p
+                            v-if="!feed.length"
+                            class="text-muted-foreground text-sm"
+                        >
+                            {{ t('No activity yet.') }}
+                        </p>
+                        <ol
+                            v-else
+                            class="border-border relative ms-2 space-y-5 border-s ps-5"
+                        >
+                            <li
+                                v-for="item in feed.slice(0, 30)"
+                                :key="item.key"
+                                class="relative"
+                            >
+                                <span
+                                    class="ring-card absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full ring-4"
+                                    :class="
+                                        item.kind === 'activity'
+                                            ? 'bg-primary'
+                                            : 'bg-muted-foreground/50'
+                                    "
+                                    aria-hidden="true"
+                                />
+                                <p
+                                    class="text-sm"
+                                    :class="
+                                        item.kind === 'activity'
+                                            ? 'font-medium capitalize'
+                                            : ''
+                                    "
+                                >
+                                    {{ item.title }}
+                                    <span
+                                        v-if="item.done"
+                                        class="text-muted-foreground text-xs font-normal normal-case"
+                                        >· {{ t('completed') }}</span
+                                    >
+                                </p>
+                                <p
+                                    v-if="item.body"
+                                    class="mt-1 text-sm whitespace-pre-wrap"
+                                >
+                                    {{ item.body }}
+                                </p>
+                                <p class="text-muted-foreground mt-1 text-xs">
+                                    {{ item.actor }} ·
+                                    <DateText :value="item.at" with-time />
+                                    <template v-if="item.due">
+                                        · {{ t('due') }}
+                                        <DateText :value="item.due" with-time
+                                    /></template>
+                                </p>
+                            </li>
+                        </ol>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="activities">
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between gap-3"
+                    >
+                        <CardTitle>{{
+                            t('Activities and comments')
+                        }}</CardTitle>
+                        <a
+                            v-if="canExportActivities"
+                            :href="`/crm/leads/export/activities?lead_id=${lead.id}`"
+                            class="text-sm underline"
+                        >
+                            {{ t('Download this lead') }}
+                        </a>
+                    </CardHeader>
+                    <CardContent class="space-y-3">
+                        <p
+                            v-if="!activities.length"
+                            class="text-muted-foreground text-sm"
+                        >
+                            {{ t('No activities yet.') }}
+                        </p>
+                        <div
+                            v-for="activity in activities"
+                            :key="activity.id"
+                            class="border-b pb-3 last:border-0"
+                        >
+                            <p class="font-medium capitalize">
+                                {{ activity.type }}
+                                <span
+                                    v-if="activity.completed_at"
+                                    class="text-muted-foreground text-xs font-normal"
+                                    >· {{ t('completed') }}</span
+                                >
+                            </p>
+                            <p
+                                v-if="activity.notes"
+                                class="text-sm whitespace-pre-wrap"
+                            >
+                                {{ activity.notes }}
+                            </p>
+                            <p class="text-muted-foreground text-xs">
+                                {{ activity.creator?.name ?? 'System' }} ·
+                                <DateText
+                                    :value="activity.created_at"
+                                    with-time
+                                />
+                                <template v-if="activity.due_at">
+                                    · {{ t('due') }}
+                                    <DateText
+                                        :value="activity.due_at"
+                                        with-time
+                                /></template>
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="history">
+                <Card>
+                    <CardHeader
+                        ><CardTitle>{{ t('History') }}</CardTitle></CardHeader
+                    >
+                    <CardContent class="overflow-x-auto">
+                        <p
+                            v-if="!timeline.length"
+                            class="text-muted-foreground text-sm"
+                        >
+                            {{ t('No history yet.') }}
+                        </p>
+                        <table v-else class="w-full text-start text-sm">
+                            <thead>
+                                <tr
+                                    class="text-muted-foreground border-b text-xs"
+                                >
+                                    <th
+                                        class="py-2 pe-4 text-start font-medium"
+                                    >
+                                        {{ t('Date') }}
+                                    </th>
+                                    <th
+                                        class="py-2 pe-4 text-start font-medium"
+                                    >
+                                        {{ t('Created by') }}
+                                    </th>
+                                    <th class="py-2 text-start font-medium">
+                                        {{ t('Description') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="entry in timeline"
+                                    :key="entry.id"
+                                    class="border-b last:border-0"
+                                >
+                                    <td class="py-3 pe-4 align-top">
+                                        <DateText :value="entry.at" with-time />
+                                    </td>
+                                    <td class="py-3 pe-4 align-top">
+                                        {{ entry.actor }}
+                                    </td>
+                                    <td class="py-3 align-top">
+                                        {{ entry.detail }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p
+                            v-if="timeline.length === 100"
+                            class="text-muted-foreground mt-3 text-xs"
+                        >
+                            {{ t('Showing the 100 most recent events.') }}
+                        </p>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
 </template>

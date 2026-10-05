@@ -22,6 +22,7 @@ use App\Http\Controllers\CrmHierarchyController;
 use App\Http\Controllers\CrmLeadController;
 use App\Http\Controllers\CrmLeadExportController;
 use App\Http\Controllers\CrmLeadImportController;
+use App\Http\Controllers\CrmLeadPreferenceController;
 use App\Http\Controllers\CrmPipelineController;
 use App\Http\Controllers\CrmPipelineReportController;
 use App\Http\Controllers\CustomerCreditNoteController;
@@ -449,6 +450,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/leads/{lead}/stage', [CrmLeadController::class, 'move'])->name('crm.leads.stage');
     Route::post('crm/leads/{lead}/transfer', [CrmLeadController::class, 'transfer'])->name('crm.leads.transfer');
     Route::get('crm/leads', [CrmLeadController::class, 'index'])->name('crm.leads.index');
+    Route::get('crm/leads/preferences', [CrmLeadPreferenceController::class, 'index'])->name('crm.leads.preferences.index');
+    Route::post('crm/leads/preferences', [CrmLeadPreferenceController::class, 'store'])->name('crm.leads.preferences.store');
+    Route::delete('crm/leads/preferences/{preset}', [CrmLeadPreferenceController::class, 'destroy'])->name('crm.leads.preferences.destroy');
+    Route::get('crm/leads/import/sample', [CrmLeadImportController::class, 'sample'])->name('crm.leads.import.sample');
     Route::get('crm/leads/import', [CrmLeadImportController::class, 'index'])->name('crm.leads.import.index');
     Route::get('crm/leads/export', [CrmLeadExportController::class, 'index'])->name('crm.leads.export.index');
     Route::get('crm/leads/export/download', [CrmLeadExportController::class, 'download'])->name('crm.leads.export.download');
@@ -466,7 +471,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/leads/{lead}/assignment', [CrmLeadController::class, 'assign'])->name('crm.leads.assignment');
     Route::get('crm/contacts', [CrmContactController::class, 'index'])->name('crm.contacts.index');
     Route::post('crm/contacts', [CrmContactController::class, 'store'])->name('crm.contacts.store');
+    Route::get('crm/activities', [CrmActivityController::class, 'index'])->name('crm.activities.index');
     Route::post('crm/activities', [CrmActivityController::class, 'store'])->name('crm.activities.store');
+    Route::put('crm/activities/{activity}', [CrmActivityController::class, 'update'])->name('crm.activities.update');
     Route::post('crm/activities/{activity}/complete', [CrmActivityController::class, 'complete'])->name('crm.activities.complete');
     Route::get('real-estate/people', [RealEstatePartyController::class, 'index'])->name('real-estate.people.index');
     Route::post('real-estate/people/{type}', [RealEstatePartyController::class, 'store'])->name('real-estate.people.store');

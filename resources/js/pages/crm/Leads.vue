@@ -11,7 +11,17 @@ import CrmLeadStageEditor from '@/components/CrmLeadStageEditor.vue';
 import CrmLeadTransfer from '@/components/CrmLeadTransfer.vue';
 import InputError from '@/components/InputError.vue';
 import type { Pipeline, Stage, TransitionOption } from '@/types/crm-pipeline';
-import Heading from '@/components/Heading.vue';
+import CrmLeadCreateSheet from '@/components/CrmLeadCreateSheet.vue';
+import CrmLeadActivitiesBoard from '@/components/CrmLeadActivitiesBoard.vue';
+import CrmLeadCalendar from '@/components/CrmLeadCalendar.vue';
+import CrmLeadFilterPanel from '@/components/CrmLeadFilterPanel.vue';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDown, Plus } from '@lucide/vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,7 +98,8 @@ type FilterField = {
 
 const props = defineProps<{
     pipelines: Pipeline[];
-    stageCounts: (Stage & { count: number })[];
+    stageCounts: (Stage & { count: number; amount: number | null })[];
+    amountField: { key: string; name: string } | null;
     filters: {
         pipeline_id: number;
         stage_id: number | null;
@@ -121,70 +132,78 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
+const viewLabels = computed<Record<LeadView, string>>(() => ({
+    board: t('Kanban'),
+    list: t('List'),
+    activities: t('Activities'),
+    calendar: t('Calendar'),
+}));
+const tools = computed(() =>
+    [
+        {
+            href: '/crm/pipeline-report',
+            label: 'Pipeline reporting',
+            show: true,
+        },
+        {
+            href: '/crm/hierarchy',
+            label: 'Departments and CRM access',
+            show: props.canManageHierarchy,
+        },
+        {
+            href: '/crm/pipelines',
+            label: 'Manage CRM pipelines',
+            show: props.canManagePipelines,
+        },
+        {
+            href: '/crm/custom-fields',
+            label: 'CRM field settings',
+            show: props.canManageHierarchy,
+        },
+        {
+            href: '/crm/automation',
+            label: 'Automation rules',
+            show: props.canManageHierarchy,
+        },
+        {
+            href: '/crm/assignment',
+            label: 'Assignment routing and check-in',
+            show: true,
+        },
+        {
+            href: '/crm/leads/import',
+            label: 'Import leads',
+            show: props.canManageCrm,
+        },
+        {
+            href: '/crm/leads/export',
+            label: 'Export leads',
+            show: props.canExportLeads,
+        },
+    ].filter((tool) => tool.show),
+);
 const addLeadOpen = ref(false);
-const showFieldFilters = ref(props.filters.filters.length > 0);
-const leadView = ref<'board' | 'list'>('board');
+type LeadView = 'board' | 'list' | 'activities' | 'calendar';
+const leadViews: LeadView[] = ['board', 'list', 'activities', 'calendar'];
+const leadView = ref<LeadView>('board');
 onMounted(() => {
     const saved = localStorage.getItem('crm-lead-view');
-    if (saved === 'board' || saved === 'list') leadView.value = saved;
+    if (leadViews.includes(saved as LeadView))
+        leadView.value = saved as LeadView;
 });
 const filters = reactive({
     ...props.filters,
     filters: [...props.filters.filters],
 });
-const findField = ref('');
-const chosenField = ref('');
-const availableFilterFields = computed(() =>
-    props.filterCatalog.filter((field) =>
-        `${field.label} ${field.key}`
-            .toLowerCase()
-            .includes(findField.value.toLowerCase()),
-    ),
-);
-function filterMeta(key: string): FilterField | undefined {
-    return props.filterCatalog.find((field) => field.key === key);
-}
-function operators(type: string): { value: string; label: string }[] {
-    const shared = [
-        { value: 'equals', label: 'Equals' },
-        { value: 'not_equals', label: 'Not equal' },
-        { value: 'empty', label: 'Empty' },
-        { value: 'not_empty', label: 'Not empty' },
-    ];
-    if (['number', 'currency', 'date', 'datetime'].includes(type))
-        return [
-            ...shared,
-            { value: 'gte', label: 'At least / after' },
-            { value: 'lte', label: 'At most / before' },
-            { value: 'between', label: 'Between' },
-        ];
-    if (['text', 'long_text', 'email', 'phone', 'url'].includes(type))
-        return [...shared, { value: 'contains', label: 'Contains' }];
-    return shared;
-}
-function filterInputType(type: string): string {
-    if (['number', 'currency'].includes(type)) return 'number';
-    if (['date', 'datetime'].includes(type))
-        return type === 'datetime' ? 'datetime-local' : 'date';
-    return 'text';
-}
-function addFilter(): void {
-    if (!chosenField.value || !filterMeta(chosenField.value)) return;
-    filters.filters.push({
-        field: chosenField.value,
-        operator: 'equals',
-        value: '',
-    });
-    chosenField.value = '';
-}
+const userId = computed(() => {
+    const id = (page.props.auth as { user?: { id?: number } } | undefined)?.user
+        ?.id;
+
+    return typeof id === 'number' ? id : null;
+});
 const appliedPipeline = computed(() =>
     props.pipelines.find(
         (pipeline) => pipeline.id === props.filters.pipeline_id,
-    ),
-);
-const selectedPipeline = computed(() =>
-    props.pipelines.find(
-        (pipeline) => pipeline.id === Number(filters.pipeline_id),
     ),
 );
 function filterLeads(resetStage = false): void {
@@ -199,31 +218,10 @@ function changePage(page: number): void {
         { preserveScroll: true },
     );
 }
-function clearFilters(): void {
-    filters.q = '';
-    filters.filters = [];
-    filterLeads();
+function resetFilters(): void {
+    filters.assignee_id = null;
+    filterLeads(true);
 }
-const form = useForm({
-    pipeline_id:
-        props.pipelines.find((pipeline) => pipeline.is_default)?.id ?? null,
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    company: '',
-    city: '',
-    source: '',
-    project_name: '',
-    campaign_name: '',
-    meta_form_id: '',
-    meta_form_name: '',
-    notes: '',
-    custom_fields: {} as Record<
-        string,
-        string | number | boolean | string[] | null
-    >,
-});
 const activityForm = useForm({
     lead_id: '',
     type: 'call',
@@ -231,14 +229,8 @@ const activityForm = useForm({
     due_at: '',
 });
 
-function createLead(): void {
-    form.post('/crm/leads', {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset();
-            addLeadOpen.value = false;
-        },
-    });
+function openAddLead(): void {
+    addLeadOpen.value = true;
 }
 
 function convertLead(lead: Lead): void {
@@ -271,7 +263,7 @@ function assignLead(lead: Lead, event: Event): void {
 function completeFollowUp(id: number): void {
     router.post(`/crm/activities/${id}/complete`, {}, { preserveScroll: true });
 }
-function switchLeadView(view: 'board' | 'list'): void {
+function switchLeadView(view: LeadView): void {
     leadView.value = view;
     localStorage.setItem('crm-lead-view', view);
     document.getElementById('crm-lead-results')?.scrollIntoView({
@@ -284,15 +276,48 @@ function switchLeadView(view: 'board' | 'list'): void {
 <template>
     <Head title="CRM leads" />
 
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
-            title="CRM leads"
-            description="Capture prospects and convert qualified leads into contacts and accounts."
-        />
-        <div v-if="canManageCrm" class="flex flex-wrap gap-2">
-            <Button type="button" @click="addLeadOpen = true">Add lead</Button>
+    <div class="flex w-full flex-1 flex-col gap-4 p-4 md:p-6">
+        <div class="flex flex-wrap items-center gap-3">
+            <h1 class="font-display text-3xl leading-tight font-medium">
+                {{ t('CRM leads') }}
+            </h1>
+            <Button
+                v-if="canManageCrm"
+                type="button"
+                @click="addLeadOpen = true"
+            >
+                <Plus class="size-4" aria-hidden="true" />{{ t('Create') }}
+            </Button>
+            <CrmLeadFilterPanel
+                :model-value="filters"
+                class="min-w-64"
+                :catalog="filterCatalog"
+                :pipelines="pipelines"
+                :members="members"
+                :assignee-scoped="assigneeScoped"
+                :limited-visibility="limitedVisibility"
+                :user-id="userId"
+                @apply="filterLeads"
+                @reset="resetFilters"
+            />
+            <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                    <Button type="button" variant="outline">
+                        {{ t('Extensions') }}
+                        <ChevronDown class="size-4" aria-hidden="true" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-60">
+                    <DropdownMenuItem
+                        v-for="tool in tools"
+                        :key="tool.href"
+                        as-child
+                    >
+                        <Link :href="tool.href">{{ t(tool.label) }}</Link>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
-
         <div aria-live="polite">
             <InputError
                 v-for="(error, field) in page.props.errors"
@@ -300,583 +325,141 @@ function switchLeadView(view: 'board' | 'list'): void {
                 :message="error"
             />
         </div>
-        <nav
-            aria-label="CRM tools"
-            class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
-        >
-            <Link
-                href="/crm/pipeline-report"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Pipeline reporting</Link
-            >
-            <Link
-                v-if="canManageHierarchy"
-                href="/crm/hierarchy"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Departments and CRM access</Link
-            >
-            <Link
-                v-if="canManagePipelines"
-                href="/crm/pipelines"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Manage CRM pipelines</Link
-            >
-            <Link
-                v-if="canManageHierarchy"
-                href="/crm/custom-fields"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >CRM field settings</Link
-            >
-            <Link
-                v-if="canManageHierarchy"
-                href="/crm/automation"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Automation rules</Link
-            >
-            <Link
-                href="/crm/assignment"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Assignment routing and check-in</Link
-            >
-            <Link
-                v-if="canManageCrm"
-                href="/crm/leads/import"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Import leads</Link
-            >
-            <Link
-                v-if="canExportLeads"
-                href="/crm/leads/export"
-                class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Export leads</Link
-            >
-        </nav>
         <div
             class="flex flex-wrap items-center gap-2"
             role="group"
-            aria-label="Lead view"
+            :aria-label="t('Lead view')"
         >
-            <span class="mr-1 text-sm font-medium">View leads:</span>
             <Button
+                v-for="view in leadViews"
+                :key="view"
                 type="button"
-                :variant="leadView === 'board' ? 'default' : 'outline'"
-                :aria-pressed="leadView === 'board'"
+                size="sm"
+                :variant="leadView === view ? 'default' : 'outline'"
+                :aria-pressed="leadView === view"
                 aria-controls="crm-lead-results"
-                @click="switchLeadView('board')"
-                >Kanban</Button
+                @click="switchLeadView(view)"
+                >{{ viewLabels[view] }}</Button
             >
-            <Button
-                type="button"
-                :variant="leadView === 'list' ? 'default' : 'outline'"
-                :aria-pressed="leadView === 'list'"
-                aria-controls="crm-lead-results"
-                @click="switchLeadView('list')"
-                >List</Button
-            >
+            <span class="text-muted-foreground ms-2 text-sm">
+                {{ leads.length }} {{ t('of') }} {{ filteredTotal }}
+                {{ t('shown') }}
+            </span>
         </div>
-        <Card>
-            <CardHeader><CardTitle>Pipeline overview</CardTitle></CardHeader>
-            <CardContent class="space-y-4">
-                <form
-                    class="flex flex-wrap items-end gap-3"
-                    @submit.prevent="filterLeads()"
-                >
-                    <div class="min-w-48 flex-1">
-                        <Label for="lead-search"
-                            >Search leads and permitted fields</Label
-                        ><Input
-                            id="lead-search"
-                            v-model="filters.q"
-                            type="search"
-                            placeholder="Name, contact, source or custom value"
-                        />
-                    </div>
-                    <div>
-                        <Label for="filter-pipeline">Pipeline</Label
-                        ><select
-                            id="filter-pipeline"
-                            v-model="filters.pipeline_id"
-                            class="h-9 rounded-md border px-3"
-                            @change="filters.stage_id = null"
-                        >
-                            <option
-                                v-for="pipeline in pipelines"
-                                :key="pipeline.id"
-                                :value="pipeline.id"
-                            >
-                                {{ pipeline.name }}
-                                {{ !pipeline.active ? '(inactive)' : '' }}
-                            </option>
-                        </select>
-                    </div>
-                    <div>
-                        <Label for="filter-stage">Stage</Label
-                        ><select
-                            id="filter-stage"
-                            v-model="filters.stage_id"
-                            class="h-9 rounded-md border px-3"
-                        >
-                            <option :value="null">All stages</option>
-                            <option
-                                v-for="stage in selectedPipeline?.stages"
-                                :key="stage.id"
-                                :value="stage.id"
-                            >
-                                {{ stage.name }}
-                            </option>
-                        </select>
-                    </div>
-                    <div v-if="!assigneeScoped">
-                        <Label for="filter-assignee">{{ t('Assignee') }}</Label
-                        ><select
-                            id="filter-assignee"
-                            v-model="filters.assignee_id"
-                            class="h-9 rounded-md border px-3"
-                        >
-                            <option :value="null">
-                                {{
-                                    limitedVisibility
-                                        ? 'All accessible agents'
-                                        : 'All agents'
-                                }}
-                            </option>
-                            <option
-                                v-for="member in members"
-                                :key="member.id"
-                                :value="member.id"
-                            >
-                                {{ member.name }}
-                            </option>
-                        </select>
-                    </div>
-                    <p v-else class="text-muted-foreground self-end text-sm">
-                        Showing leads within your access
-                    </p>
-                    <Button type="submit">{{ t('Apply filters') }}</Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        aria-controls="crm-field-filters"
-                        :aria-expanded="showFieldFilters"
-                        @click="showFieldFilters = !showFieldFilters"
-                        >Field filters{{
-                            filters.filters.length
-                                ? ` (${filters.filters.length})`
-                                : ''
-                        }}</Button
+        <CrmLeadCreateSheet
+            v-if="canManageCrm"
+            v-model:open="addLeadOpen"
+            :pipelines="pipelines"
+            :pipeline-id="filters.pipeline_id"
+            :members="members"
+            :custom-fields="
+                customFields.filter((field) =>
+                    editableCustomFieldKeys.includes(field.key),
+                )
+            "
+            :user-id="userId"
+        />
+
+        <details v-if="canManageCrm && props.leads.length" class="group">
+            <summary class="cursor-pointer text-sm font-medium">
+                {{ t('Log activity') }}
+            </summary>
+            <Card class="mt-2">
+                <CardHeader><CardTitle>Log activity</CardTitle></CardHeader>
+                <CardContent
+                    ><form
+                        class="grid gap-4 md:grid-cols-4"
+                        @submit.prevent="createActivity"
                     >
-                </form>
-                <div
-                    v-if="showFieldFilters"
-                    id="crm-field-filters"
-                    class="rounded-md border p-3"
-                >
-                    <h3 class="font-medium">Filter by field</h3>
-                    <div class="mt-3 space-y-3">
-                        <Label for="find-filter-field">Find field</Label>
-                        <Input
-                            id="find-filter-field"
-                            v-model="findField"
-                            type="search"
-                            placeholder="Find field"
-                        />
-                        <div class="flex flex-wrap gap-2">
-                            <select
-                                v-model="chosenField"
-                                aria-label="Filter field"
-                                class="border-input bg-background h-9 min-w-48 rounded-md border px-3"
-                            >
-                                <option value="">Choose a field</option>
-                                <optgroup
-                                    v-for="group in ['Lead', 'Activity']"
-                                    :key="group"
-                                    :label="group"
-                                >
-                                    <option
-                                        v-for="field in availableFilterFields.filter(
-                                            (item) => item.group === group,
-                                        )"
-                                        :key="field.key"
-                                        :value="field.key"
-                                    >
-                                        {{ field.label }}
-                                    </option>
-                                </optgroup>
-                            </select>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                @click="addFilter"
-                                >Add field</Button
-                            >
-                        </div>
-                        <div
-                            v-for="(clause, index) in filters.filters"
-                            :key="`${clause.field}-${index}`"
-                            class="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]"
-                        >
-                            <span class="self-center text-sm font-medium">{{
-                                filterMeta(clause.field)?.label
-                            }}</span>
-                            <select
-                                v-model="clause.operator"
-                                :aria-label="`Operator for ${filterMeta(clause.field)?.label}`"
-                                class="border-input bg-background h-9 rounded-md border px-2"
-                            >
-                                <option
-                                    v-for="operator in operators(
-                                        filterMeta(clause.field)?.type ??
-                                            'text',
-                                    )"
-                                    :key="operator.value"
-                                    :value="operator.value"
-                                >
-                                    {{ operator.label }}
-                                </option>
-                            </select>
-                            <template
-                                v-if="
-                                    !['empty', 'not_empty'].includes(
-                                        clause.operator,
-                                    )
-                                "
-                            >
-                                <select
-                                    v-if="
-                                        filterMeta(clause.field)?.type ===
-                                        'user'
-                                    "
-                                    v-model="clause.value"
-                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
-                                    class="border-input bg-background h-9 rounded-md border px-2"
-                                >
-                                    <option value="">Select member</option>
-                                    <option
-                                        v-for="member in members"
-                                        :key="member.id"
-                                        :value="String(member.id)"
-                                    >
-                                        {{ member.name }}
-                                    </option>
-                                </select>
-                                <select
-                                    v-else-if="
-                                        filterMeta(clause.field)?.options
-                                            .length ||
-                                        filterMeta(clause.field)?.type ===
-                                            'checkbox'
-                                    "
-                                    v-model="clause.value"
-                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
-                                    class="border-input bg-background h-9 rounded-md border px-2"
-                                >
-                                    <option value="">Select value</option>
-                                    <option
-                                        v-for="option in filterMeta(
-                                            clause.field,
-                                        )?.type === 'checkbox'
-                                            ? ['true', 'false']
-                                            : filterMeta(clause.field)?.options"
-                                        :key="option"
-                                        :value="option"
-                                    >
-                                        {{ option }}
-                                    </option>
-                                </select>
-                                <Input
-                                    v-else
-                                    v-model="clause.value"
-                                    :type="
-                                        filterInputType(
-                                            filterMeta(clause.field)?.type ??
-                                                'text',
-                                        )
-                                    "
-                                    :aria-label="`Value for ${filterMeta(clause.field)?.label}`"
-                                />
-                                <Input
-                                    v-if="clause.operator === 'between'"
-                                    v-model="clause.to"
-                                    :type="
-                                        filterInputType(
-                                            filterMeta(clause.field)?.type ??
-                                                'text',
-                                        )
-                                    "
-                                    aria-label="Range end"
-                                />
-                            </template>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                @click="filters.filters.splice(index, 1)"
-                                >Remove</Button
-                            >
-                        </div>
-                        <div class="flex gap-2">
-                            <Button type="button" @click="filterLeads()"
-                                >Apply filters</Button
-                            ><Button
-                                type="button"
-                                variant="outline"
-                                @click="clearFilters"
-                                >Clear</Button
-                            >
-                        </div>
-                    </div>
-                </div>
-                <div
-                    v-if="props.filters.q || props.filters.filters.length"
-                    class="flex flex-wrap gap-2"
-                    aria-label="Active filters"
-                >
-                    <Badge v-if="props.filters.q" variant="secondary"
-                        >Search: {{ props.filters.q }}</Badge
-                    >
-                    <Badge
-                        v-for="(clause, index) in props.filters.filters"
-                        :key="index"
-                        variant="secondary"
-                        >{{ filterMeta(clause.field)?.label }} ·
-                        {{ clause.operator }} {{ clause.value }}</Badge
-                    >
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                    <div
-                        v-for="stage in stageCounts"
-                        :key="stage.id"
-                        class="rounded-md border p-3"
-                        :style="{ borderTop: `4px solid ${stage.color}` }"
-                    >
-                        <p class="text-sm">
-                            {{ stage.name }}
-                            {{ !stage.active ? '(inactive)' : '' }}
-                        </p>
-                        <p class="text-xl font-semibold">{{ stage.count }}</p>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-        <Dialog v-if="canManageCrm" v-model:open="addLeadOpen">
-            <DialogContent class="max-h-[90vh] max-w-3xl overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Add lead</DialogTitle>
-                    <DialogDescription
-                        >Enter the lead details and any required custom
-                        fields.</DialogDescription
-                    >
-                </DialogHeader>
-                <form
-                    class="grid gap-4 md:grid-cols-2"
-                    @submit.prevent="createLead"
-                >
-                    <div class="space-y-2">
-                        <Label for="lead-pipeline">Pipeline</Label
-                        ><select
-                            id="lead-pipeline"
-                            v-model="form.pipeline_id"
-                            class="h-9 w-full rounded-md border px-3"
+                        <select
+                            v-model="activityForm.lead_id"
+                            class="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
                             required
                         >
+                            <option disabled value="">Select lead</option>
                             <option
-                                v-for="pipeline in pipelines.filter(
-                                    (pipeline) => pipeline.active,
+                                v-for="lead in props.leads.filter(
+                                    (lead) => !lead.converted,
                                 )"
-                                :key="pipeline.id"
-                                :value="pipeline.id"
+                                :key="lead.id"
+                                :value="String(lead.id)"
                             >
-                                {{ pipeline.name }}
-                            </option>
-                        </select>
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="first_name">First name</Label
-                        ><Input
-                            id="first_name"
-                            v-model="form.first_name"
-                            required
-                        />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="last_name">Last name</Label
-                        ><Input
-                            id="last_name"
-                            v-model="form.last_name"
-                            required
-                        />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="email">{{ t('Email') }}</Label
-                        ><Input id="email" v-model="form.email" type="email" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="phone">{{ t('Phone') }}</Label
-                        ><Input id="phone" v-model="form.phone" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="company">Company</Label
-                        ><Input id="company" v-model="form.company" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="city">City</Label
-                        ><Input id="city" v-model="form.city" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="source">Source</Label
-                        ><Input
-                            id="source"
-                            v-model="form.source"
-                            placeholder="Referral, web, campaign…"
-                        />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="project_name">Project</Label
-                        ><Input id="project_name" v-model="form.project_name" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="campaign_name">Campaign</Label
-                        ><Input
-                            id="campaign_name"
-                            v-model="form.campaign_name"
-                        />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="meta_form_id">Meta form ID</Label
-                        ><Input id="meta_form_id" v-model="form.meta_form_id" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="meta_form_name">Meta form name</Label
-                        ><Input
-                            id="meta_form_name"
-                            v-model="form.meta_form_name"
-                        />
-                    </div>
-                    <div class="md:col-span-2" aria-live="polite">
-                        <InputError
-                            v-for="(error, field) in form.errors"
-                            :key="field"
-                            :message="error"
-                        />
-                    </div>
-                    <CustomLeadFields
-                        v-model="form.custom_fields"
-                        :fields="
-                            customFields.filter((field) =>
-                                editableCustomFieldKeys.includes(field.key),
-                            )
-                        "
-                        :members="members"
-                        prefix="new-lead"
-                    />
-                    <div class="space-y-2">
-                        <Label for="lead-notes">{{ t('Notes') }}</Label
-                        ><Input
-                            id="lead-notes"
-                            v-model="form.notes"
-                            maxlength="5000"
-                        />
-                    </div>
-                    <Button class="w-fit" :disabled="form.processing"
-                        >Create lead</Button
-                    >
-                </form>
-            </DialogContent>
-        </Dialog>
-
-        <Card v-if="canManageCrm && props.leads.length">
-            <CardHeader><CardTitle>Log activity</CardTitle></CardHeader>
-            <CardContent
-                ><form
-                    class="grid gap-4 md:grid-cols-4"
-                    @submit.prevent="createActivity"
-                >
-                    <select
-                        v-model="activityForm.lead_id"
-                        class="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
-                        required
-                    >
-                        <option disabled value="">Select lead</option>
-                        <option
-                            v-for="lead in props.leads.filter(
-                                (lead) => !lead.converted,
-                            )"
-                            :key="lead.id"
-                            :value="String(lead.id)"
+                                {{ lead.first_name }} {{ lead.last_name }}
+                            </option></select
+                        ><select
+                            v-model="activityForm.type"
+                            class="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
                         >
-                            {{ lead.first_name }} {{ lead.last_name }}
-                        </option></select
-                    ><select
-                        v-model="activityForm.type"
-                        class="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
-                    >
-                        <option
-                            v-for="type in [
-                                'call',
-                                'email',
-                                'meeting',
-                                'task',
-                                'note',
-                            ]"
-                            :key="type"
-                            :value="type"
+                            <option
+                                v-for="type in [
+                                    'call',
+                                    'email',
+                                    'meeting',
+                                    'task',
+                                    'note',
+                                ]"
+                                :key="type"
+                                :value="type"
+                            >
+                                {{ type }}
+                            </option></select
+                        ><Input
+                            v-model="activityForm.notes"
+                            placeholder="Outcome or next step"
+                        /><Input
+                            v-model="activityForm.due_at"
+                            type="datetime-local"
+                            aria-label="Follow-up due date and time (optional)"
+                        /><Button :disabled="activityForm.processing"
+                            >Log activity</Button
                         >
-                            {{ type }}
-                        </option></select
-                    ><Input
-                        v-model="activityForm.notes"
-                        placeholder="Outcome or next step"
-                    /><Input
-                        v-model="activityForm.due_at"
-                        type="datetime-local"
-                        aria-label="Follow-up due date and time (optional)"
-                    /><Button :disabled="activityForm.processing"
-                        >Log activity</Button
-                    >
-                </form></CardContent
-            >
-        </Card>
+                    </form></CardContent
+                >
+            </Card>
+        </details>
 
-        <Card>
-            <CardHeader><CardTitle>Open follow-ups</CardTitle></CardHeader>
-            <CardContent class="space-y-3">
-                <p
-                    v-if="!followUps.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No open follow-ups.
-                </p>
-                <div
-                    v-for="followUp in followUps"
-                    :key="followUp.id"
-                    class="flex flex-wrap items-center gap-3 border-b pb-3"
-                >
-                    <div class="flex-1">
-                        <p>
-                            {{ followUp.lead?.first_name }}
-                            {{ followUp.lead?.last_name }} · {{ followUp.type }}
-                        </p>
-                        <p class="text-muted-foreground text-sm">
-                            {{ followUp.notes }} · due {{ followUp.due_at }}
-                        </p>
+        <details class="group">
+            <summary class="cursor-pointer text-sm font-medium">
+                {{ t('Open follow-ups') }} ({{ followUps.length }})
+            </summary>
+            <Card class="mt-2">
+                <CardHeader><CardTitle>Open follow-ups</CardTitle></CardHeader>
+                <CardContent class="space-y-3">
+                    <p
+                        v-if="!followUps.length"
+                        class="text-muted-foreground text-sm"
+                    >
+                        No open follow-ups.
+                    </p>
+                    <div
+                        v-for="followUp in followUps"
+                        :key="followUp.id"
+                        class="flex flex-wrap items-center gap-3 border-b pb-3"
+                    >
+                        <div class="flex-1">
+                            <p>
+                                {{ followUp.lead?.first_name }}
+                                {{ followUp.lead?.last_name }} ·
+                                {{ followUp.type }}
+                            </p>
+                            <p class="text-muted-foreground text-sm">
+                                {{ followUp.notes }} · due {{ followUp.due_at }}
+                            </p>
+                        </div>
+                        <Badge v-if="followUp.is_overdue" variant="destructive"
+                            >Overdue</Badge
+                        >
+                        <Button
+                            v-if="canManageCrm"
+                            size="sm"
+                            @click="completeFollowUp(followUp.id)"
+                            >{{ t('Complete') }}</Button
+                        >
                     </div>
-                    <Badge v-if="followUp.is_overdue" variant="destructive"
-                        >Overdue</Badge
-                    >
-                    <Button
-                        v-if="canManageCrm"
-                        size="sm"
-                        @click="completeFollowUp(followUp.id)"
-                        >{{ t('Complete') }}</Button
-                    >
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </details>
         <div id="crm-lead-results" class="scroll-mt-4">
-            <p class="mb-3 text-sm font-medium">
-                {{ leadView === 'board' ? 'Kanban board' : 'Lead list' }} ·
-                {{ leads.length }} of {{ filteredTotal }} shown
-            </p>
             <CrmPipelineBoard
                 v-if="leadView === 'board' && appliedPipeline"
                 :key="props.filters.pipeline_id"
@@ -884,6 +467,21 @@ function switchLeadView(view: 'board' | 'list'): void {
                 :leads="leads"
                 :can-manage="canManageCrm"
                 :stage-counts="stageCounts"
+                :amount-field="amountField"
+                :can-add="canManageCrm"
+                :members="members"
+                @add="openAddLead"
+            />
+            <CrmLeadActivitiesBoard
+                v-if="leadView === 'activities'"
+                :follow-ups="followUps"
+                :leads="leads"
+                :can-complete="canManageCrm"
+                @complete="completeFollowUp"
+            />
+            <CrmLeadCalendar
+                v-if="leadView === 'calendar'"
+                :follow-ups="followUps"
             />
             <p
                 v-if="leadView === 'board' && canManageCrm"
@@ -1084,30 +682,35 @@ function switchLeadView(view: 'board' | 'list'): void {
             >
         </div>
 
-        <Card v-if="activities.length"
-            ><CardHeader><CardTitle>Recent activity</CardTitle></CardHeader
-            ><CardContent class="space-y-3"
-                ><div
-                    v-for="activity in activities"
-                    :key="activity.id"
-                    class="border-b pb-3 last:border-0 last:pb-0"
-                >
-                    <p class="font-medium">
-                        {{ activity.type }} ·
-                        {{
-                            activity.lead
-                                ? `${activity.lead.first_name} ${activity.lead.last_name}`
-                                : 'Lead'
-                        }}
-                    </p>
-                    <p class="text-muted-foreground text-sm">
-                        {{ activity.notes || 'No note provided'
-                        }}<span v-if="activity.creator">
-                            · {{ activity.creator.name }}</span
-                        >
-                    </p>
-                </div></CardContent
-            ></Card
-        >
+        <details v-if="activities.length" class="group">
+            <summary class="cursor-pointer text-sm font-medium">
+                {{ t('Recent activity') }}
+            </summary>
+            <Card class="mt-2"
+                ><CardHeader><CardTitle>Recent activity</CardTitle></CardHeader
+                ><CardContent class="space-y-3"
+                    ><div
+                        v-for="activity in activities"
+                        :key="activity.id"
+                        class="border-b pb-3 last:border-0 last:pb-0"
+                    >
+                        <p class="font-medium">
+                            {{ activity.type }} ·
+                            {{
+                                activity.lead
+                                    ? `${activity.lead.first_name} ${activity.lead.last_name}`
+                                    : 'Lead'
+                            }}
+                        </p>
+                        <p class="text-muted-foreground text-sm">
+                            {{ activity.notes || 'No note provided'
+                            }}<span v-if="activity.creator">
+                                · {{ activity.creator.name }}</span
+                            >
+                        </p>
+                    </div></CardContent
+                ></Card
+            >
+        </details>
     </div>
 </template>

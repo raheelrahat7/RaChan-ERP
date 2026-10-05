@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Domain\Crm\Actions\ManageCustomFields;
 use App\Domain\Crm\Actions\ManageLeadFollowUp;
 use App\Domain\Crm\Actions\ManageLeadPipeline;
+use App\Domain\Crm\Actions\ManageLeadPreferences;
 use App\Domain\Crm\Models\CustomFieldValue;
+use App\Domain\Crm\Models\Pipeline;
 use App\Domain\Crm\Queries\ExportLeads;
+use App\Domain\Crm\Queries\LeadActivityBoard;
 use App\Domain\Crm\Queries\LeadFilters;
 use App\Domain\Crm\Queries\LeadTimeline;
 use App\Domain\Crm\Queries\PipelineOverview;
@@ -22,13 +25,17 @@ use Inertia\Response;
 
 class CrmLeadController extends Controller
 {
-    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility, ManageCustomFields $fields, LeadFilters $leadFilters, ExportLeads $exports): Response
+    public function index(Request $request, PipelineOverview $overview, LeadVisibility $visibility, ManageCustomFields $fields, LeadFilters $leadFilters, ExportLeads $exports, LeadActivityBoard $activityBoard, ManageLeadPreferences $preferences): Response
     {
         $organization = $this->currentOrganization($request);
         $this->authorize('viewCrm', $organization);
 
+        $filters = $request->validate(['pipeline_id' => ['nullable', 'integer'], 'stage_id' => ['nullable', 'integer'], 'assignee_id' => ['nullable', 'integer'], 'q' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'], 'activity_page' => ['nullable', 'integer', 'min:1'], 'filters' => ['nullable', 'array', 'max:12'], 'filters.*.field' => ['required', 'string', 'max:100'], 'filters.*.operator' => ['required', 'string', 'max:20'], 'filters.*.value' => ['nullable'], 'filters.*.to' => ['nullable']]);
+
         return Inertia::render('crm/Leads', [
-            ...$overview->leads($organization, $request->validate(['pipeline_id' => ['nullable', 'integer'], 'stage_id' => ['nullable', 'integer'], 'assignee_id' => ['nullable', 'integer'], 'q' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'], 'filters' => ['nullable', 'array', 'max:12'], 'filters.*.field' => ['required', 'string', 'max:100'], 'filters.*.operator' => ['required', 'string', 'max:20'], 'filters.*.value' => ['nullable'], 'filters.*.to' => ['nullable']]), $request->user()),
+            ...$overview->leads($organization, $filters, $request->user()),
+            'leadPreferences' => $preferences->for($organization, $request->user()),
+            'activityBoard' => $activityBoard->for($organization, $request->user(), $filters),
             'filterCatalog' => $leadFilters->catalog($organization, $request->user()),
             'canManagePipelines' => $request->user()->can('manageCrmPipelines', $organization),
             'customFields' => $fields->visible($organization, $request->user()),
@@ -37,11 +44,11 @@ class CrmLeadController extends Controller
             'assigneeScoped' => $visibility->restricted($organization, $request->user()) && count($visibility->assigneeIds($organization, $request->user())) === 1,
             'limitedVisibility' => $visibility->restricted($organization, $request->user()),
             'members' => $visibility->restricted($organization, $request->user()) ? $organization->users()->whereIn('users.id', $visibility->assigneeIds($organization, $request->user()))->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']) : $organization->users()->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']),
-            'followUps' => CrmActivity::where('organization_id', $organization->id)->whereNotNull('due_at')->whereNull('completed_at')->whereHasMorph('subject', [CrmLead::class], fn ($query) => $visibility->scope($query->where('organization_id', $organization->id)->whereNull('converted_at'), $organization, $request->user()))->with('subject:id,first_name,last_name')->orderBy('due_at')->get()->map(fn ($activity) => [...$activity->only('id', 'type', 'notes', 'due_at'), 'lead' => $activity->subject->only('id', 'first_name', 'last_name'), 'is_overdue' => $activity->due_at->isPast()]),
+            'followUps' => $activityBoard->activities($organization, $request->user(), $filters)->whereNotNull('due_at')->whereNull('completed_at')->whereHasMorph('subject', [CrmLead::class], fn ($query) => $query->whereNull('converted_at'))->with('subject:id,first_name,last_name')->orderBy('due_at')->get()->map(fn ($activity) => [...$activity->only('id', 'type', 'notes', 'due_at', 'updated_at'), 'lead' => $activity->subject->only('id', 'first_name', 'last_name'), 'is_overdue' => $activity->due_at->isPast()]),
             'canManageCrm' => $request->user()->can('manageCrm', $organization),
             'canExportLeads' => $exports->canExport($organization, $request->user()),
-            'activities' => CrmActivity::query()->where('organization_id', $organization->id)->whereHasMorph('subject', [CrmLead::class], fn ($query) => $visibility->scope($query->where('organization_id', $organization->id), $organization, $request->user()))->with(['subject:id,first_name,last_name', 'creator:id,name'])->latest()->take(10)->get()->map(fn (CrmActivity $activity) => [
-                ...$activity->only('id', 'type', 'notes', 'due_at'),
+            'activities' => $activityBoard->activities($organization, $request->user(), $filters)->with(['subject:id,first_name,last_name', 'creator:id,name'])->latest()->take(10)->get()->map(fn (CrmActivity $activity) => [
+                ...$activity->only('id', 'type', 'notes', 'due_at', 'completed_at', 'created_at', 'updated_at'),
                 'lead' => $activity->subject ? $activity->subject->only('id', 'first_name', 'last_name') : null,
                 'creator' => $activity->creator?->only('id', 'name'),
             ]),
@@ -57,21 +64,33 @@ class CrmLeadController extends Controller
         return back();
     }
 
-    public function show(Request $request, CrmLead $lead, LeadVisibility $visibility, ManageCustomFields $fields, LeadTimeline $timeline, ExportLeads $exports): Response
+    public function show(Request $request, CrmLead $lead, LeadVisibility $visibility, ManageCustomFields $fields, LeadTimeline $timeline, ExportLeads $exports, PipelineOverview $overview): Response
     {
         $org = $this->currentOrganization($request);
         $this->authorize('viewCrm', $org);
         abort_unless($lead->organization_id === $org->id && $visibility->canSeeLead($org, $request->user(), $lead->assigned_to), 404);
+        $historyFilters = $request->validate(['history_q' => ['nullable', 'string', 'max:100'], 'history_event' => ['nullable', 'string', 'max:100'], 'history_page' => ['nullable', 'integer', 'min:1']]);
         $visible = $fields->visible($org, $request->user());
         $values = CustomFieldValue::where('organization_id', $org->id)->where('lead_id', $lead->id)
             ->whereIn('field_id', array_map(fn ($field) => $field->id, $visible))->get()->keyBy('field_id');
 
+        $pipeline = Pipeline::where('organization_id', $org->id)->with(['stages', 'reasons'])->findOrFail($lead->pipeline_id);
+        $role = $request->user()->organizations()->whereKey($org->id)->value('organization_user.role');
+        $lead->load(['stage', 'assignee:id,name']);
+
         return Inertia::render('crm/LeadShow', [
-            'lead' => $lead->load(['stage', 'assignee:id,name'])->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'notes', 'status', 'stage', 'assignee', 'created_at', 'updated_at'),
-            'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'value' => $values->get($field->id)?->value], $visible),
-            'timeline' => $timeline->for($org, $request->user(), $lead),
+            'pipeline' => $pipeline,
+            'transitionOptions' => $overview->transitionOptions($pipeline, $lead, $role),
+            'canManageCrm' => $request->user()->can('manageCrm', $org),
+            'members' => $visibility->restricted($org, $request->user()) ? $org->users()->whereIn('users.id', $visibility->assigneeIds($org, $request->user()))->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']) : $org->users()->orderBy('name')->get(['users.id', 'users.name'])->map->only(['id', 'name']),
+            'lead' => [...$lead->only('pipeline_id', 'current_stage_id', 'assigned_to', 'project_name', 'campaign_name', 'meta_form_id', 'meta_form_name', 'lost_reason_id', 'stage_changed_at'), 'converted' => $lead->converted_at !== null, ...$lead->only('id', 'first_name', 'last_name', 'email', 'phone', 'company', 'city', 'source', 'notes', 'status', 'stage', 'assignee', 'created_at', 'updated_at')],
+            'editableCustomFieldKeys' => array_map(fn ($field) => $field->key, $fields->visible($org, $request->user(), true)),
+            'customFields' => array_map(fn ($field) => ['key' => $field->key, 'name' => $field->name, 'type' => $field->type, 'required' => $field->required, 'options' => $field->options ?? [], 'value' => $values->get($field->id)?->value], $visible),
+            'timeline' => $timeline->for($org, $request->user(), $lead, $historyFilters),
+            'historyFilters' => $historyFilters,
+            'historyPagination' => $timeline->pagination($org, $lead, $historyFilters),
             'canExportActivities' => $exports->canExport($org, $request->user()),
-            'activities' => $lead->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest()->limit(50)->get(['id', 'organization_id', 'subject_type', 'subject_id', 'created_by', 'type', 'notes', 'due_at', 'completed_at', 'created_at']),
+            'activities' => $lead->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest()->limit(50)->get(['id', 'organization_id', 'subject_type', 'subject_id', 'created_by', 'type', 'notes', 'due_at', 'completed_at', 'created_at', 'updated_at']),
         ]);
     }
 
@@ -91,7 +110,7 @@ class CrmLeadController extends Controller
         abort_unless($lead->organization_id === $organization->id, 404);
         $this->authorize('manageCrm', $organization);
         $data = $this->validatedLead($request);
-        unset($data['pipeline_id']);
+        unset($data['pipeline_id'], $data['assigned_to']);
         $manage->updateDetails($organization, $request->user(), $lead, $data);
 
         return back();
@@ -149,6 +168,7 @@ class CrmLeadController extends Controller
     {
         return $request->validate([
             'pipeline_id' => ['nullable', 'integer'],
+            'assigned_to' => ['sometimes', 'nullable', 'integer'],
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'email' => ['nullable', 'email', 'max:255'],

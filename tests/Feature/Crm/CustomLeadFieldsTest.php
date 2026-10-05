@@ -80,4 +80,24 @@ class CustomLeadFieldsTest extends TestCase
         $this->get(route('crm.leads.index', ['filters' => [['field' => 'custom:admin_code', 'operator' => 'equals', 'value' => 'LOCKED-77']]]))->assertSessionHasErrors('filters.0.field');
         $this->actingAs($owner)->get(route('crm.leads.index', ['q' => 'LOCKED-77']))->assertInertia(fn (Assert $page) => $page->has('leads', 1)->etc());
     }
+
+    public function test_stage_totals_sum_the_first_visible_currency_field(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $manager = $this->member($org, OrganizationRole::Manager);
+        $this->actingAs($owner)->post(route('crm.custom-fields.store'), ['name' => 'Budget', 'key' => 'budget', 'type' => 'currency'])->assertRedirect();
+        $this->post(route('crm.leads.store'), ['first_name' => 'A', 'last_name' => 'One', 'custom_fields' => ['budget' => '100']])->assertRedirect();
+        $this->post(route('crm.leads.store'), ['first_name' => 'B', 'last_name' => 'Two', 'custom_fields' => ['budget' => '250.5']])->assertRedirect();
+        $this->post(route('crm.leads.store'), ['first_name' => 'C', 'last_name' => 'Three'])->assertRedirect();
+
+        $this->get(route('crm.leads.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('amountField.key', 'budget')
+            ->where('stageCounts.0.count', 3)
+            ->where('stageCounts.0.amount', 350.5)
+            ->where('stageCounts.1.amount', 0)
+            ->etc());
+
+        $this->actingAs($manager)->post(route('crm.custom-fields.store'), ['name' => 'X', 'key' => 'x', 'type' => 'currency'])->assertForbidden();
+    }
 }

@@ -52,6 +52,8 @@ The first implementation increment covers configuration permissions, pipeline/st
 
 The user paused further CRM automation for an acceptance review, then said to proceed on 2026-09-21. Local technical checks are recorded in [CRM_ACCEPTANCE_REVIEW_2026_09_20.md](CRM_ACCEPTANCE_REVIEW_2026_09_20.md); owner business and physical-device sign-off are still unrecorded. The next CRM automation increment adds opt-in in-app escalation at 1 day, 1 week and 2 weeks overdue. Scoped Managers and Owners/Administrators receive notices; follow-ups remain open. See [CRM_DYNAMIC_PIPELINE_PLAN.md](CRM_DYNAMIC_PIPELINE_PLAN.md).
 
+CRM reference-workflow continuation — 2026-10-05: the user requested completion of the CRM leads backend against supplied screenshots while a separate frontend implementation runs. The increment adds CSV source settings/default assignment, private saved filters and field selection, corrected typed/name/activity/history filters, organization-local activity-board data, audited activity rescheduling, paginated history, and delayed internal automation with scoped manager alerts and guarded nonterminal stage changes. Generic automatic moves cannot chain automation rules or convert customers. Three additive migrations are applied locally. Frontend contracts, validation and provider/reference-data boundaries are recorded in [the CRM backend handoff](CRM_LEADS_BACKEND_HANDOFF_2026_10_05.md). This supersedes the earlier immediate-only generic-rule boundary for these selected internal actions; it does not authorize live provider activation.
+
 ### Phase 3 — Property and inventory
 
 Implement properties, buildings, units, availability, and related documents.

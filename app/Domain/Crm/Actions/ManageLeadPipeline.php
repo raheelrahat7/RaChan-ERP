@@ -32,7 +32,9 @@ class ManageLeadPipeline
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
             $custom = $data['custom_fields'] ?? [];
             unset($data['custom_fields']);
-            if ($this->visibility->restricted($org, $actor)) {
+            if (isset($data['assigned_to'])) {
+                $this->visibility->assigneeFilter($org, $actor, (int) $data['assigned_to']);
+            } elseif ($this->visibility->restricted($org, $actor)) {
                 $data['assigned_to'] = $actor->id;
             }
             $lead = $org->leads()->create($data);
@@ -117,7 +119,7 @@ class ManageLeadPipeline
             $from = $lead->stage;
             $lead->update(['current_stage_id' => $stage->id, 'lost_reason_id' => $reason?->id, 'stage_changed_at' => now()]);
             $this->autoAssign->handle($org, $lead, $stage);
-            $this->record($org, $actor, $lead, $from, $stage, $reason, $data['notes'] ?? null);
+            $this->record($org, $actor, $lead, $from, $stage, $reason, $data['notes'] ?? null, isset($data['automation_rule_id']) ? (int) $data['automation_rule_id'] : null);
         });
     }
 
@@ -229,9 +231,9 @@ class ManageLeadPipeline
         return $locked;
     }
 
-    private function record(Organization $org, ?User $actor, CrmLead $lead, ?PipelineStage $from, PipelineStage $to, ?LostReason $reason, ?string $notes): void
+    private function record(Organization $org, ?User $actor, CrmLead $lead, ?PipelineStage $from, PipelineStage $to, ?LostReason $reason, ?string $notes, ?int $automationRuleId = null): void
     {
-        $history = LeadStageHistory::create(['organization_id' => $org->id, 'lead_id' => $lead->id, 'pipeline_id' => $lead->pipeline_id, 'from_stage_id' => $from?->id, 'to_stage_id' => $to->id, 'lost_reason_id' => $reason?->id, 'changed_by' => $actor?->id, 'changed_at' => now(), 'notes' => $notes, 'snapshot' => ['pipeline' => $to->pipeline->name, 'from_pipeline' => $from?->pipeline?->name, 'from' => $from?->name, 'from_type' => $from?->type, 'to' => $to->name, 'to_type' => $to->type, 'lost_reason' => $reason?->name, 'assigned_to' => $lead->assigned_to, 'notify_assignee_on_entry' => (bool) $to->notify_assignee_on_entry, 'follow_up_due_days' => $to->follow_up_due_days]]);
+        $history = LeadStageHistory::create(['organization_id' => $org->id, 'lead_id' => $lead->id, 'pipeline_id' => $lead->pipeline_id, 'from_stage_id' => $from?->id, 'to_stage_id' => $to->id, 'lost_reason_id' => $reason?->id, 'changed_by' => $actor?->id, 'changed_at' => now(), 'notes' => $notes, 'snapshot' => ['pipeline' => $to->pipeline->name, 'from_pipeline' => $from?->pipeline?->name, 'from' => $from?->name, 'from_type' => $from?->type, 'to' => $to->name, 'to_type' => $to->type, 'lost_reason' => $reason?->name, 'assigned_to' => $lead->assigned_to, 'notify_assignee_on_entry' => (bool) $to->notify_assignee_on_entry, 'follow_up_due_days' => $to->follow_up_due_days, 'automation_rule_id' => $automationRuleId]]);
         $this->audit->handle($org, $actor, 'crm.lead.stage_changed', $lead, $history->snapshot);
         event(new LeadStageChanged($history));
     }

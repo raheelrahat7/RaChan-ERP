@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Crm\Actions\EscalateOverdueFollowUps;
+use App\Domain\Crm\Actions\ExecuteAutomationRule;
 use App\Domain\Crm\Actions\RetryHeldLeads;
 use App\Domain\Crm\Actions\SendFollowUpReminders;
 use App\Domain\Notifications\Actions\GenerateDailyNotifications;
@@ -75,3 +76,11 @@ Artisan::command('reports:generate-private', function (GeneratePrivateReports $r
     return $result['failed'] === 0 ? 0 : 1;
 })->purpose('Deliver opted-in private operations reports to their creators');
 Schedule::command('reports:generate-private')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
+
+Artisan::command('crm:run-due-automation', function (ExecuteAutomationRule $automation) {
+    $result = $automation->due();
+    $this->info('Processed '.$result['processed'].' automation executions; '.$result['failed'].' failed.');
+
+    return $result['failed'] === 0 ? 0 : 1;
+})->purpose('Execute bounded internal CRM automation with stale-event and replay protection');
+Schedule::command('crm:run-due-automation')->everyMinute()->withoutOverlapping()->onOneServer();

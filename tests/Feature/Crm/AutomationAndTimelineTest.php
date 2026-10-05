@@ -50,7 +50,7 @@ class AutomationAndTimelineTest extends TestCase
         event(new LeadStageChanged(LeadStageHistory::where('lead_id', $lead->id)->firstOrFail()));
         $this->assertDatabaseCount('crm_automation_executions', 1);
         $this->assertDatabaseCount('crm_activities', 1);
-        $this->get(route('crm.leads.show', $lead))->assertInertia(fn (Assert $page) => $page->component('crm/LeadShow')->where('lead.id', $lead->id)->has('timeline')->etc());
+        $this->get(route('crm.leads.show', $lead))->assertInertia(fn (Assert $page) => $page->component('crm/LeadShow')->where('lead.id', $lead->id)->where('lead.current_stage_id', $lead->current_stage_id)->where('lead.converted', false)->where('canManageCrm', true)->has('pipeline.stages')->has('transitionOptions')->has('timeline')->etc());
         $this->get(route('crm.leads.show', $lead))->assertOk();
         $this->assertDatabaseHas('audit_logs', ['organization_id' => $org->id, 'subject_type' => $lead->getMorphClass(), 'subject_id' => $lead->id, 'event' => 'crm.lead.viewed']);
         $this->assertSame(1, AuditLog::where('organization_id', $org->id)->where('event', 'crm.lead.viewed')->where('subject_id', $lead->id)->count());

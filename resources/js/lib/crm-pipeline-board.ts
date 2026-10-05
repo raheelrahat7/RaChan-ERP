@@ -11,6 +11,7 @@ export type BoardLead = {
     current_stage_id: number;
     converted: boolean;
     transitionOptions?: TransitionOption[];
+    custom_fields?: Record<string, unknown>;
     assignee: { id: number; name: string } | null;
 };
 
@@ -64,4 +65,18 @@ export function canDropOnStage(
         current.type !== 'lost' ||
         (target.type !== 'lost' && target.type !== 'won')
     );
+}
+
+/** Readable text color (near-black or white) for a stage's hex background. */
+export function readableOn(hex: string): string {
+    const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!match) {
+        return '#1f1a17';
+    }
+    const [r, g, b] = [0, 2, 4].map((i) =>
+        parseInt(match[1].slice(i, i + 2), 16),
+    );
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance > 0.6 ? '#1f1a17' : '#ffffff';
 }

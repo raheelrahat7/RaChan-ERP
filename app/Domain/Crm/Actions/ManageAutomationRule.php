@@ -9,6 +9,7 @@ use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Identity\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -31,7 +32,10 @@ class ManageAutomationRule
             'condition_field' => ['nullable', 'string', 'max:100'],
             'condition_operator' => ['nullable', 'in:equals,not_equals,contains,empty,not_empty'],
             'condition_value' => ['nullable', 'string', 'max:255'],
-            'action' => ['required', 'in:notify_assignee,create_follow_up'],
+            'action' => ['required', 'in:notify_assignee,notify_managers,create_follow_up,change_stage'],
+            'delay_minutes' => ['sometimes', 'integer', 'min:0', 'max:525600'],
+            'activity_type' => ['sometimes', 'in:call,email,meeting,task,note'],
+            'target_stage_id' => ['nullable', 'integer'],
             'due_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'active' => ['sometimes', 'boolean'],
         ])->validate();
@@ -47,17 +51,29 @@ class ManageAutomationRule
         if (isset($data['condition_field']) && ! isset($data['condition_operator'])) {
             throw ValidationException::withMessages(['condition_operator' => 'Choose a condition operator.']);
         }
+        if (isset($data['condition_field']) && ! in_array($data['condition_operator'], ['empty', 'not_empty'], true) && (! isset($data['condition_value']) || $data['condition_value'] === '')) {
+            throw ValidationException::withMessages(['condition_value' => 'Enter a condition value.']);
+        }
+        if ($data['action'] === 'change_stage' && (! isset($data['target_stage_id']) || ! PipelineStage::where('pipeline_id', $data['pipeline_id'])->where('active', true)->where('type', 'normal')->whereKey($data['target_stage_id'])->exists())) {
+            throw ValidationException::withMessages(['target_stage_id' => 'Choose an active nonterminal stage in this pipeline.']);
+        }
+        if ($data['action'] === 'change_stage' && ($data['stage_id'] ?? null) === ($data['target_stage_id'] ?? null)) {
+            throw ValidationException::withMessages(['target_stage_id' => 'Choose a different destination stage.']);
+        }
         if ($data['action'] === 'create_follow_up' && ! isset($data['due_days'])) {
             throw ValidationException::withMessages(['due_days' => 'Choose when the follow-up is due.']);
         }
-        if ($rule) {
-            $rule->update($data);
-        } else {
-            $rule = AutomationRule::create(['organization_id' => $org->id, 'created_by' => $actor->id, ...$data]);
-        }
-        $this->audit->handle($org, $actor, 'crm.automation_rule.saved', $rule, ['name' => $rule->name, 'active' => $rule->active]);
 
-        return $rule;
+        return DB::transaction(function () use ($org, $actor, $data, $rule): AutomationRule {
+            if ($rule) {
+                $rule->update($data);
+            } else {
+                $rule = AutomationRule::create(['organization_id' => $org->id, 'created_by' => $actor->id, ...$data]);
+            }
+            $this->audit->handle($org, $actor, 'crm.automation_rule.saved', $rule, ['name' => $rule->name, 'active' => $rule->active]);
+
+            return $rule;
+        });
     }
 
     public function disable(Organization $org, User $actor, AutomationRule $rule): void

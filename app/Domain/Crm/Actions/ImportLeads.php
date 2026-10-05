@@ -4,6 +4,8 @@ namespace App\Domain\Crm\Actions;
 
 use App\Domain\Crm\Models\LeadImportBatch;
 use App\Domain\Crm\Models\Pipeline;
+use App\Domain\Crm\Services\LeadVisibility;
+use App\Domain\Crm\Services\ParseLeadImportCsv;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Models\CrmLead;
 use App\Models\Organization;
@@ -20,49 +22,17 @@ class ImportLeads
 
     public function __construct(private ManageCustomFields $fields, private ManageLeadPipeline $leads, private RecordOrganizationAuditLog $audit) {}
 
-    public function preview(Organization $org, User $actor, UploadedFile $file): LeadImportBatch
+    /** @param array<string, mixed> $settings */
+    public function preview(Organization $org, User $actor, UploadedFile $file, array $settings = []): LeadImportBatch
     {
         Gate::forUser($actor)->authorize('manageCrm', $org);
-        Validator::make(['file' => $file], ['file' => ['required', 'file', 'max:2048', 'extensions:csv,txt']])->validate();
-        $raw = file_get_contents($file->getRealPath());
-        if ($raw === false || ! mb_check_encoding($raw, 'UTF-8') || str_contains($raw, "\0")) {
-            throw ValidationException::withMessages(['file' => 'Upload a UTF-8 CSV without binary content.']);
-        }
-        $stream = fopen('php://temp', 'w+');
-        if ($stream === false) {
-            throw new \RuntimeException('Could not create import buffer.');
-        }
-        try {
-            fwrite($stream, preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw);
-            rewind($stream);
-            $headers = fgetcsv($stream, null, ',', '"', '');
-            if (! $headers || count($headers) > 100 || count($headers) !== count(array_unique($headers))) {
-                throw ValidationException::withMessages(['file' => 'Use one header row with distinct column names (100 maximum).']);
-            }
-            $headers = array_map(fn ($header) => trim((string) $header), $headers);
-            if (in_array('', $headers, true) || count($headers) !== count(array_unique($headers))) {
-                throw ValidationException::withMessages(['file' => 'Every column needs a unique header.']);
-            }
-            $rows = [];
-            while (($cells = fgetcsv($stream, null, ',', '"', '')) !== false) {
-                if ($cells === [null]) {
-                    continue;
-                }
-                if (count($rows) >= 1000 || count($cells) !== count($headers)) {
-                    throw ValidationException::withMessages(['file' => 'Use at most 1,000 rows with the same number of columns as the header.']);
-                }
-                $rows[] = array_combine($headers, array_map(fn ($cell) => trim((string) $cell), $cells));
-            }
-            if ($rows === []) {
-                throw ValidationException::withMessages(['file' => 'The CSV has no data rows.']);
-            }
-        } finally {
-            fclose($stream);
-        }
+        $parsed = app(ParseLeadImportCsv::class)->parse($file, $settings);
 
-        return DB::transaction(function () use ($org, $actor, $headers, $rows, $raw): LeadImportBatch {
-            $batch = LeadImportBatch::create(['organization_id' => $org->id, 'user_id' => $actor->id, 'headers' => $headers, 'rows' => $rows, 'source_hash' => hash('sha256', $raw), 'expires_at' => now()->addDay()]);
-            $this->audit->handle($org, $actor, 'crm.lead_import.previewed', $batch, ['rows' => count($rows)]);
+        return DB::transaction(function () use ($org, $actor, $parsed): LeadImportBatch {
+            $batch = LeadImportBatch::create(['organization_id' => $org->id, 'user_id' => $actor->id,
+                'headers' => $parsed['headers'], 'rows' => $parsed['rows'], 'source_settings' => $parsed['settings'],
+                'source_hash' => $parsed['source_hash'], 'expires_at' => now()->addDay()]);
+            $this->audit->handle($org, $actor, 'crm.lead_import.previewed', $batch, ['rows' => count($parsed['rows'])]);
 
             return $batch;
         });
@@ -83,6 +53,7 @@ class ImportLeads
             'mapping' => ['required', 'array'], 'mapping.*' => ['nullable', 'string', 'max:100'],
             'duplicate_mode' => ['required', 'in:skip,allow'],
             'pipeline_id' => ['required', 'integer'],
+            'assigned_to' => ['sometimes', 'nullable', 'integer'],
             'required_targets' => ['sometimes', 'array', 'max:100'],
             'required_targets.*' => ['string', 'max:100', 'distinct'],
         ])->validate();
@@ -98,6 +69,9 @@ class ImportLeads
             throw ValidationException::withMessages(['required_targets' => 'Required import fields must be mapped to a source column.']);
         }
         $pipeline = Pipeline::where('organization_id', $org->id)->where('active', true)->findOrFail((int) $data['pipeline_id']);
+        if (isset($data['assigned_to'])) {
+            app(LeadVisibility::class)->assigneeFilter($org, $actor, (int) $data['assigned_to']);
+        }
         $customFields = collect($this->fields->visible($org, $actor, true))->keyBy('key');
 
         return DB::transaction(function () use ($org, $actor, $batch, $mapping, $data, $pipeline, $requiredTargets, $customFields): LeadImportBatch {
@@ -108,10 +82,12 @@ class ImportLeads
             if ($batch->expires_at->isPast()) {
                 throw ValidationException::withMessages(['batch' => 'Preview expired. Upload the file again.']);
             }
+            Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
             $created = 0;
             $skipped = 0;
             $errors = [];
             $seen = [];
+            $rowOffset = ($batch->source_settings['has_header'] ?? true) ? 2 : 1;
             foreach ($batch->rows as $index => $row) {
                 $missing = [];
                 foreach ($mapping as $header => $target) {
@@ -120,11 +96,14 @@ class ImportLeads
                     }
                 }
                 if ($missing !== []) {
-                    $errors[] = ['row' => $index + 2, 'messages' => ['Required source fields are blank: '.implode(', ', $missing).'.']];
+                    $errors[] = ['row' => $batch->source_settings['row_numbers'][$index] ?? $index + $rowOffset, 'messages' => ['Required source fields are blank: '.implode(', ', $missing).'.']];
 
                     continue;
                 }
                 $leadData = ['pipeline_id' => $pipeline->id];
+                if (isset($data['assigned_to'])) {
+                    $leadData['assigned_to'] = (int) $data['assigned_to'];
+                }
                 $custom = [];
                 foreach ($mapping as $header => $target) {
                     $cell = $row[$header] === '' ? null : $row[$header];
@@ -146,6 +125,9 @@ class ImportLeads
                 }
                 if (! empty($leadData['full_name'])) {
                     $parts = preg_split('/\s+/u', trim($leadData['full_name']), 2) ?: [];
+                    if (($batch->source_settings['name_format'] ?? 'first_last') === 'last_first') {
+                        $parts = array_reverse($parts);
+                    }
                     $leadData['first_name'] ??= $parts[0] ?? null;
                     $leadData['last_name'] ??= $parts[1] ?? ($parts[0] ?? null);
                 }
@@ -153,26 +135,35 @@ class ImportLeads
                 $leadData['custom_fields'] = $custom;
                 $validation = Validator::make($leadData, ['first_name' => ['required', 'string', 'max:100'], 'last_name' => ['required', 'string', 'max:100'], 'email' => ['nullable', 'email', 'max:255'], 'phone' => ['nullable', 'string', 'max:50'], 'company' => ['nullable', 'string', 'max:255'], 'city' => ['nullable', 'string', 'max:255'], 'source' => ['nullable', 'string', 'max:100'], 'notes' => ['nullable', 'string', 'max:5000'], 'project_name' => ['nullable', 'string', 'max:255'], 'campaign_name' => ['nullable', 'string', 'max:255']]);
                 if ($validation->fails()) {
-                    $errors[] = ['row' => $index + 2, 'messages' => $validation->errors()->all()];
+                    $errors[] = ['row' => $batch->source_settings['row_numbers'][$index] ?? $index + $rowOffset, 'messages' => $validation->errors()->all()];
 
                     continue;
                 }
                 $email = mb_strtolower(trim((string) ($leadData['email'] ?? '')));
                 $phone = preg_replace('/\D+/', '', (string) ($leadData['phone'] ?? ''));
-                $key = $email !== '' ? 'email:'.$email : ($phone !== '' ? 'phone:'.$phone : null);
-                if ($data['duplicate_mode'] === 'skip' && $key !== null && (isset($seen[$key]) || CrmLead::where('organization_id', $org->id)->where($email !== '' ? 'email' : 'phone', $email !== '' ? $leadData['email'] : $leadData['phone'])->exists())) {
+                $keys = array_filter([$email !== '' ? 'email:'.$email : null, $phone !== '' ? 'phone:'.$phone : null]);
+                $duplicate = $keys !== [] && (array_intersect($keys, array_keys($seen)) !== [] || CrmLead::where('organization_id', $org->id)
+                    ->where(function ($query) use ($email, $phone): void {
+                        if ($email !== '') {
+                            $query->orWhereRaw('LOWER(TRIM(email)) = ?', [$email]);
+                        }
+                        if ($phone !== '') {
+                            $query->orWhereRaw("REGEXP_REPLACE(phone, '[^0-9]', '') = ?", [$phone]);
+                        }
+                    })->exists());
+                if ($data['duplicate_mode'] === 'skip' && $duplicate) {
                     $skipped++;
 
                     continue;
                 }
-                if ($key !== null) {
-                    $seen[$key] = true;
-                }
                 try {
                     $this->leads->create($org, $actor, $leadData);
                     $created++;
+                    foreach ($keys as $key) {
+                        $seen[$key] = true;
+                    }
                 } catch (ValidationException $exception) {
-                    $errors[] = ['row' => $index + 2, 'messages' => $exception->errors()];
+                    $errors[] = ['row' => $batch->source_settings['row_numbers'][$index] ?? $index + $rowOffset, 'messages' => $exception->errors()];
                 }
             }
             $batch->update(['summary' => ['created' => $created, 'skipped_duplicates' => $skipped, 'failed' => count($errors)], 'errors' => $errors, 'committed_at' => now()]);

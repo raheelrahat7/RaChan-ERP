@@ -121,8 +121,12 @@ class ManageCustomFields
                 throw ValidationException::withMessages(['custom_fields.'.$field->key => 'This field is required.']);
             }
             $previous = CustomFieldValue::where('organization_id', $org->id)->where('lead_id', $lead->id)->where('field_id', $field->id)->first();
+            $previousValue = $previous?->value;
             if ($normal === null) {
                 $previous?->delete();
+                if ($previous !== null) {
+                    $this->audit->handle($org, $actor, 'crm.lead.custom_field_changed', $lead, ['field_key' => $field->key]);
+                }
 
                 continue;
             }
@@ -136,7 +140,7 @@ class ManageCustomFields
             } else {
                 CustomFieldValue::create(['organization_id' => $org->id, 'lead_id' => $lead->id, 'field_id' => $field->id, ...$data]);
             }
-            if ($previous?->value !== $normal) {
+            if ($previousValue !== $normal) {
                 $this->audit->handle($org, $actor, 'crm.lead.custom_field_changed', $lead, ['field_key' => $field->key]);
             }
         }
