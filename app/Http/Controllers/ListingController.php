@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\RealEstate\Actions\CreateListingWithInventory;
 use App\Domain\RealEstate\Actions\RecordListingInquiry;
 use App\Domain\RealEstate\Services\ListingMarket;
 use App\Models\Broker;
+use App\Models\Building;
 use App\Models\Listing;
+use App\Models\Property;
 use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -56,21 +60,42 @@ class ListingController extends Controller
 
         $listings = $market->forSegment($organization, $segment);
 
-        return Inertia::render('real-estate/Listings', ['listings' => $listings->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization), 'canManageTransactions' => $request->user()->can('manageTransactions', $organization), 'canManageInventory' => $request->user()->can('manageInventory', $organization)]);
+        return Inertia::render('real-estate/Listings', ['listings' => $listings->latest()->get()->map(fn (Listing $listing) => [...$listing->toArray(), 'public_url' => $listing->public_token ? route('public.listings.show', $listing->public_token) : null]), 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'properties' => Property::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name', 'type', 'city']), 'buildings' => Building::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'property_id', 'name', 'floors']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'marketSegment' => $segment, 'canManage' => $request->user()->can('manageCrm', $organization), 'canManageTransactions' => $request->user()->can('manageTransactions', $organization), 'canManageInventory' => $request->user()->can('manageInventory', $organization)]);
     }
 
-    public function store(Request $request, ListingMarket $market): RedirectResponse
+    public function store(Request $request, CreateListingWithInventory $create, RecordOrganizationAuditLog $audit): RedirectResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageCrm', $organization);
-        $input = $request->validate(['unit_id' => ['required', 'integer'], 'broker_id' => ['nullable', 'integer'], 'purpose' => ['required', 'in:sale,rent'], 'market_segment' => ['nullable', 'in:primary,secondary'], 'price' => ['required', 'numeric', 'min:0']]);
-        $input['market_segment'] = $market->forNewListing($input['purpose'], $input['market_segment'] ?? null);
-        Unit::where('organization_id', $organization->id)->where('status', 'available')->findOrFail((int) $input['unit_id']);
+        $newUnit = $request->input('inventory_mode') === 'new_unit';
+        if ($newUnit) {
+            $this->authorize('manageInventory', $organization);
+        }
+        $input = $request->validate([
+            'inventory_mode' => ['nullable', 'in:existing_unit,new_unit'],
+            'unit_id' => [Rule::requiredIf(! $newUnit), 'nullable', 'integer'],
+            'property_id' => ['nullable', 'integer'],
+            'property_name' => [Rule::requiredIf($newUnit && ! $request->filled('property_id')), 'nullable', 'string', 'max:255'],
+            'property_type' => [Rule::requiredIf($newUnit && ! $request->filled('property_id')), 'nullable', 'in:residential,commercial,mixed_use,land'],
+            'property_city' => ['nullable', 'string', 'max:100'],
+            'building_id' => ['nullable', 'integer', 'prohibits:building_name'],
+            'building_name' => ['nullable', 'string', 'max:255', 'prohibits:building_id'],
+            'building_floors' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'floor' => ['nullable', 'string', 'max:8', 'regex:/^(?:G|P[1-9][0-9]?|[1-9][0-9]{0,2})$/'],
+            'unit_number' => [Rule::requiredIf($newUnit), 'nullable', 'string', 'max:100'],
+            'unit_type' => [Rule::requiredIf($newUnit), 'nullable', 'in:apartment,office,retail,warehouse,plot,other'],
+            'broker_id' => ['nullable', 'integer'],
+            'purpose' => ['required', 'in:sale,rent'],
+            'market_segment' => ['nullable', 'in:primary,secondary'],
+            'price' => ['required', 'numeric', 'min:0'],
+        ]);
+        $input['inventory_mode'] = $newUnit ? 'new_unit' : 'existing_unit';
         if ($input['broker_id'] ?? null) {
             Broker::where('organization_id', $organization->id)->findOrFail((int) $input['broker_id']);
         }
-        Listing::create(['organization_id' => $organization->id, 'reference' => 'LST-'.Str::upper(Str::random(8)), 'public_token' => Str::random(48), ...$input]);
+        $listing = $create->handle($organization, $input);
+        $audit->handle($organization, $request->user(), 'listing.created', $listing, ['unit_id' => $listing->unit_id, 'inventory_mode' => $input['inventory_mode']]);
 
         return back();
     }

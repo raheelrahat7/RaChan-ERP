@@ -43,6 +43,42 @@ class SecondaryMarketTest extends TestCase
             ->where('canManageInventory', true));
     }
 
+    public function test_listing_can_create_property_building_and_unit_in_one_step(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($owner, ['role' => OrganizationRole::Owner->value]);
+
+        $this->actingAs($owner)->post(route('real-estate.listings.store'), [
+            'inventory_mode' => 'new_unit', 'property_name' => 'Marina Tower', 'property_type' => 'residential', 'property_city' => 'Dubai',
+            'building_name' => 'Tower A', 'building_floors' => 10, 'floor' => '3', 'unit_number' => '301', 'unit_type' => 'apartment',
+            'purpose' => 'sale', 'market_segment' => 'secondary', 'price' => 1200000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $unit = Unit::where('number', '301')->sole();
+        $this->assertSame('available', $unit->status);
+        $this->assertDatabaseHas('buildings', ['name' => 'Tower A', 'property_id' => $unit->property_id]);
+        $this->assertDatabaseHas('listings', ['unit_id' => $unit->id, 'purpose' => 'sale', 'market_segment' => 'secondary']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'listing.created']);
+
+        $this->post(route('real-estate.listings.store'), [
+            'inventory_mode' => 'new_unit', 'property_id' => $unit->property_id, 'unit_number' => '301', 'unit_type' => 'apartment', 'purpose' => 'rent', 'price' => 1,
+        ])->assertSessionHasErrors('unit_number');
+        $this->assertSame(1, Listing::count());
+    }
+
+    public function test_listing_creating_new_inventory_requires_inventory_permission(): void
+    {
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['current_organization_id' => $org->id]);
+        $org->users()->attach($user, ['role' => OrganizationRole::Member->value]);
+
+        $this->actingAs($user)->post(route('real-estate.listings.store'), [
+            'inventory_mode' => 'new_unit', 'property_name' => 'X', 'property_type' => 'residential', 'unit_number' => '1', 'unit_type' => 'apartment', 'purpose' => 'rent', 'price' => 1,
+        ])->assertForbidden();
+        $this->assertSame(0, Property::count());
+    }
+
     public function test_secondary_market_includes_resales_and_rentals_but_excludes_primary_sales_and_other_organizations(): void
     {
         $org = Organization::factory()->create();
