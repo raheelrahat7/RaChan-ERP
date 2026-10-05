@@ -1,292 +1,154 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import CrmFieldFormSheet from '@/components/CrmFieldFormSheet.vue';
+import type { FieldRecord } from '@/components/CrmFieldFormSheet.vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import { Badge } from '@/components/ui/badge';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn, RowKey } from '@/lib/data-table';
 
-type Role = 'owner' | 'administrator' | 'manager' | 'member' | 'viewer';
-type Field = {
+const props = defineProps<{ fields: FieldRecord[]; types: string[] }>();
+const { t } = useLocale();
+
+type FieldRow = {
     id: number;
+    sort_order: number;
     name: string;
     key: string;
     type: string;
-    options: string[] | null;
-    required: boolean;
-    active: boolean;
-    view_roles: Role[] | null;
-    edit_roles: Role[] | null;
+    required: string;
+    visible_to: string;
+    status: string;
 };
-const props = defineProps<{ fields: Field[]; types: string[] }>();
-const roles: Role[] = ['owner', 'administrator', 'manager', 'member', 'viewer'];
-const selected = ref<Field | null>(null);
-const find = ref('');
-const visible = computed(() =>
-    props.fields.filter((field) =>
-        `${field.name} ${field.key}`
-            .toLowerCase()
-            .includes(find.value.toLowerCase()),
-    ),
+const ENTITIES = [
+    { key: 'lead', label: 'Lead', connected: true },
+    { key: 'contact', label: 'Contact', connected: false },
+    { key: 'company', label: 'Company', connected: false },
+    { key: 'deal', label: 'Deal', connected: false },
+];
+const sheetOpen = ref(false);
+const editing = ref<FieldRecord | null>(null);
+const rows = computed<FieldRow[]>(() =>
+    props.fields.map((field) => ({
+        id: field.id,
+        sort_order: field.sort_order ?? 0,
+        name: field.name,
+        key: field.key,
+        type: field.type.replaceAll('_', ' '),
+        required: field.required ? t('Yes') : t('No'),
+        visible_to: (field.view_roles ?? ['everyone']).join(', '),
+        status: field.active ? t('Active') : t('Archived'),
+    })),
 );
-const form = useForm({
-    name: '',
-    key: '',
-    type: 'text',
-    options: '' as string,
-    required: false,
-    active: true,
-    view_roles: [...roles] as Role[],
-    edit_roles: [...roles] as Role[],
-});
-function edit(field: Field): void {
-    selected.value = field;
-    form.name = field.name;
-    form.key = field.key;
-    form.type = field.type;
-    form.options = (field.options ?? []).join('\n');
-    form.required = field.required;
-    form.active = field.active;
-    form.view_roles = field.view_roles ?? [...roles];
-    form.edit_roles = field.edit_roles ?? [...roles];
+const columns = computed<DataTableColumn<FieldRow>[]>(() => [
+    { key: 'sort_order', label: t('Sorting'), sortable: true },
+    { key: 'name', label: t('Name'), sortable: true },
+    { key: 'key', label: t('Internal key'), sortable: true },
+    { key: 'type', label: t('Type'), sortable: true },
+    { key: 'required', label: t('Required') },
+    { key: 'visible_to', label: t('Visible to') },
+    { key: 'status', label: t('Status') },
+]);
+
+function byId(id: RowKey): FieldRecord | undefined {
+    return props.fields.find((field) => field.id === id);
 }
-function reset(): void {
-    selected.value = null;
-    form.reset();
-    form.clearErrors();
+function add(): void {
+    editing.value = null;
+    sheetOpen.value = true;
 }
-function toggleRole(kind: 'view_roles' | 'edit_roles', role: Role): void {
-    form[kind] = form[kind].includes(role)
-        ? form[kind].filter((item) => item !== role)
-        : [...form[kind], role];
-    if (kind === 'view_roles' && !form.view_roles.includes(role))
-        form.edit_roles = form.edit_roles.filter((item) => item !== role);
+function edit(keys: RowKey[]): void {
+    const field = keys.length ? byId(keys[0]) : undefined;
+    if (field) {
+        editing.value = field;
+        sheetOpen.value = true;
+    }
+}
+function archive(keys: RowKey[]): void {
+    const targets = keys
+        .map(byId)
+        .filter((field): field is FieldRecord => field !== undefined);
     if (
-        kind === 'edit_roles' &&
-        form.edit_roles.includes(role) &&
-        !form.view_roles.includes(role)
-    )
-        form.view_roles = [...form.view_roles, role];
-}
-function save(): void {
-    const payload = {
-        name: form.name,
-        key: form.key,
-        type: form.type,
-        options: form.options
-            .split('\n')
-            .map((item) => item.trim())
-            .filter(Boolean),
-        required: form.required,
-        active: form.active,
-        view_roles: form.view_roles,
-        edit_roles: form.edit_roles,
-    };
-    const options = { preserveScroll: true, onSuccess: reset };
-    if (selected.value)
-        form.transform(() => payload).put(
-            `/crm/custom-fields/${selected.value.id}`,
-            options,
-        );
-    else form.transform(() => payload).post('/crm/custom-fields', options);
-}
-function archive(field: Field): void {
-    if (confirm(`Archive ${field.name}? Saved lead values will be preserved.`))
-        router.delete(`/crm/custom-fields/${field.id}`, {
-            preserveScroll: true,
-        });
+        targets.length &&
+        confirm(
+            `${t('Archive')} ${targets.map((field) => field.name).join(', ')}? ${t('Saved lead values will be preserved.')}`,
+        )
+    ) {
+        for (const field of targets) {
+            router.delete(`/crm/custom-fields/${field.id}`, {
+                preserveScroll: true,
+            });
+        }
+    }
 }
 </script>
 
 <template>
-    <Head title="CRM field settings" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
-            title="CRM field settings"
-            description="Define lead fields without changing the database schema. Archived fields keep their saved values."
-        />
-        <Link href="/crm/leads" class="text-sm underline">Back to leads</Link>
-        <div
-            class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]"
-        >
-            <Card>
-                <CardHeader><CardTitle>Fields</CardTitle></CardHeader>
-                <CardContent class="space-y-3">
-                    <Label for="find-field">Find field</Label>
-                    <Input
-                        id="find-field"
-                        v-model="find"
-                        type="search"
-                        placeholder="Search name or key"
-                    />
-                    <div
-                        v-for="field in visible"
-                        :key="field.id"
-                        class="flex items-center justify-between gap-3 rounded-md border p-3"
+    <Head :title="t('CRM field settings')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <nav :aria-label="t('Field types')" class="flex flex-wrap gap-2">
+                <template v-for="entity in ENTITIES" :key="entity.key">
+                    <span
+                        v-if="entity.connected"
+                        class="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-sm font-medium"
+                        aria-current="page"
+                        >{{ t(entity.label) }}</span
                     >
-                        <div class="min-w-0">
-                            <p class="truncate font-medium">
-                                {{ field.name }}
-                                <span
-                                    v-if="!field.active"
-                                    class="text-muted-foreground"
-                                    >(archived)</span
-                                >
-                            </p>
-                            <p class="text-muted-foreground text-xs">
-                                {{ field.key }} · {{ field.type }}
-                            </p>
-                        </div>
-                        <div class="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                @click="edit(field)"
-                                >Edit</Button
-                            ><Button
-                                v-if="field.active"
-                                variant="ghost"
-                                size="sm"
-                                @click="archive(field)"
-                                >Archive</Button
-                            >
-                        </div>
-                    </div>
-                    <p
-                        v-if="!visible.length"
-                        class="text-muted-foreground text-sm"
+                    <span
+                        v-else
+                        class="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-sm"
+                        aria-disabled="true"
+                        >{{ t(entity.label)
+                        }}<Badge variant="outline">{{
+                            t('Not connected yet')
+                        }}</Badge></span
                     >
-                        No fields match.
-                    </p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader
-                    ><CardTitle>{{
-                        selected ? 'Edit field' : 'Create field'
-                    }}</CardTitle></CardHeader
-                >
-                <CardContent>
-                    <form class="space-y-4" @submit.prevent="save">
-                        <div>
-                            <Label for="field-name">Name</Label
-                            ><Input
-                                id="field-name"
-                                v-model="form.name"
-                                required
-                                maxlength="120"
-                            />
-                        </div>
-                        <div>
-                            <Label for="field-key">Internal key</Label
-                            ><Input
-                                id="field-key"
-                                v-model="form.key"
-                                :disabled="!!selected"
-                                required
-                                maxlength="80"
-                                pattern="[A-Za-z0-9_-]+"
-                            />
-                            <p class="text-muted-foreground text-xs">
-                                Stable identifier; renaming the display name
-                                keeps saved values.
-                            </p>
-                        </div>
-                        <div>
-                            <Label for="field-type">Type</Label
-                            ><select
-                                id="field-type"
-                                v-model="form.type"
-                                class="border-input bg-background h-9 w-full rounded-md border px-3"
-                                :disabled="!!selected"
-                            >
-                                <option
-                                    v-for="type in types"
-                                    :key="type"
-                                    :value="type"
-                                >
-                                    {{ type.replace('_', ' ') }}
-                                </option>
-                            </select>
-                        </div>
-                        <div
-                            v-if="
-                                ['single_select', 'multi_select'].includes(
-                                    form.type,
-                                )
-                            "
-                        >
-                            <Label for="field-options"
-                                >Options, one per line</Label
-                            ><textarea
-                                id="field-options"
-                                v-model="form.options"
-                                class="border-input bg-background min-h-24 w-full rounded-md border p-2"
-                            />
-                        </div>
-                        <label class="flex items-center gap-2 text-sm"
-                            ><input
-                                v-model="form.required"
-                                type="checkbox"
-                            />Required for editors who can see it</label
-                        >
-                        <label class="flex items-center gap-2 text-sm"
-                            ><input
-                                v-model="form.active"
-                                type="checkbox"
-                            />Active</label
-                        >
-                        <fieldset class="space-y-2">
-                            <legend class="font-medium">Permissions</legend>
-                            <div
-                                v-for="role in roles"
-                                :key="role"
-                                class="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm"
-                            >
-                                <span class="capitalize">{{ role }}</span
-                                ><label class="flex items-center gap-1"
-                                    ><input
-                                        :checked="
-                                            form.view_roles.includes(role)
-                                        "
-                                        type="checkbox"
-                                        @change="toggleRole('view_roles', role)"
-                                    />View</label
-                                ><label class="flex items-center gap-1"
-                                    ><input
-                                        :checked="
-                                            form.edit_roles.includes(role)
-                                        "
-                                        type="checkbox"
-                                        @change="toggleRole('edit_roles', role)"
-                                    />Edit</label
-                                >
-                            </div>
-                        </fieldset>
-                        <div aria-live="polite">
-                            <InputError
-                                v-for="(error, key) in form.errors"
-                                :key="key"
-                                :message="error"
-                            />
-                        </div>
-                        <div class="flex gap-2">
-                            <Button :disabled="form.processing">{{
-                                selected ? 'Save changes' : 'Create field'
-                            }}</Button
-                            ><Button
-                                v-if="selected"
-                                type="button"
-                                variant="outline"
-                                @click="reset"
-                                >Cancel</Button
-                            >
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                </template>
+            </nav>
+            <div class="flex gap-3 text-sm">
+                <Link href="/crm/leads" class="underline">{{
+                    t('Back to leads')
+                }}</Link>
+            </div>
         </div>
+
+        <CrmSettingsTable
+            title="Fields: Lead"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.name"
+            searchable
+            can-edit
+            add-label="Add field"
+            @add="add"
+            @edit="edit"
+            @delete="archive"
+        >
+            <template #cell-name="{ row }">
+                <button
+                    type="button"
+                    class="text-primary text-start font-medium underline-offset-2 hover:underline"
+                    @click="edit([row.id])"
+                >
+                    {{ row.name }}
+                </button>
+            </template>
+        </CrmSettingsTable>
+        <p class="text-muted-foreground text-xs">
+            {{
+                t(
+                    'Select a field to edit it. Delete archives a field and keeps the values saved on existing leads.',
+                )
+            }}
+        </p>
+
+        <CrmFieldFormSheet
+            v-model:open="sheetOpen"
+            :field="editing"
+            :types="types"
+        />
     </div>
 </template>
