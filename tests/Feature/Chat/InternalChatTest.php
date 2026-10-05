@@ -20,6 +20,8 @@ class InternalChatTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
+        // These tests are about chat behaviour; scanning has its own tests and defaults to on.
+        config(['chat.virus_scan.driver' => 'off']);
     }
 
     private function member(Organization $org, OrganizationRole $role): User

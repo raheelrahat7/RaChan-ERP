@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Chat\Services\ClamAvScanner;
+use App\Domain\Chat\Services\NullScanner;
+use App\Domain\Chat\Services\VirusScanner;
 use App\Domain\Crm\Events\LeadStageChanged;
 use App\Domain\Crm\Listeners\CreateStageEntryFollowUp;
 use App\Domain\Crm\Listeners\DeliverStageEntryNotification;
@@ -24,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Unknown driver names fall back to the real scanner, so a typo never disables scanning.
+        $this->app->bind(VirusScanner::class, fn (): VirusScanner => config('chat.virus_scan.driver') === 'off'
+            ? new NullScanner
+            : new ClamAvScanner((string) config('chat.virus_scan.host'), (int) config('chat.virus_scan.port'), (int) config('chat.virus_scan.timeout')));
     }
 
     /**

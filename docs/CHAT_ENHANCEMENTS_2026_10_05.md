@@ -13,8 +13,18 @@ Additive changes to the existing internal chat (`app/Domain/Chat`). Migration `2
 - **Search.** `GET /chat/rooms/{room}/messages?q=` searches the latest 2,000 messages of the room. Bodies are encrypted at rest, so this is done after decryption; older history is not searched.
 - **Video calls.** `POST /chat/rooms/{room}/call {kind: audio|video}`; direct chats only. Group and company-wide calls would need a media server and are not supported.
 
+## Virus scanning
+
+Every attachment and voice note is checked before anything is stored or any message is created:
+
+1. `ExecutableContentGuard` rejects programs and scripts by content (Windows, Linux and macOS binaries, Java/universal binaries, `#!` scripts), whatever the file name says.
+2. `ClamAvScanner` streams the file to a ClamAV daemon (`clamd`, INSTREAM). An infected file is refused, the attempt is written to the audit log as `chat.attachment.blocked` (reason and signature, no file contents), and the user sees which file was blocked.
+3. **Fail closed.** If the scanner cannot be reached, times out or answers unexpectedly, the upload is refused with "the virus scanner is not available". An unscanned file is never accepted.
+
+Configuration (`config/chat.php`, `.env.example`): `CHAT_VIRUS_SCAN` (`clamav` by default; `off` for local development only), `CHAT_CLAMAV_HOST`, `CHAT_CLAMAV_PORT`, `CHAT_CLAMAV_TIMEOUT`. An unknown driver name still uses the real scanner. `release:check` fails if scanning is `off`. `compose.yaml` defines a `clamav` service (`clamav/clamav:stable`); the first start downloads virus definitions and takes a couple of minutes.
+
 ## Limits to know about
 
-- Attachment files are not virus-scanned.
+- ClamAV only knows signatures it has downloaded; keep the daemon's definitions updating. Files above clamd's stream limit (25 MB by default) are not accepted anyway (10 MB cap).
 - Read pointers are per member; leaving and re-joining is not modelled.
 - Message bodies stay encrypted; attachment contents are not encrypted at rest.

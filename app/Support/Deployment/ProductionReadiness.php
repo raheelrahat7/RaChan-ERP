@@ -42,6 +42,10 @@ class ProductionReadiness
             $failures[] = 'MAIL_MAILER must use a delivery transport.';
         }
 
+        if (config('chat.virus_scan.driver') === 'off') {
+            $failures[] = 'CHAT_VIRUS_SCAN must not be off; chat attachments must be scanned.';
+        }
+
         return $failures;
     }
 }
