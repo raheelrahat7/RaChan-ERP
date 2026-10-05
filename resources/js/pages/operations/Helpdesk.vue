@@ -1,115 +1,162 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { computed } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
 import type { SlaCycle } from '@/types/sla';
+
+type Job = {
+    id: number;
+    reference: string;
+    title: string;
+    priority: string;
+    status: string;
+    sla: SlaCycle | null;
+};
+type Row = {
+    id: number;
+    job: string;
+    priority: string;
+    status: string;
+    sla: string;
+};
 
 const props = defineProps<{
     jobs: {
-        data: {
-            id: number;
-            reference: string;
-            title: string;
-            priority: string;
-            status: string;
-            sla: SlaCycle | null;
-        }[];
+        data: Job[];
         next_page_url: string | null;
         prev_page_url: string | null;
     };
     filters: { status?: string; search?: string };
 }>();
+const { t } = useLocale();
+const STATUSES = ['open', 'in_progress', 'on_hold', 'completed', 'cancelled'];
 const filters = useForm({
     status: props.filters.status ?? '',
     search: props.filters.search ?? '',
 });
+const label = (value: string): string => value.replaceAll('_', ' ');
+
+function slaText(sla: SlaCycle | null): string {
+    if (!sla) {
+        return t('No service targets configured');
+    }
+    const resolution =
+        sla.outcome === 'cancelled'
+            ? t('cancelled')
+            : sla.resolution_breached
+              ? t('breached')
+              : t('within target');
+
+    return [
+        `${t('Cycle')} ${sla.cycle_number}`,
+        sla.held_at ? t('On hold') : '',
+        `${t('Response')} ${sla.response_breached ? t('breached') : t('within target')}`,
+        `${t('Resolution')} ${resolution}`,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
+
+const rows = computed<Row[]>(() =>
+    props.jobs.data.map((job) => ({
+        id: job.id,
+        job: `${job.reference} · ${job.title}`,
+        priority: job.priority,
+        status: job.status,
+        sla: slaText(job.sla),
+    })),
+);
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'job', label: t('Job'), sortable: true },
+    { key: 'priority', label: t('Priority'), sortable: true },
+    { key: 'status', label: t('Status') },
+    { key: 'sla', label: t('Service targets') },
+]);
+
 function search(): void {
     filters.get('/operations/helpdesk', { preserveState: true });
 }
 </script>
 
 <template>
-    <Head title="Service helpdesk" />
-    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Service helpdesk')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Service helpdesk"
             description="Track jobs, acknowledgements and service targets."
-        />
-        <Link href="/maintenance" class="text-sm underline">{{
-            t('Maintenance')
-        }}</Link>
+        >
+            <template #actions>
+                <Link href="/maintenance" class="text-sm underline">{{
+                    t('Maintenance')
+                }}</Link>
+            </template>
+        </PageHeader>
+
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="search">
-            <label
-                >Search jobs<Input
+            <div class="space-y-1">
+                <Label for="hd-search">{{ t('Search jobs') }}</Label>
+                <Input
+                    id="hd-search"
                     v-model="filters.search"
-                    placeholder="Reference or title"
-            /></label>
-            <label
-                >{{ t('Status')
-                }}<select
+                    :placeholder="t('Reference or title')"
+                />
+            </div>
+            <div class="space-y-1">
+                <Label for="hd-status">{{ t('Status') }}</Label>
+                <select
+                    id="hd-status"
                     v-model="filters.status"
-                    class="bg-background block rounded-md border p-2"
+                    class="border-input bg-background h-9 rounded-md border px-2 text-sm"
                 >
                     <option value="">{{ t('All statuses') }}</option>
                     <option
-                        v-for="status in [
-                            'open',
-                            'in_progress',
-                            'on_hold',
-                            'completed',
-                            'cancelled',
-                        ]"
+                        v-for="status in STATUSES"
                         :key="status"
                         :value="status"
                     >
-                        {{ status.replaceAll('_', ' ') }}
+                        {{ label(status) }}
                     </option>
-                </select></label
-            >
-            <Button :disabled="filters.processing">Filter</Button>
+                </select>
+            </div>
+            <Button :disabled="filters.processing">{{ t('Filter') }}</Button>
         </form>
-        <p v-if="!jobs.data.length">No matching jobs.</p>
-        <div
-            v-for="job in jobs.data"
-            :key="job.id"
-            class="space-y-2 rounded-md border p-4"
+
+        <CrmSettingsTable
+            title=""
+            add-label=""
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.job"
+            :selectable="false"
         >
-            <Link
-                :href="`/maintenance/${job.id}/job-card`"
-                class="font-medium underline"
-                >{{ job.reference }} · {{ job.title }}</Link
-            >
-            <p class="text-sm">
-                {{ job.priority }} · {{ job.status.replaceAll('_', ' ') }}
-            </p>
-            <p v-if="job.sla" class="text-sm">
-                Cycle {{ job.sla.cycle_number }} ·
-                {{ job.sla.held_at ? 'On hold · ' : '' }}Response
-                {{ job.sla.response_breached ? 'breached' : 'within target' }} ·
-                Resolution
-                {{
-                    job.sla.outcome === 'cancelled'
-                        ? 'cancelled'
-                        : job.sla.resolution_breached
-                          ? 'breached'
-                          : 'within target'
-                }}
-            </p>
-            <p v-else class="text-muted-foreground text-sm">
-                No service targets configured
-            </p>
-        </div>
-        <nav aria-label="Helpdesk pagination" class="flex gap-4">
+            <template #cell-job="{ row }">
+                <Link
+                    :href="`/maintenance/${row.id}/job-card`"
+                    class="text-primary font-medium underline-offset-2 hover:underline"
+                    >{{ row.job }}</Link
+                >
+            </template>
+            <template #cell-status="{ row }">
+                <Badge variant="secondary">{{ label(row.status) }}</Badge>
+            </template>
+        </CrmSettingsTable>
+
+        <nav :aria-label="t('Helpdesk pagination')" class="flex gap-4 text-sm">
             <Link
                 v-if="jobs.prev_page_url"
                 :href="jobs.prev_page_url"
                 class="underline"
                 >{{ t('Previous') }}</Link
-            ><Link
+            >
+            <Link
                 v-if="jobs.next_page_url"
                 :href="jobs.next_page_url"
                 class="underline"

@@ -72,10 +72,17 @@ void slots;
 <template>
     <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="font-display text-3xl leading-tight font-medium">
+            <h1
+                v-if="title"
+                class="font-display text-3xl leading-tight font-medium"
+            >
                 {{ t(title) }}
             </h1>
-            <Button type="button" :disabled="!canEdit" @click="emit('add')"
+            <Button
+                v-if="addLabel"
+                type="button"
+                :disabled="!canEdit"
+                @click="emit('add')"
                 ><Plus class="size-4" aria-hidden="true" />{{
                     t(addLabel)
                 }}</Button

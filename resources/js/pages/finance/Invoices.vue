@@ -1,14 +1,26 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import CustomerCreditNotes from '@/components/CustomerCreditNotes.vue';
 import CustomerRefunds from '@/components/CustomerRefunds.vue';
-import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
+
 type Invoice = {
     id: number;
     reference: string;
@@ -50,7 +62,7 @@ type Invoice = {
     currency: string;
     due_on: string | null;
 };
-defineProps<{
+const props = defineProps<{
     invoices: Invoice[];
     canManageFinance: boolean;
     canApproveCustomerRefunds: boolean;
@@ -67,7 +79,10 @@ const form = useForm({
 function createInvoice(): void {
     form.post('/invoices', {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            form.reset();
+            createOpen.value = false;
+        },
     });
 }
 function postInvoice(invoice: Invoice): void {
@@ -103,176 +118,328 @@ function payInvoice(invoice: Invoice): void {
             { preserveScroll: true },
         );
 }
+const { t } = useLocale();
+const selectClass =
+    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
+const createOpen = ref(false);
+const detailId = ref<number | null>(null);
+const detail = computed(() =>
+    props.invoices.find((invoice) => invoice.id === detailId.value),
+);
+const detailOpen = computed({
+    get: () => detail.value !== undefined,
+    set: (value: boolean) => {
+        if (!value) {
+            detailId.value = null;
+        }
+    },
+});
+
+type Row = {
+    id: number;
+    reference: string;
+    due_on: string;
+    total: string;
+    paid: string;
+    balance: string;
+    status: string;
+    actions: string;
+};
+const rows = computed<Row[]>(() =>
+    props.invoices.map((invoice) => ({
+        id: invoice.id,
+        reference: invoice.reference,
+        due_on: invoice.due_on ?? '',
+        total: `${invoice.currency} ${invoice.total}`,
+        paid: `${invoice.currency} ${invoice.paid_amount}`,
+        balance: `${invoice.currency} ${invoice.balance.toFixed(2)}`,
+        status: invoice.status,
+        actions: '',
+    })),
+);
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'reference', label: t('Reference'), sortable: true },
+    { key: 'due_on', label: t('Due'), sortable: true },
+    { key: 'total', label: t('Total'), align: 'end' },
+    { key: 'paid', label: t('Paid'), align: 'end' },
+    { key: 'balance', label: t('Balance'), align: 'end' },
+    { key: 'status', label: t('Status') },
+    { key: 'actions', label: '' },
+]);
+const invoiceOf = (id: number): Invoice | undefined =>
+    props.invoices.find((invoice) => invoice.id === id);
 </script>
+
 <template>
-    <Head title="Invoices" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Invoices')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Invoices"
             description="AED receivables and payment allocation."
-        /><Card v-if="canManageFinance"
-            ><CardHeader><CardTitle>Create invoice</CardTitle></CardHeader
-            ><CardContent
-                ><form
-                    class="flex flex-wrap gap-3"
+        />
+
+        <CrmSettingsTable
+            title="Invoices"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.reference"
+            add-label="Create invoice"
+            :selectable="false"
+            searchable
+            :can-edit="canManageFinance"
+            @add="createOpen = true"
+        >
+            <template #cell-reference="{ row }">
+                <button
+                    type="button"
+                    class="text-primary font-medium underline-offset-2 hover:underline"
+                    @click="detailId = row.id"
+                >
+                    {{ row.reference }}
+                </button>
+                <Badge
+                    v-if="invoiceOf(row.id)?.is_overdue"
+                    variant="destructive"
+                    class="ms-2"
+                    >{{ t('Overdue') }}</Badge
+                >
+            </template>
+            <template #cell-status="{ row }">
+                <Badge variant="secondary">{{ row.status }}</Badge>
+            </template>
+            <template #cell-actions="{ row }">
+                <div
+                    v-if="canManageFinance && invoiceOf(row.id)"
+                    class="flex justify-end gap-2"
+                >
+                    <Button
+                        v-if="row.status === 'draft'"
+                        size="sm"
+                        @click="postInvoice(invoiceOf(row.id)!)"
+                        >{{ t('Post') }}</Button
+                    >
+                    <Button
+                        v-if="['posted', 'partial'].includes(row.status)"
+                        size="sm"
+                        variant="outline"
+                        @click="payInvoice(invoiceOf(row.id)!)"
+                        >{{ t('Record payment') }}</Button
+                    >
+                </div>
+            </template>
+        </CrmSettingsTable>
+
+        <Sheet v-model:open="createOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('Create invoice')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t('AED receivables and payment allocation.')
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="invoice-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
                     @submit.prevent="createInvoice"
                 >
-                    <Input
-                        v-model="form.description"
-                        placeholder="Description"
-                        required
-                    /><Input
-                        v-model="form.quantity"
-                        type="number"
-                        min="0.01"
-                        required
-                    /><Input
-                        v-model="form.unit_price"
-                        type="number"
-                        min="0"
-                        placeholder="AED amount"
-                        required
-                    /><Input
-                        v-model="form.due_on"
-                        type="date"
-                        required
-                    /><select
-                        v-model="form.accounting_treatment"
-                        aria-label="Accounting treatment"
-                        class="border-input h-9 rounded-md border px-3"
-                        required
-                    >
-                        <option disabled value="">
-                            {{ t('Accounting treatment') }}
-                        </option>
-                        <option value="revenue">Revenue</option>
-                        <option value="refundable_deposit">
-                            Refundable deposit
-                        </option></select
-                    ><select
-                        v-if="vatEnabled"
-                        v-model="form.vat_treatment"
-                        aria-label="VAT treatment"
-                        class="border-input h-9 rounded-md border px-3"
-                        required
-                    >
-                        <option disabled value="">
-                            {{ t('VAT treatment') }}
-                        </option>
-                        <option value="standard">Standard 5%</option>
-                        <option value="zero_rated">Zero-rated 0%</option>
-                        <option value="exempt">Exempt</option>
-                        <option value="out_of_scope">
-                            Out of scope
-                        </option></select
-                    ><Button :disabled="form.processing">Create draft</Button>
-                </form></CardContent
-            ></Card
-        ><Card
-            ><CardHeader
-                ><CardTitle>{{ t('Invoices') }}</CardTitle></CardHeader
-            ><CardContent class="space-y-3"
-                ><p
-                    v-if="!invoices.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No invoices yet.
-                </p>
-                <div
-                    v-for="invoice in invoices"
-                    :key="invoice.id"
-                    class="flex flex-wrap items-center justify-between gap-3 border-b pb-3 last:border-0"
-                >
-                    <span
-                        >{{ invoice.reference }} · AED {{ invoice.total }}</span
-                    >
-                    <div class="flex flex-wrap items-center gap-2">
-                        <select
-                            v-if="
-                                canManageFinance && invoice.status === 'draft'
-                            "
-                            :value="invoice.accounting_treatment ?? ''"
-                            :aria-label="`Accounting treatment for ${invoice.reference}`"
-                            class="border-input h-9 rounded-md border px-2 text-sm"
-                            @change="updateTreatment(invoice, $event)"
-                        >
-                            <option disabled value="">Select treatment</option>
-                            <option value="revenue">Revenue</option>
-                            <option value="refundable_deposit">
-                                Refundable deposit
-                            </option>
-                        </select>
-                        <select
-                            v-if="
-                                vatEnabled &&
-                                canManageFinance &&
-                                invoice.status === 'draft'
-                            "
-                            :value="invoice.vat_treatment ?? ''"
-                            :aria-label="`VAT treatment for ${invoice.reference}`"
-                            class="border-input h-9 rounded-md border px-2 text-sm"
-                            @change="updateVatTreatment(invoice, $event)"
-                        >
-                            <option disabled value="">
-                                {{ t('VAT treatment') }}
-                            </option>
-                            <option value="standard">5%</option>
-                            <option value="zero_rated">0%</option>
-                            <option value="exempt">Exempt</option>
-                            <option value="out_of_scope">Out of scope</option>
-                        </select>
-                        <span class="text-muted-foreground"
-                            >{{ invoice.status
-                            }}<template v-if="invoice.vat_amount !== null">
-                                · VAT AED {{ invoice.vat_amount }}</template
-                            >
-                            · paid AED {{ invoice.paid_amount }} · credited AED
-                            {{ invoice.credited_amount }} · balance AED
-                            {{ invoice.balance.toFixed(2) }}</span
-                        ><span
-                            v-if="invoice.is_overdue"
-                            class="text-destructive text-sm"
-                            >Overdue</span
-                        ><Button
-                            v-if="
-                                canManageFinance && invoice.status === 'draft'
-                            "
-                            size="sm"
-                            @click="postInvoice(invoice)"
-                            >Post</Button
-                        ><Button
-                            v-if="
-                                canManageFinance &&
-                                ['posted', 'partial'].includes(invoice.status)
-                            "
-                            size="sm"
-                            variant="outline"
-                            @click="payInvoice(invoice)"
-                            >Record payment</Button
-                        >
+                    <div class="space-y-1">
+                        <Label for="inv-desc">{{ t('Description') }}</Label>
+                        <Input
+                            id="inv-desc"
+                            v-model="form.description"
+                            required
+                        />
+                        <InputError :message="form.errors.description" />
                     </div>
-                    <CustomerCreditNotes
-                        :invoice-id="invoice.id"
-                        :max-credit="Number(invoice.creditable_amount)"
-                        :eligible="
-                            invoice.currency === 'AED' &&
-                            invoice.accounting_treatment === 'revenue' &&
-                            ['posted', 'partial', 'paid'].includes(
-                                invoice.status,
-                            ) &&
-                            Number(invoice.creditable_amount) > 0
-                        "
-                        :can-manage="canManageFinance"
-                        :notes="invoice.credit_notes"
-                    />
-                    <CustomerRefunds
-                        :invoice-id="invoice.id"
-                        :notes="invoice.credit_notes"
-                        :refunds="invoice.refunds"
-                        :refundable-cash-amount="invoice.refundable_cash_amount"
-                        :can-request="canManageFinance"
-                        :can-approve="canApproveCustomerRefunds"
-                    /></div></CardContent
-        ></Card>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <Label for="inv-qty">{{ t('Quantity') }}</Label>
+                            <Input
+                                id="inv-qty"
+                                v-model="form.quantity"
+                                type="number"
+                                min="0.01"
+                                step="any"
+                                required
+                            />
+                            <InputError :message="form.errors.quantity" />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="inv-price">{{ t('AED amount') }}</Label>
+                            <Input
+                                id="inv-price"
+                                v-model="form.unit_price"
+                                type="number"
+                                min="0"
+                                step="any"
+                                required
+                            />
+                            <InputError :message="form.errors.unit_price" />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="inv-due">{{ t('Due') }}</Label>
+                        <Input
+                            id="inv-due"
+                            v-model="form.due_on"
+                            type="date"
+                            required
+                        />
+                        <InputError :message="form.errors.due_on" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="inv-acc">{{
+                            t('Accounting treatment')
+                        }}</Label>
+                        <select
+                            id="inv-acc"
+                            v-model="form.accounting_treatment"
+                            :class="selectClass"
+                            required
+                        >
+                            <option disabled value="">—</option>
+                            <option value="revenue">{{ t('Revenue') }}</option>
+                            <option value="refundable_deposit">
+                                {{ t('Refundable deposit') }}
+                            </option>
+                        </select>
+                        <InputError
+                            :message="form.errors.accounting_treatment"
+                        />
+                    </div>
+                    <div v-if="vatEnabled" class="space-y-1">
+                        <Label for="inv-vat">{{ t('VAT treatment') }}</Label>
+                        <select
+                            id="inv-vat"
+                            v-model="form.vat_treatment"
+                            :class="selectClass"
+                            required
+                        >
+                            <option disabled value="">—</option>
+                            <option value="standard">
+                                {{ t('Standard 5%') }}
+                            </option>
+                            <option value="zero_rated">
+                                {{ t('Zero-rated 0%') }}
+                            </option>
+                            <option value="exempt">{{ t('Exempt') }}</option>
+                            <option value="out_of_scope">
+                                {{ t('Out of scope') }}
+                            </option>
+                        </select>
+                        <InputError :message="form.errors.vat_treatment" />
+                    </div>
+                </form>
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="invoice-form"
+                        :disabled="form.processing"
+                        >{{ t('Create draft') }}</Button
+                    >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="createOpen = false"
+                        >{{ t('Cancel') }}</Button
+                    >
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
+
+        <Sheet v-model:open="detailOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-xl" side="right">
+                <template v-if="detail">
+                    <SheetHeader class="border-b">
+                        <SheetTitle class="font-display text-2xl font-medium">{{
+                            detail.reference
+                        }}</SheetTitle>
+                        <SheetDescription>
+                            {{ detail.status }} · {{ detail.currency }}
+                            {{ detail.total
+                            }}<template v-if="detail.vat_amount !== null">
+                                · {{ t('VAT') }}
+                                {{ detail.vat_amount }}</template
+                            >
+                            · {{ t('credited') }} {{ detail.credited_amount }}
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div class="flex-1 space-y-4 overflow-y-auto p-4">
+                        <div
+                            v-if="canManageFinance && detail.status === 'draft'"
+                            class="grid grid-cols-2 gap-3"
+                        >
+                            <div class="space-y-1">
+                                <Label for="dt-acc">{{
+                                    t('Accounting treatment')
+                                }}</Label>
+                                <select
+                                    id="dt-acc"
+                                    :value="detail.accounting_treatment ?? ''"
+                                    :class="selectClass"
+                                    @change="updateTreatment(detail, $event)"
+                                >
+                                    <option disabled value="">—</option>
+                                    <option value="revenue">
+                                        {{ t('Revenue') }}
+                                    </option>
+                                    <option value="refundable_deposit">
+                                        {{ t('Refundable deposit') }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div v-if="vatEnabled" class="space-y-1">
+                                <Label for="dt-vat">{{
+                                    t('VAT treatment')
+                                }}</Label>
+                                <select
+                                    id="dt-vat"
+                                    :value="detail.vat_treatment ?? ''"
+                                    :class="selectClass"
+                                    @change="updateVatTreatment(detail, $event)"
+                                >
+                                    <option disabled value="">—</option>
+                                    <option value="standard">5%</option>
+                                    <option value="zero_rated">0%</option>
+                                    <option value="exempt">
+                                        {{ t('Exempt') }}
+                                    </option>
+                                    <option value="out_of_scope">
+                                        {{ t('Out of scope') }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <CustomerCreditNotes
+                            :invoice-id="detail.id"
+                            :max-credit="Number(detail.creditable_amount)"
+                            :eligible="
+                                detail.currency === 'AED' &&
+                                detail.accounting_treatment === 'revenue' &&
+                                ['posted', 'partial', 'paid'].includes(
+                                    detail.status,
+                                ) &&
+                                Number(detail.creditable_amount) > 0
+                            "
+                            :can-manage="canManageFinance"
+                            :notes="detail.credit_notes"
+                        />
+                        <CustomerRefunds
+                            :invoice-id="detail.id"
+                            :notes="detail.credit_notes"
+                            :refunds="detail.refunds"
+                            :refundable-cash-amount="
+                                detail.refundable_cash_amount
+                            "
+                            :can-request="canManageFinance"
+                            :can-approve="canApproveCustomerRefunds"
+                        />
+                    </div>
+                </template>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
