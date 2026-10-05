@@ -3,6 +3,10 @@ import { Head } from '@inertiajs/vue3';
 import { Download, FileText, Inbox, Plus, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import AreaChart from '@/components/AreaChart.vue';
+import CrmDealsView from '@/components/CrmDealsView.vue';
+import CrmPermissionsMatrix from '@/components/CrmPermissionsMatrix.vue';
+import CrmSettingsHub from '@/components/CrmSettingsHub.vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import DataTable from '@/components/DataTable.vue';
 import DateText from '@/components/DateText.vue';
 import DetailLayout from '@/components/DetailLayout.vue';
@@ -32,6 +36,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useFormat } from '@/composables/useFormat';
 import type { DataTableColumn, RowKey, SortState } from '@/lib/data-table';
 import { STATUS_TONES } from '@/lib/status-tones';
+import type {
+    PermissionGroup,
+    PermissionRole,
+    PermissionValues,
+} from '@/lib/crm-permissions';
+import type { Deal, DealPipeline } from '@/types/crm-deals';
 
 defineOptions({
     layout: {
@@ -48,6 +58,294 @@ type Invoice = {
     amount: number;
     status: string;
 };
+
+const dealPipelines: DealPipeline[] = [
+    {
+        id: 1,
+        name: 'Off plan (Team C)',
+        kind: 'off_plan',
+        active: true,
+        stages: [
+            {
+                id: 11,
+                name: 'Viewing booked',
+                type: 'normal',
+                color: '#4ba3ff',
+                position: 1,
+                active: true,
+            },
+            {
+                id: 12,
+                name: 'Follow up',
+                type: 'normal',
+                color: '#ffe680',
+                position: 2,
+                active: true,
+            },
+            {
+                id: 13,
+                name: 'Contract sent',
+                type: 'normal',
+                color: '#5b7f2b',
+                position: 3,
+                active: true,
+            },
+            {
+                id: 14,
+                name: 'Deal won',
+                type: 'won',
+                color: '#8bd13f',
+                position: 4,
+                active: true,
+            },
+            {
+                id: 15,
+                name: 'Deal lost',
+                type: 'lost',
+                color: '#ee6a5b',
+                position: 5,
+                active: true,
+            },
+        ],
+    },
+    {
+        id: 2,
+        name: 'Resale (Team X)',
+        kind: 'resale',
+        active: true,
+        stages: [
+            {
+                id: 21,
+                name: 'New',
+                type: 'normal',
+                color: '#4ba3ff',
+                position: 1,
+                active: true,
+            },
+            {
+                id: 22,
+                name: 'Deal won',
+                type: 'won',
+                color: '#8bd13f',
+                position: 2,
+                active: true,
+            },
+        ],
+    },
+];
+const sampleDeals: Deal[] = [
+    {
+        id: 1,
+        title: 'Marina Heights 1204 · Al Noor',
+        amount: 1850000,
+        currency: 'AED',
+        kind: 'off_plan',
+        pipeline_id: 1,
+        stage_id: 11,
+        contact: { id: 1, name: 'Hassan Al Noor' },
+        assignee: { id: 1, name: 'Sana Nadeem' },
+        lead_id: 31,
+        created_at: '2026-09-14',
+        next_activity_at: '2026-10-09',
+    },
+    {
+        id: 2,
+        title: 'Palm Vista 08 · Khan',
+        amount: 3200000,
+        currency: 'AED',
+        kind: 'off_plan',
+        pipeline_id: 1,
+        stage_id: 11,
+        contact: { id: 2, name: 'Amir Khan' },
+        assignee: { id: 2, name: 'Hamza Arif' },
+        lead_id: null,
+        created_at: '2026-09-21',
+        next_activity_at: null,
+    },
+    {
+        id: 3,
+        title: 'Creek Residences 3B',
+        amount: 2400000,
+        currency: 'AED',
+        kind: 'off_plan',
+        pipeline_id: 1,
+        stage_id: 12,
+        contact: { id: 3, name: 'Nadia Raza' },
+        assignee: { id: 1, name: 'Sana Nadeem' },
+        lead_id: 44,
+        created_at: '2026-08-30',
+        next_activity_at: '2026-10-07',
+    },
+    {
+        id: 4,
+        title: 'Dubai Hills Villa 14',
+        amount: 7900000,
+        currency: 'AED',
+        kind: 'off_plan',
+        pipeline_id: 1,
+        stage_id: 13,
+        contact: { id: 4, name: 'Pratik Hemdev' },
+        assignee: { id: 3, name: 'Aqsa Zafar' },
+        lead_id: 12,
+        created_at: '2026-07-13',
+        next_activity_at: '2026-10-12',
+    },
+    {
+        id: 5,
+        title: 'Business Bay 2201',
+        amount: 1340000,
+        currency: 'AED',
+        kind: 'off_plan',
+        pipeline_id: 1,
+        stage_id: 14,
+        contact: { id: 5, name: 'Mandy Thoe' },
+        assignee: { id: 2, name: 'Hamza Arif' },
+        lead_id: 8,
+        created_at: '2026-06-02',
+        next_activity_at: null,
+    },
+    {
+        id: 6,
+        title: 'JVC Studio 410',
+        amount: null,
+        currency: 'AED',
+        kind: 'resale',
+        pipeline_id: 2,
+        stage_id: 21,
+        contact: null,
+        assignee: null,
+        lead_id: null,
+        created_at: '2026-10-01',
+        next_activity_at: null,
+    },
+];
+const dealPipelineId = ref(1);
+const permissionGroups: PermissionGroup[] = [
+    {
+        key: 'lead',
+        label: 'Lead',
+        rows: [
+            { key: 'read', label: 'Read', kind: 'level' },
+            { key: 'add', label: 'Add', kind: 'level' },
+            { key: 'edit', label: 'Edit', kind: 'level' },
+            { key: 'export', label: 'Export', kind: 'level' },
+            { key: 'form', label: 'Allow custom view form', kind: 'toggle' },
+        ],
+    },
+    {
+        key: 'deal-offplan',
+        label: 'Deal pipeline: Off plan (Team C)',
+        rows: [
+            { key: 'read', label: 'Read', kind: 'level' },
+            { key: 'move', label: 'Move to stage', kind: 'level' },
+            { key: 'amount', label: 'Amount on kanban stages', kind: 'toggle' },
+        ],
+    },
+    {
+        key: 'deal-resale',
+        label: 'Deal pipeline: Resale (Team X)',
+        rows: [
+            { key: 'read', label: 'Read', kind: 'level' },
+            { key: 'move', label: 'Move to stage', kind: 'level' },
+        ],
+    },
+];
+const permissionRoles: PermissionRole[] = [
+    {
+        id: 1,
+        name: 'Manager',
+        members: [
+            { id: 1, name: 'Sana Nadeem' },
+            { id: 2, name: 'Hamza Arif' },
+        ],
+    },
+    {
+        id: 2,
+        name: 'Agent',
+        members: [
+            { id: 3, name: 'Aqsa Zafar' },
+            { id: 4, name: 'Raza Khan' },
+            { id: 5, name: 'Faraz Azam' },
+            { id: 6, name: 'Zeeshan Idrees' },
+            { id: 7, name: 'Naina Shoaib' },
+        ],
+    },
+    { id: 3, name: 'Role name', members: [] },
+];
+const permissionValues: PermissionValues = {
+    1: {
+        'lead.read': 'all',
+        'lead.add': 'all',
+        'lead.edit': 'department',
+        'lead.form': true,
+        'deal-offplan.read': 'all',
+        'deal-offplan.move': 'all',
+    },
+    2: {
+        'lead.read': 'own',
+        'lead.add': 'own',
+        'lead.edit': 'own',
+        'deal-offplan.read': 'own',
+    },
+};
+const currencyRows = [
+    {
+        id: 'AED',
+        name: 'UAE Dirham',
+        sort: 100,
+        rate: 1,
+        base: 'Yes',
+        reporting: 'Yes',
+    },
+    {
+        id: 'EUR',
+        name: 'Euro',
+        sort: 100,
+        rate: 0.2506,
+        base: 'No',
+        reporting: 'No',
+    },
+    {
+        id: 'GBP',
+        name: 'Pound Sterling',
+        sort: 100,
+        rate: 0.2186,
+        base: 'No',
+        reporting: 'No',
+    },
+    {
+        id: 'INR',
+        name: 'Indian Rupee',
+        sort: 100,
+        rate: 20.57,
+        base: 'No',
+        reporting: 'No',
+    },
+    {
+        id: 'PKR',
+        name: 'Pakistani Rupee',
+        sort: 100,
+        rate: 0.023,
+        base: 'No',
+        reporting: 'No',
+    },
+    {
+        id: 'USD',
+        name: 'US Dollar',
+        sort: 100,
+        rate: 0.2722,
+        base: 'No',
+        reporting: 'No',
+    },
+];
+const currencyColumns = [
+    { key: 'id', label: 'ID', sortable: true },
+    { key: 'name', label: 'Name', sortable: true },
+    { key: 'sort', label: 'Sort', sortable: true },
+    { key: 'rate', label: 'Exchange rate', sortable: true },
+    { key: 'base', label: 'Base' },
+    { key: 'reporting', label: 'Reporting currency' },
+] as DataTableColumn<(typeof currencyRows)[number]>[];
 
 const invoices: Invoice[] = [
     {
@@ -189,6 +487,49 @@ const months = [
                 <Button><Plus />New invoice</Button>
             </template>
         </PageHeader>
+
+        <section class="flex flex-col gap-4">
+            <h2 class="text-eyebrow">
+                Deals board (layout preview, sample data)
+            </h2>
+            <CrmDealsView
+                v-model:pipeline-id="dealPipelineId"
+                :pipelines="dealPipelines"
+                :deals="sampleDeals"
+                can-create
+            />
+        </section>
+
+        <section class="flex flex-col gap-4">
+            <h2 class="text-eyebrow">Settings hub (layout preview)</h2>
+            <CrmSettingsHub />
+        </section>
+
+        <section class="flex flex-col gap-4">
+            <h2 class="text-eyebrow">
+                Settings table: Currencies (layout preview, sample data)
+            </h2>
+            <CrmSettingsTable
+                title="Currencies"
+                :columns="currencyColumns"
+                :rows="currencyRows"
+                :row-key="(row) => row.id"
+                :row-label="(row) => row.name"
+                add-label="Add"
+            />
+        </section>
+
+        <section class="flex flex-col gap-4">
+            <h2 class="text-eyebrow">
+                Access permissions (layout preview, sample data)
+            </h2>
+            <CrmPermissionsMatrix
+                :groups="permissionGroups"
+                :roles="permissionRoles"
+                :values="permissionValues"
+                can-edit
+            />
+        </section>
 
         <section class="flex flex-col gap-4">
             <h2 class="text-eyebrow">Stat tiles</h2>

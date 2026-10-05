@@ -11,7 +11,7 @@ const EXCLUDED =
     /\/(auth|settings|portal|public)\/|Welcome\.vue$|Styleguide\.vue$/;
 
 // Wide boards (kanban, calendar) fill the viewport; they keep the shared padding.
-const FULL_WIDTH = new Set(['crm/Leads.vue']);
+const FULL_WIDTH = new Set(['crm/Leads.vue', 'crm/Deals.vue']);
 
 function pages(dir) {
     return readdirSync(dir).flatMap((name) => {
