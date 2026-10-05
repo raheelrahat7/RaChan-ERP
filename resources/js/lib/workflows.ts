@@ -7,6 +7,10 @@ export type WorkflowStage = {
     position: number;
     active: boolean;
     is_initial: boolean;
+    allowed_from_stage_ids?: number[] | null;
+    entry_roles?: string[] | null;
+    required_fields?: string[] | null;
+    source_statuses?: string[] | null;
 };
 export type WorkflowPipeline = {
     id: number;
@@ -14,6 +18,7 @@ export type WorkflowPipeline = {
     name: string;
     active: boolean;
     stages: WorkflowStage[];
+    field_definitions?: { key: string }[] | null;
 };
 export type WorkflowRecord = {
     id: number;
@@ -107,4 +112,98 @@ export function estimateTotal(lines: EstimateLine[]): string {
 
 export function operationKey(): string {
     return crypto.randomUUID();
+}
+
+export type StageRules = {
+    allowed_from_stage_ids: number[] | null;
+    entry_roles: string[] | null;
+    required_fields: string[] | null;
+    source_statuses: string[] | null;
+    is_initial: boolean;
+};
+export const ENTRY_ROLES = [
+    'owner',
+    'administrator',
+    'manager',
+    'member',
+    'viewer',
+];
+export const INVOICE_STATUSES = ['draft', 'posted', 'partial', 'paid', 'void'];
+/** Detail fields that make sense per workflow kind (the server accepts the full list). */
+const KIND_FIELDS: Record<WorkflowKind, string[]> = {
+    estimate: ['valid_until', 'lines', 'currency', 'notes'],
+    invoice: ['notes'],
+    document: ['notes'],
+    recruitment: [
+        'name',
+        'email',
+        'phone',
+        'job_title',
+        'location',
+        'resume_reference',
+        'interview_notes',
+        'offer_reference',
+        'joined_on',
+        'notes',
+    ],
+};
+
+/** Fields a stage can require: the kind's built-in details plus the pipeline's custom fields. */
+export function requirableFields(
+    kind: WorkflowKind,
+    detailFields: string[],
+    customKeys: string[],
+): { value: string; label: string }[] {
+    const builtin = KIND_FIELDS[kind].filter((key) =>
+        detailFields.includes(key),
+    );
+
+    return [
+        ...builtin.map((key) => ({
+            value: key,
+            label: key.replaceAll('_', ' '),
+        })),
+        ...customKeys.map((key) => ({
+            value: `custom:${key}`,
+            label: key.replaceAll('_', ' '),
+        })),
+    ];
+}
+
+/** Toggle a value in a list, returning null when the list becomes empty (meaning "no restriction"). */
+export function toggleRule<T>(list: T[] | null, value: T): T[] | null {
+    const current = list ?? [];
+    const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+
+    return next.length ? next : null;
+}
+
+export function stageRulesFrom(stage?: Partial<StageRules> | null): StageRules {
+    return {
+        allowed_from_stage_ids: stage?.allowed_from_stage_ids ?? null,
+        entry_roles: stage?.entry_roles ?? null,
+        required_fields: stage?.required_fields?.length
+            ? stage.required_fields
+            : null,
+        source_statuses: stage?.source_statuses?.length
+            ? stage.source_statuses
+            : null,
+        is_initial: stage?.is_initial ?? false,
+    };
+}
+
+/** Request fields: empty restrictions go as null/[] exactly as the validator allows. */
+export function stageRulesPayload(
+    rules: StageRules,
+    kind: WorkflowKind,
+): Record<string, unknown> {
+    return {
+        is_initial: rules.is_initial,
+        allowed_from_stage_ids: rules.allowed_from_stage_ids,
+        entry_roles: rules.entry_roles,
+        required_fields: rules.required_fields ?? [],
+        source_statuses: kind === 'invoice' ? rules.source_statuses : null,
+    };
 }

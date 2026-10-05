@@ -210,4 +210,19 @@ class CrmPageShellTest extends TestCase
         $this->postJson('/reference-workflows', ['pipeline_id' => $pipeline, 'title' => 'Estimate – Noor', 'assigned_to' => $owner->id, 'lead_id' => $lead, 'operation_key' => (string) Str::uuid(), 'details' => ['currency' => 'AED', 'lines' => [['description' => 'Survey', 'quantity' => '2', 'unit_price' => '250']]]])->assertSuccessful();
         $this->getJson('/crm/leads/'.$lead.'/products')->assertOk()->assertJsonPath('estimates.0.title', 'Estimate – Noor');
     }
+
+    public function test_workflow_stage_rules_are_saved_and_returned(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+        $pipeline = $this->postJson('/reference-workflows/pipelines', ['kind' => 'estimate', 'name' => 'Quotes'])->assertSuccessful()->json('pipeline');
+        $first = $pipeline['stages'][0]['id'];
+
+        $this->postJson('/reference-workflows/pipelines/'.$pipeline['id'].'/stages', ['name' => 'Review', 'type' => 'normal', 'active' => true, 'position' => 4, 'color' => '#336699', 'is_initial' => false, 'allowed_from_stage_ids' => [$first], 'entry_roles' => ['owner'], 'required_fields' => ['lines'], 'source_statuses' => null])->assertSuccessful();
+        $stage = collect($this->getJson('/reference-workflows?kind=estimate')->json('pipelines.0.stages'))->firstWhere('name', 'Review');
+        $this->assertSame([$first], $stage['allowed_from_stage_ids']);
+        $this->assertSame(['owner'], $stage['entry_roles']);
+        $this->assertSame(['lines'], $stage['required_fields']);
+    }
 }

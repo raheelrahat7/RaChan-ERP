@@ -11,7 +11,16 @@ import { Label } from '@/components/ui/label';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
 import { readableOn } from '@/lib/crm-pipeline-board';
-import { WORKFLOW_KINDS } from '@/lib/workflows';
+import {
+    ENTRY_ROLES,
+    INVOICE_STATUSES,
+    WORKFLOW_KINDS,
+    requirableFields,
+    stageRulesFrom,
+    stageRulesPayload,
+    toggleRule,
+} from '@/lib/workflows';
+import type { StageRules } from '@/lib/workflows';
 import type {
     WorkflowKind,
     WorkflowPipeline,
@@ -38,6 +47,29 @@ const stageForm = ref({
     position: 1,
 });
 
+const detailFields = ref<string[]>([]);
+const rules = ref<StageRules>(stageRulesFrom());
+const editingPipeline = computed(() =>
+    pipelines.value.find((item) => item.id === editing.value?.pipelineId),
+);
+const otherStages = computed(() =>
+    (editingPipeline.value?.stages ?? []).filter(
+        (stage) =>
+            editing.value?.stage === 'new' || stage.id !== editing.value?.stage,
+    ),
+);
+const requirable = computed(() =>
+    editingPipeline.value
+        ? requirableFields(
+              editingPipeline.value.kind,
+              detailFields.value,
+              (editingPipeline.value.field_definitions ?? []).map(
+                  (field) => field.key,
+              ),
+          )
+        : [],
+);
+
 const grouped = computed(() =>
     WORKFLOW_KINDS.map((kind) => ({
         ...kind,
@@ -53,10 +85,12 @@ function failure(cause: unknown): string {
 
 async function load(): Promise<void> {
     try {
-        const data = await apiJson<{ pipelines: WorkflowPipeline[] }>(
-            '/reference-workflows',
-        );
+        const data = await apiJson<{
+            pipelines: WorkflowPipeline[];
+            detailFields: string[];
+        }>('/reference-workflows');
         pipelines.value = data.pipelines;
+        detailFields.value = data.detailFields;
         error.value = '';
     } catch {
         error.value = t(
@@ -93,6 +127,7 @@ const addPipeline = (): Promise<void> =>
 
 function editStage(pipeline: WorkflowPipeline, stage?: WorkflowStage): void {
     editing.value = { pipelineId: pipeline.id, stage: stage?.id ?? 'new' };
+    rules.value = stageRulesFrom(stage);
     stageForm.value = stage
         ? {
               name: stage.name,
@@ -115,9 +150,14 @@ const saveStage = (): Promise<void> =>
         const current = editing.value!;
         const base = `/reference-workflows/pipelines/${current.pipelineId}/stages`;
 
+        const body = {
+            ...stageForm.value,
+            ...stageRulesPayload(rules.value, editingPipeline.value!.kind),
+        };
+
         return current.stage === 'new'
-            ? apiJson(base, 'POST', stageForm.value)
-            : apiJson(`${base}/${current.stage}`, 'PUT', stageForm.value);
+            ? apiJson(base, 'POST', body)
+            : apiJson(`${base}/${current.stage}`, 'PUT', body);
     });
 
 const toggle = (pipeline: WorkflowPipeline): Promise<void> =>
@@ -293,6 +333,140 @@ onMounted(load);
                                 type="checkbox"
                             />{{ t('Active') }}</label
                         >
+                        <details class="rounded-md border p-3 sm:col-span-5">
+                            <summary class="cursor-pointer text-sm font-medium">
+                                {{ t('Stage rules') }}
+                            </summary>
+                            <div class="mt-3 grid gap-4 sm:grid-cols-2">
+                                <label
+                                    class="flex items-center gap-2 text-sm sm:col-span-2"
+                                    ><input
+                                        v-model="rules.is_initial"
+                                        type="checkbox"
+                                    />{{
+                                        t('New records start in this stage')
+                                    }}</label
+                                >
+                                <fieldset class="space-y-1">
+                                    <legend class="text-sm font-medium">
+                                        {{ t('Can be entered from') }}
+                                    </legend>
+                                    <p class="text-muted-foreground text-xs">
+                                        {{
+                                            t('Leave empty to allow any stage.')
+                                        }}
+                                    </p>
+                                    <label
+                                        v-for="other in otherStages"
+                                        :key="other.id"
+                                        class="flex items-center gap-2 text-sm"
+                                        ><input
+                                            type="checkbox"
+                                            :checked="
+                                                rules.allowed_from_stage_ids?.includes(
+                                                    other.id,
+                                                ) ?? false
+                                            "
+                                            @change="
+                                                rules.allowed_from_stage_ids =
+                                                    toggleRule(
+                                                        rules.allowed_from_stage_ids,
+                                                        other.id,
+                                                    )
+                                            "
+                                        />{{ other.name }}</label
+                                    >
+                                </fieldset>
+                                <fieldset class="space-y-1">
+                                    <legend class="text-sm font-medium">
+                                        {{
+                                            t(
+                                                'Roles that can move records here',
+                                            )
+                                        }}
+                                    </legend>
+                                    <p class="text-muted-foreground text-xs">
+                                        {{
+                                            t(
+                                                'Leave empty to allow every role.',
+                                            )
+                                        }}
+                                    </p>
+                                    <label
+                                        v-for="role in ENTRY_ROLES"
+                                        :key="role"
+                                        class="flex items-center gap-2 text-sm capitalize"
+                                        ><input
+                                            type="checkbox"
+                                            :checked="
+                                                rules.entry_roles?.includes(
+                                                    role,
+                                                ) ?? false
+                                            "
+                                            @change="
+                                                rules.entry_roles = toggleRule(
+                                                    rules.entry_roles,
+                                                    role,
+                                                )
+                                            "
+                                        />{{ t(role) }}</label
+                                    >
+                                </fieldset>
+                                <fieldset class="space-y-1">
+                                    <legend class="text-sm font-medium">
+                                        {{ t('Fields required to enter') }}
+                                    </legend>
+                                    <label
+                                        v-for="field in requirable"
+                                        :key="field.value"
+                                        class="flex items-center gap-2 text-sm capitalize"
+                                        ><input
+                                            type="checkbox"
+                                            :checked="
+                                                rules.required_fields?.includes(
+                                                    field.value,
+                                                ) ?? false
+                                            "
+                                            @change="
+                                                rules.required_fields =
+                                                    toggleRule(
+                                                        rules.required_fields,
+                                                        field.value,
+                                                    )
+                                            "
+                                        />{{ field.label }}</label
+                                    >
+                                </fieldset>
+                                <fieldset
+                                    v-if="editingPipeline?.kind === 'invoice'"
+                                    class="space-y-1"
+                                >
+                                    <legend class="text-sm font-medium">
+                                        {{ t('Invoice must be') }}
+                                    </legend>
+                                    <label
+                                        v-for="status in INVOICE_STATUSES"
+                                        :key="status"
+                                        class="flex items-center gap-2 text-sm capitalize"
+                                        ><input
+                                            type="checkbox"
+                                            :checked="
+                                                rules.source_statuses?.includes(
+                                                    status,
+                                                ) ?? false
+                                            "
+                                            @change="
+                                                rules.source_statuses =
+                                                    toggleRule(
+                                                        rules.source_statuses,
+                                                        status,
+                                                    )
+                                            "
+                                        />{{ t(status) }}</label
+                                    >
+                                </fieldset>
+                            </div>
+                        </details>
                         <div class="flex justify-end gap-2 sm:col-span-2">
                             <Button
                                 type="button"

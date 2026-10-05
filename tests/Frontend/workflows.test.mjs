@@ -87,3 +87,44 @@ await test('only estimates and recruitment are created here', () => {
     assert.equal(canCreateKind('estimate'), true);
     assert.equal(canCreateKind('invoice'), false);
 });
+
+import {
+    requirableFields,
+    stageRulesFrom,
+    stageRulesPayload,
+    toggleRule,
+} from '../../resources/js/lib/workflows.ts';
+
+await test('toggling a rule returns null when nothing is left', () => {
+    assert.deepEqual(toggleRule(null, 'a'), ['a']);
+    assert.equal(toggleRule(['a'], 'a'), null);
+    assert.deepEqual(toggleRule([1, 2], 3), [1, 2, 3]);
+});
+
+await test('requirable fields combine kind fields with custom keys', () => {
+    const all = ['name', 'email', 'lines', 'currency', 'notes', 'valid_until'];
+    const fields = requirableFields('estimate', all, ['site_visit']);
+    assert.deepEqual(
+        fields.map((f) => f.value),
+        ['valid_until', 'lines', 'currency', 'notes', 'custom:site_visit'],
+    );
+});
+
+await test('stage rule payload sends nulls for open restrictions', () => {
+    const rules = stageRulesFrom({
+        entry_roles: ['owner'],
+        required_fields: [],
+    });
+    assert.deepEqual(stageRulesPayload(rules, 'estimate'), {
+        is_initial: false,
+        allowed_from_stage_ids: null,
+        entry_roles: ['owner'],
+        required_fields: [],
+        source_statuses: null,
+    });
+    assert.deepEqual(
+        stageRulesPayload({ ...rules, source_statuses: ['paid'] }, 'invoice')
+            .source_statuses,
+        ['paid'],
+    );
+});
