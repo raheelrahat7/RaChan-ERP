@@ -18,8 +18,6 @@ use App\Http\Controllers\CrmAssignmentController;
 use App\Http\Controllers\CrmAutomationController;
 use App\Http\Controllers\CrmCatalogController;
 use App\Http\Controllers\CrmContactController;
-use App\Http\Controllers\CrmCompanyController;
-use App\Http\Controllers\QualifiedLeadController;
 use App\Http\Controllers\CrmCustomFieldController;
 use App\Http\Controllers\CrmDealController;
 use App\Http\Controllers\CrmHierarchyController;
@@ -466,7 +464,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/records/{entity}/{record}/fields', [CrmSettingsDataController::class, 'recordFields'])->name('crm.records.fields');
     Route::put('crm/records/{entity}/{record}/fields', [CrmSettingsDataController::class, 'updateRecordFields'])->name('crm.records.fields.update');
     Route::put('crm/deals/{deal}/financial-links', [CrmDealController::class, 'financialLink'])->name('crm.deals.financial-links');
-    Route::post('crm/deals/{deal}/financial-links', [CrmDealController::class, 'financialLink'])->name('crm.deals.financial-links.store');
     Route::get('reference-workflows', [ReferenceWorkflowController::class, 'index'])->name('reference-workflows.index');
     Route::post('reference-workflows', [ReferenceWorkflowController::class, 'save'])->name('reference-workflows.store');
     Route::get('reference-workflows/{record}', [ReferenceWorkflowController::class, 'show'])->whereNumber('record')->name('reference-workflows.show');
@@ -515,7 +512,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/deals/{deal}', [CrmDealController::class, 'update'])->name('crm.deals.update');
     Route::put('crm/deals/{deal}/stage', [CrmDealController::class, 'move'])->name('crm.deals.stage');
     Route::post('crm/deals/{deal}/transfer', [CrmDealController::class, 'transfer'])->name('crm.deals.transfer');
-    Route::put('crm/deals/{deal}/transfer', [CrmDealController::class, 'transfer'])->name('crm.deals.transfer.update');
     Route::get('crm/leads', [CrmLeadController::class, 'index'])->name('crm.leads.index');
     Route::get('deals', [CrmPageController::class, 'deals'])->name('deals.index');
     Route::get('deals/{deal}', [CrmPageController::class, 'deal'])->whereNumber('deal')->name('deals.show');
@@ -539,7 +535,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/leads/export/grants', [CrmLeadExportController::class, 'grant'])->name('crm.leads.export.grants');
     Route::post('crm/leads/import/preview', [CrmLeadImportController::class, 'preview'])->name('crm.leads.import.preview');
     Route::post('crm/leads/import/{batch}/commit', [CrmLeadImportController::class, 'commit'])->name('crm.leads.import.commit');
-    Route::get('crm/leads/qualified', QualifiedLeadController::class)->name('crm.leads.qualified');
     Route::get('crm/leads/{lead}', [CrmLeadController::class, 'show'])->name('crm.leads.show');
     Route::get('crm/custom-fields', [CrmCustomFieldController::class, 'index'])->name('crm.custom-fields.index');
     Route::post('crm/custom-fields', [CrmCustomFieldController::class, 'store'])->name('crm.custom-fields.store');
@@ -550,11 +545,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/leads/{lead}/assignment', [CrmLeadController::class, 'assign'])->name('crm.leads.assignment');
     Route::get('crm/contacts', [CrmContactController::class, 'index'])->name('crm.contacts.index');
     Route::post('crm/contacts', [CrmContactController::class, 'store'])->name('crm.contacts.store');
-    Route::get('crm/contacts/{contact}', [CrmContactController::class, 'show'])->name('crm.contacts.show');
-    Route::put('crm/contacts/{contact}', [CrmContactController::class, 'update'])->name('crm.contacts.update');
-    Route::get('crm/companies', [CrmCompanyController::class, 'index'])->name('crm.companies.index');
-    Route::get('crm/companies/{company}', [CrmCompanyController::class, 'show'])->name('crm.companies.show');
-    Route::put('crm/companies/{company}', [CrmCompanyController::class, 'update'])->name('crm.companies.update');
     Route::get('crm/activities', [CrmActivityController::class, 'index'])->name('crm.activities.index');
     Route::post('crm/activities', [CrmActivityController::class, 'store'])->name('crm.activities.store');
     Route::put('crm/activities/{activity}', [CrmActivityController::class, 'update'])->name('crm.activities.update');
