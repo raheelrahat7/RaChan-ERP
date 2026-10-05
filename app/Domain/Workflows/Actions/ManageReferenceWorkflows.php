@@ -3,6 +3,7 @@
 namespace App\Domain\Workflows\Actions;
 
 use App\Domain\Configuration\Services\AllocateReferenceNumber;
+use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Documents\Services\DocumentAccess;
 use App\Domain\Finance\Services\EstimatePricing;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
@@ -12,6 +13,7 @@ use App\Domain\Workflows\Models\WorkflowRecord;
 use App\Domain\Workflows\Models\WorkflowStage;
 use App\Domain\Workflows\Services\WorkflowAccess;
 use App\Models\CrmContact;
+use App\Models\CrmLead;
 use App\Models\Document;
 use App\Models\Invoice;
 use App\Models\Organization;
@@ -118,7 +120,7 @@ class ManageReferenceWorkflows
     /** @param array<string, mixed> $input */
     public function save(Organization $org, User $actor, array $input, ?int $id = null): WorkflowRecord
     {
-        $data = Validator::make($input, ['pipeline_id' => [$id ? 'sometimes' : 'required', 'integer'], 'title' => ['required', 'string', 'max:255'], 'assigned_to' => ['required', 'integer'], 'details' => ['present', 'array'], 'operation_key' => [$id ? 'prohibited' : 'required', 'uuid'], 'expected_version' => [$id ? 'required' : 'prohibited', 'integer', 'min:1'], 'document_id' => ['nullable', 'integer'], 'invoice_id' => ['nullable', 'integer'], 'contact_id' => ['nullable', 'integer']])->validate();
+        $data = Validator::make($input, ['pipeline_id' => [$id ? 'sometimes' : 'required', 'integer'], 'title' => ['required', 'string', 'max:255'], 'assigned_to' => ['required', 'integer'], 'details' => ['present', 'array'], 'operation_key' => [$id ? 'prohibited' : 'required', 'uuid'], 'expected_version' => [$id ? 'required' : 'prohibited', 'integer', 'min:1'], 'document_id' => ['nullable', 'integer'], 'invoice_id' => ['nullable', 'integer'], 'contact_id' => ['nullable', 'integer'], 'lead_id' => ['nullable', 'integer']])->validate();
 
         return DB::transaction(function () use ($org, $actor, $data, $id): WorkflowRecord {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
@@ -136,7 +138,7 @@ class ManageReferenceWorkflows
                 if ($pipeline->kind === 'estimate' && $record->invoice_id !== null) {
                     $this->fail('record', 'Converted estimates are read-only. Create a revised estimate instead.');
                 }
-                foreach (['document_id', 'invoice_id', 'contact_id'] as $link) {
+                foreach (['document_id', 'invoice_id', 'contact_id', 'lead_id'] as $link) {
                     if (array_key_exists($link, $data) && $data[$link] !== $record->$link) {
                         $this->fail($link, 'Record links cannot change after creation.');
                     }
@@ -152,6 +154,13 @@ class ManageReferenceWorkflows
             $data['details'] = $details;
             if (isset($data['contact_id'])) {
                 CrmContact::where('organization_id', $org->id)->findOrFail($data['contact_id']);
+            }
+            if (isset($data['lead_id'])) {
+                if ($pipeline->kind !== 'estimate') {
+                    $this->fail('lead_id', 'Lead links belong to estimate workflows.');
+                }
+                $lead = CrmLead::where('organization_id', $org->id)->whereKey($data['lead_id'])->firstOrFail();
+                abort_unless(app(LeadVisibility::class)->canSeeLead($org, $actor, $lead->assigned_to), 404);
             }
             if ($pipeline->kind === 'document') {
                 $document = Document::where('organization_id', $org->id)->findOrFail((int) ($data['document_id'] ?? $record->document_id));
@@ -170,7 +179,7 @@ class ManageReferenceWorkflows
                 $existing = WorkflowRecord::where('organization_id', $org->id)->where('operation_key', $data['operation_key'])->first();
                 if ($existing) {
                     app(WorkflowAccess::class)->record($org, $actor, $existing);
-                    if ($existing->pipeline_id !== $pipeline->id || $existing->title !== $data['title'] || $existing->assigned_to !== $data['assigned_to'] || $existing->details != $details || $existing->document_id !== ($data['document_id'] ?? null) || $existing->invoice_id !== ($data['invoice_id'] ?? null) || $existing->contact_id !== ($data['contact_id'] ?? null)) {
+                    if ($existing->pipeline_id !== $pipeline->id || $existing->title !== $data['title'] || $existing->assigned_to !== $data['assigned_to'] || $existing->details != $details || $existing->document_id !== ($data['document_id'] ?? null) || $existing->invoice_id !== ($data['invoice_id'] ?? null) || $existing->contact_id !== ($data['contact_id'] ?? null) || $existing->lead_id !== ($data['lead_id'] ?? null)) {
                         $this->fail('operation_key', 'This key belongs to different record details.');
                     }
 
@@ -191,7 +200,7 @@ class ManageReferenceWorkflows
             }
             app(RecordOrganizationAuditLog::class)->handle($org, $actor, 'workflows.record.saved', $record, ['kind' => $pipeline->kind]);
 
-            return $record->load(['stage', 'pipeline']);
+            return $record->refresh()->load(['stage', 'pipeline']);
         });
     }
 

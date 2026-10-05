@@ -56,6 +56,8 @@ CRM reference-workflow continuation — 2026-10-05: the user requested completio
 
 CRM Deals and settings continuation — 2026-10-05: the user explicitly requested the working backend for separate deal funnels, direct deals, qualified-lead linking with the original lead retained, and pipeline/team/department/section access. This adds organization-owned deal pipelines and stages, audited version-checked movement/transfer/reopening, current hierarchy access matrices and amount/export controls, deal activities, internal delayed stage-entry notices/follow-ups, entity-specific typed CRM fields, configurable selection options and section restrictions that preserve role/financial approval boundaries. Backend JSON contracts, migration and validation details are recorded in [the Deals backend handoff](CRM_DEALS_BACKEND_HANDOFF_2026_10_05.md). Frontend work is handled separately. CRM opportunities do not create contracts, reservations or accounting entries; provider and finance decision gates remain unchanged.
 
+CRM Settings continuation — 2026-10-06: the user requested deal stage amount totals, immediate workflow record versions, and the remaining Settings hub backend catalogs plus lead product/estimate links. The organization-scoped contracts and non-posting boundaries are recorded in [the CRM Settings backend handoff](CRM_SETTINGS_BACKEND_2026_10_06.md).
+
 ### Phase 3 — Property and inventory
 
 Implement properties, buildings, units, availability, and related documents.

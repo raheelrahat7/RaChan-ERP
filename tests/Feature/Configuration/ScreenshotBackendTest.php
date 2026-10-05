@@ -42,6 +42,41 @@ class ScreenshotBackendTest extends TestCase
         return $user;
     }
 
+    public function test_deal_stage_amounts_follow_visible_rows_and_amount_permissions(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org);
+        $pipeline = app(ManageDealPipelines::class)->save($org, $owner, ['name' => 'Sales']);
+        app(ManageDeals::class)->create($org, $owner, ['title' => 'One', 'category' => 'secondary', 'pipeline_id' => $pipeline->id, 'amount' => '10.25']);
+        app(ManageDeals::class)->create($org, $owner, ['title' => 'Two', 'category' => 'secondary', 'pipeline_id' => $pipeline->id, 'amount' => '20.30']);
+        $this->actingAs($owner)->getJson(route('crm.deals.index', ['pipeline_id' => $pipeline->id]))
+            ->assertOk()->assertJsonPath('stageCounts.0.total', 2)->assertJsonPath('stageCounts.0.amount', '30.55');
+    }
+
+    public function test_settings_catalog_and_lead_products_are_scoped_and_estimates_return_a_version(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org);
+        $other = Organization::factory()->create();
+        $otherOwner = $this->member($other);
+        $this->actingAs($owner)->postJson(route('crm-catalog.store', 'taxes'), ['code' => 'vat5', 'name' => 'VAT 5%', 'active' => true, 'settings' => ['rate' => 5]])->assertOk();
+        $unit = $this->postJson(route('crm-catalog.store', 'units'), ['code' => 'each', 'name' => 'Each', 'active' => true, 'settings' => ['symbol' => 'ea', 'precision' => 0]])->assertOk()->json('record.id');
+        $product = $this->postJson(route('crm-catalog.store', 'products'), ['code' => 'service', 'name' => 'Service', 'active' => true, 'settings' => ['unit_id' => $unit, 'price' => 10, 'currency' => 'AED']])->assertOk()->json('record.id');
+        foreach (['detail-templates' => ['entity' => 'contact', 'fields' => ['name']], 'company-details' => ['legal_name' => 'Example LLC'], 'mailboxes' => ['email' => 'sales@example.test']] as $kind => $settings) {
+            $this->postJson(route('crm-catalog.store', $kind), ['code' => 'default', 'name' => 'Default', 'active' => true, 'settings' => $settings])->assertOk();
+        }
+        $lead = app(ManageLeadPipeline::class)->create($org, $owner, ['first_name' => 'Client', 'last_name' => 'Example', 'assigned_to' => $owner->id]);
+        $line = $this->postJson(route('crm.leads.products.store', $lead->id), ['product_id' => $product, 'quantity' => 2, 'unit_price' => '10.50', 'currency' => 'AED'])->assertOk()->json('line.id');
+        $workflow = app(ManageReferenceWorkflows::class)->pipeline($org, $owner, ['kind' => 'estimate', 'name' => 'Estimates']);
+        $this->postJson(route('reference-workflows.store'), ['pipeline_id' => $workflow->id, 'title' => 'Quote', 'assigned_to' => $owner->id, 'operation_key' => (string) Str::uuid(), 'lead_id' => $lead->id, 'details' => ['currency' => 'AED', 'lines' => [['description' => 'Service', 'quantity' => '2', 'unit_price' => '10.50']]]])->assertOk()->assertJsonPath('record.version', 1);
+        $this->getJson(route('crm.leads.products', $lead->id))->assertOk()->assertJsonCount(1, 'products')->assertJsonCount(1, 'estimates');
+        $this->actingAs($otherOwner)->getJson(route('crm-catalog.index', 'products'))->assertOk()->assertJsonCount(0, 'records');
+        $this->getJson(route('crm.leads.products', $lead->id))->assertNotFound();
+        $this->postJson(route('crm.leads.products.store', $lead->id), ['product_id' => $product, 'quantity' => 1, 'unit_price' => 10, 'currency' => 'AED'])->assertNotFound();
+        $this->actingAs($owner)->deleteJson(route('crm.leads.products.destroy', ['lead' => $lead->id, 'line' => $line]))->assertOk();
+        $this->getJson(route('crm.leads.products', $lead->id))->assertJsonCount(0, 'products')->assertJsonCount(1, 'estimates');
+    }
+
     public function test_typed_deal_filters_and_exports_use_current_field_permissions(): void
     {
         $org = Organization::factory()->create();

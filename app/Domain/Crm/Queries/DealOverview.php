@@ -43,7 +43,22 @@ class DealOverview
         $query = $this->query($org, $actor, $filters);
         $deals = (clone $query)->with(['stage', 'assignee:id,name', 'pipeline'])->latest('id')->paginate(50)->withQueryString();
         $deals->through(fn ($deal) => $this->serialize($org, $actor, $deal));
-        $counts = (clone $query)->selectRaw('pipeline_id, current_stage_id, COUNT(*) as total')->groupBy('pipeline_id', 'current_stage_id')->get()->map->only(['pipeline_id', 'current_stage_id', 'total']);
+        $counts = (clone $query)->selectRaw('pipeline_id, current_stage_id, COUNT(*) as total')->groupBy('pipeline_id', 'current_stage_id')->get()
+            ->map(function ($row) use ($org, $actor, $query): array {
+                $pipeline = DealPipeline::where('organization_id', $org->id)->findOrFail($row->pipeline_id);
+                $amountScopes = $this->access->scopes($org, $actor, $pipeline, 'amount');
+                $amount = null;
+                if ($amountScopes !== []) {
+                    $amountQuery = (clone $query)->where('pipeline_id', $row->pipeline_id)->where('current_stage_id', $row->current_stage_id);
+                    if (! in_array('organization', $amountScopes, true)) {
+                        $amountQuery->whereIn('assigned_to', $this->access->assignees($org, $actor, $amountScopes));
+                    }
+                    $amount = (string) $amountQuery->sum('amount');
+                    $amount = str_contains($amount, '.') ? $amount : $amount.'.00';
+                }
+
+                return ['pipeline_id' => $row->pipeline_id, 'current_stage_id' => $row->current_stage_id, 'total' => (int) $row->getAttribute('total'), 'amount' => $amount];
+            });
 
         return ['deals' => $deals, 'pipelines' => $this->pipelines($org, $actor), 'stageCounts' => $counts, 'filters' => $filters, 'categories' => app(ManageCrmSettings::class)->activeCategories($org), 'categoryOptions' => app(ManageCrmSettings::class)->categories($org), 'timezone' => $org->timezone, 'filterFields' => app(DealConditions::class)->catalog($org, $actor), 'canConfigure' => $this->access->administrator($org, $actor)];
     }

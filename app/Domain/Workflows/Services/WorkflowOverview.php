@@ -2,10 +2,12 @@
 
 namespace App\Domain\Workflows\Services;
 
+use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Documents\Services\DocumentAccess;
 use App\Domain\Workflows\Actions\ManageReferenceWorkflows;
 use App\Domain\Workflows\Models\WorkflowPipeline;
 use App\Domain\Workflows\Models\WorkflowRecord;
+use App\Models\CrmLead;
 use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\User;
@@ -24,6 +26,7 @@ class WorkflowOverview
             ->when($filters['kind'] ?? null, fn ($q, $kind) => $q->whereIn('pipeline_id', $pipelines->where('kind', $kind)->pluck('id')))
             ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('title', 'like', '%'.$term.'%'));
         $query->where(fn ($q) => $q->whereNull('document_id')->orWhereIn('document_id', app(DocumentAccess::class)->query($org, $actor)->select('id')));
+        $query->where(fn ($q) => $q->whereNull('lead_id')->orWhereIn('lead_id', app(LeadVisibility::class)->scope(CrmLead::where('organization_id', $org->id), $org, $actor)->select('id')));
         $counts = (clone $query)->selectRaw('pipeline_id, stage_id, COUNT(*) as total')->groupBy('pipeline_id', 'stage_id')->get();
 
         return ['pipelines' => $pipelines->values(), 'records' => $query->with(['pipeline', 'stage'])->latest('id')->paginate(50)->withQueryString(), 'stageCounts' => $counts, 'kinds' => ManageReferenceWorkflows::KINDS, 'detailFields' => ManageReferenceWorkflows::DETAIL_FIELDS, 'fieldTypes' => ['text', 'number', 'date', 'checkbox', 'select'], 'sourceInvoiceStatuses' => ['draft', 'posted', 'partial', 'paid', 'void'], 'canConfigure' => $actor->can('manageSettings', $org)];

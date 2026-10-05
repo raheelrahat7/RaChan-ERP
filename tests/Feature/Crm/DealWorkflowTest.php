@@ -122,7 +122,7 @@ class DealWorkflowTest extends TestCase
         $bobId = $this->createDeal($owner, $pipeline, ['assigned_to' => $bob->id]);
         $rule = ['principal_type' => 'user', 'principal_id' => (string) $alice->id, 'permissions' => ['read' => 'own', 'add' => 'own', 'edit' => 'own', 'amount' => 'none']];
         $this->putJson(route('crm.deal-pipelines.access', $pipeline), $rule)->assertOk();
-        $this->actingAs($alice)->getJson(route('crm.deals.index'))->assertOk()->assertJsonPath('deals.total', 1)->assertJsonMissingPath('deals.data.0.amount');
+        $this->actingAs($alice)->getJson(route('crm.deals.index'))->assertOk()->assertJsonPath('deals.total', 1)->assertJsonMissingPath('deals.data.0.amount')->assertJsonPath('stageCounts.0.amount', null);
         $this->getJson(route('crm.deals.show', $bobId))->assertNotFound();
         $this->getJson(route('crm.deals.show', $aliceId))->assertOk()->assertJsonMissingPath('deal.amount');
         $this->putJson(route('crm.deals.update', $aliceId), ['expected_version' => 1, 'amount' => '1'])->assertForbidden();
