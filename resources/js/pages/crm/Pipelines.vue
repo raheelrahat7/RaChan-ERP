@@ -117,15 +117,18 @@ const firstColor = (pipeline: Pipeline): string =>
                 </div>
                 <div>
                     <p class="text-eyebrow mb-2">{{ t('Deal pipelines') }}</p>
-                    <p
-                        class="text-muted-foreground rounded-md border border-dashed p-3 text-xs"
-                    >
+                    <p class="text-muted-foreground mb-2 text-xs">
                         {{
                             t(
-                                'Deal pipelines appear here once deals are connected. Each pipeline will have its own stages and its own team access.',
+                                'Deals have their own pipelines, stages and team access.',
                             )
                         }}
                     </p>
+                    <Link
+                        href="/crm/deal-pipelines"
+                        class="text-primary text-sm underline"
+                        >{{ t('Manage deal pipelines') }}</Link
+                    >
                 </div>
             </nav>
 

@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import CrmLeadActivityEditor from '@/components/CrmLeadActivityEditor.vue';
+import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
 import CrmLeadStageBar from '@/components/CrmLeadStageBar.vue';
 import DateText from '@/components/DateText.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -11,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocale } from '@/composables/useLocale';
+import { ApiError, apiJson } from '@/lib/crm-api';
+import type { CategoryOption, DealPipeline } from '@/types/crm-deals';
 import type { Pipeline, TransitionOption } from '@/types/crm-pipeline';
 
 type Entry = {
@@ -62,6 +65,8 @@ const props = defineProps<{
     pipeline: Pipeline;
     transitionOptions: TransitionOption[];
     canManageCrm: boolean;
+    linkedDeal?: { id: number; title: string } | null;
+    qualifiedForDeal?: boolean;
     members: { id: number; name: string }[];
     customFields: Field[];
     timeline: Entry[];
@@ -136,6 +141,34 @@ const feed = computed(() =>
     ].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')),
 );
 
+const dealSheetOpen = ref(false);
+const dealPipelines = ref<DealPipeline[]>([]);
+const dealCategories = ref<CategoryOption[]>([]);
+const dealError = ref('');
+const dealLoading = ref(false);
+async function startDeal(): Promise<void> {
+    dealLoading.value = true;
+    dealError.value = '';
+    try {
+        const data = await apiJson<{
+            pipelines: DealPipeline[];
+            categoryOptions: CategoryOption[];
+        }>('/crm/deals');
+        dealPipelines.value = data.pipelines;
+        dealCategories.value = data.categoryOptions;
+        dealSheetOpen.value = true;
+    } catch (cause) {
+        dealError.value =
+            cause instanceof ApiError
+                ? cause.message
+                : t('Something went wrong. Please try again.');
+    } finally {
+        dealLoading.value = false;
+    }
+}
+function dealCreated(deal: { id: number }): void {
+    router.visit(`/deals/${deal.id}`);
+}
 function assign(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     router.put(
@@ -205,6 +238,19 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                 </div>
             </template>
             <template #actions>
+                <Link
+                    v-if="linkedDeal"
+                    :href="`/deals/${linkedDeal.id}`"
+                    class="text-primary text-sm font-medium underline"
+                    >{{ t('Open deal') }}: {{ linkedDeal.title }}</Link
+                >
+                <Button
+                    v-else-if="qualifiedForDeal && canManageCrm"
+                    type="button"
+                    :disabled="dealLoading"
+                    @click="startDeal"
+                    >{{ t('Create deal') }}</Button
+                >
                 <Link href="/crm/leads" class="text-sm underline">
                     {{ t('Back to leads') }}
                 </Link>
@@ -545,5 +591,25 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                 </Card>
             </TabsContent>
         </Tabs>
+        <p v-if="dealError" class="text-destructive text-sm" role="alert">
+            {{ dealError }}
+        </p>
+        <CrmDealFormSheet
+            v-if="qualifiedForDeal && !linkedDeal"
+            v-model:open="dealSheetOpen"
+            :pipelines="dealPipelines"
+            :categories="dealCategories"
+            :lead-id="lead.id"
+            :prefill="{
+                title: fullName,
+                first_name: lead.first_name,
+                last_name: lead.last_name,
+                email: lead.email,
+                phone: lead.phone,
+                company: lead.company,
+                source: lead.source,
+            }"
+            @saved="dealCreated"
+        />
     </div>
 </template>

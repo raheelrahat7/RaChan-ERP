@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { ChevronDown, Plus, Search } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CrmDealBoard from '@/components/CrmDealBoard.vue';
 import DataTable from '@/components/DataTable.vue';
 import DateText from '@/components/DateText.vue';
@@ -16,42 +16,91 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useLocale } from '@/composables/useLocale';
+import {
+    amountOf,
+    categoryLabel,
+    contactName,
+    searchDeals,
+} from '@/lib/crm-deals';
 import type { DataTableColumn, SortState } from '@/lib/data-table';
-import { kindLabel, searchDeals, sortedStages } from '@/lib/crm-deals';
-import type { Deal, DealPipeline, StageTotal } from '@/types/crm-deals';
+import type {
+    CategoryOption,
+    Deal,
+    DealPipeline,
+    StageTotal,
+} from '@/types/crm-deals';
 
 const props = withDefaults(
     defineProps<{
         pipelines: DealPipeline[];
         deals: Deal[];
         totals?: StageTotal[];
+        categories?: CategoryOption[];
         canCreate?: boolean;
         canMove?: boolean;
         linkable?: boolean;
+        /** When true the server filters by search text; this view only reports what was typed. */
+        serverSearch?: boolean;
+        initialQuery?: string;
     }>(),
-    { totals: undefined, canCreate: false, canMove: false, linkable: false },
+    {
+        totals: undefined,
+        categories: () => [],
+        canCreate: false,
+        canMove: false,
+        linkable: false,
+        serverSearch: false,
+        initialQuery: '',
+    },
 );
 const pipelineId = defineModel<number>('pipelineId', { required: true });
-const emit = defineEmits<{ create: []; createFromLead: [] }>();
+const emit = defineEmits<{
+    create: [];
+    createFromLead: [];
+    move: [deal: Deal, stageId: number | null];
+    search: [query: string];
+}>();
 
 const { t } = useLocale();
 type View = 'board' | 'list';
 type DealRow = Deal & {
-    kind_label: string;
+    category_label: string;
     stage_name: string;
     contact_name: string;
     assignee_name: string;
+    amount_value: number | null;
 };
 const view = ref<View>('board');
-const query = ref('');
+const query = ref(props.initialQuery);
 const sort = ref<SortState>(null);
+let searchTimer: number | null = null;
+
+watch(query, (value) => {
+    if (!props.serverSearch) {
+        return;
+    }
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+    searchTimer = window.setTimeout(() => emit('search', value), 350);
+});
+onBeforeUnmount(() => {
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+});
+
 const pipeline = computed(() =>
     props.pipelines.find((item) => item.id === Number(pipelineId.value)),
 );
 const inPipeline = computed(() =>
     props.deals.filter((deal) => deal.pipeline_id === Number(pipelineId.value)),
 );
-const visible = computed(() => searchDeals(inPipeline.value, query.value));
+const visible = computed(() =>
+    props.serverSearch
+        ? inPipeline.value
+        : searchDeals(inPipeline.value, query.value, props.categories),
+);
 const stageName = computed(
     () =>
         new Map(
@@ -64,26 +113,21 @@ const stageName = computed(
 const rows = computed<DealRow[]>(() =>
     visible.value.map((deal) => ({
         ...deal,
-        kind_label: kindLabel(deal.kind),
-        stage_name: stageName.value.get(deal.stage_id) ?? '',
-        contact_name: deal.contact?.name ?? '',
+        category_label: categoryLabel(deal.category, props.categories),
+        stage_name: stageName.value.get(deal.current_stage_id) ?? '',
+        contact_name: contactName(deal),
         assignee_name: deal.assignee?.name ?? '',
+        amount_value: amountOf(deal),
     })),
 );
 const columns = computed<DataTableColumn<DealRow>[]>(() => [
     { key: 'title', label: t('Deal'), sortable: true },
-    { key: 'kind_label', label: t('Type'), sortable: true },
+    { key: 'category_label', label: t('Type'), sortable: true },
     { key: 'stage_name', label: t('Stage'), sortable: true },
-    {
-        key: 'amount',
-        label: t('Amount'),
-        sortable: true,
-        align: 'end',
-    },
+    { key: 'amount_value', label: t('Amount'), sortable: true, align: 'end' },
     { key: 'contact_name', label: t('Contact'), sortable: true },
     { key: 'assignee_name', label: t('Responsible person'), sortable: true },
     { key: 'created_at', label: t('Created'), sortable: true },
-    { key: 'next_activity_at', label: t('Next activity'), sortable: true },
 ]);
 const sortedRows = computed(() => {
     if (!sort.value) {
@@ -201,12 +245,6 @@ const sortedRows = computed(() => {
                 >{{ visible.length }} {{ t('of') }} {{ inPipeline.length }}
                 {{ t('shown') }}</span
             >
-            <p
-                v-if="!canMove && view === 'board'"
-                class="text-muted-foreground ms-auto text-xs"
-            >
-                {{ t('Moving deals between stages is not connected yet.') }}
-            </p>
         </div>
 
         <EmptyState
@@ -221,11 +259,13 @@ const sortedRows = computed(() => {
                 v-if="view === 'board'"
                 :stages="pipeline.stages"
                 :deals="visible"
-                :totals="query ? undefined : totals"
+                :totals="totals"
+                :categories="categories"
                 :can-move="canMove"
                 :can-create="canCreate"
                 :linkable="linkable"
                 @quick="emit('create')"
+                @move="(deal, stageId) => emit('move', deal, stageId)"
             />
             <DataTable
                 v-else
@@ -243,25 +283,26 @@ const sortedRows = computed(() => {
                 :caption="t('Deals')"
             >
                 <template #cell-title="{ row }"
-                    ><span class="font-medium">{{ row.title }}</span></template
+                    ><Link
+                        v-if="linkable"
+                        :href="`/deals/${row.id}`"
+                        class="text-primary font-medium hover:underline"
+                        >{{ row.title }}</Link
+                    ><span v-else class="font-medium">{{
+                        row.title
+                    }}</span></template
                 >
-                <template #cell-amount="{ row }"
+                <template #cell-amount_value="{ row }"
                     ><Money
-                        v-if="row.amount !== null"
-                        :value="row.amount"
-                        :currency="row.currency"
+                        v-if="row.amount_value !== null"
+                        :value="row.amount_value"
+                        :currency="row.currency ?? 'AED'"
                         :decimals="0"
                     /><span v-else>—</span></template
                 >
                 <template #cell-created_at="{ row }"
                     ><DateText :value="row.created_at"
                 /></template>
-                <template #cell-next_activity_at="{ row }"
-                    ><DateText
-                        v-if="row.next_activity_at"
-                        :value="row.next_activity_at"
-                    /><span v-else>—</span></template
-                >
                 <template #empty-action
                     ><Button v-if="canCreate" @click="emit('create')"
                         ><Plus />{{ t('New deal') }}</Button

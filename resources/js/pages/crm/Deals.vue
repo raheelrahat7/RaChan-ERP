@@ -1,19 +1,99 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
+import CrmDealMoveDialog from '@/components/CrmDealMoveDialog.vue';
 import CrmDealsView from '@/components/CrmDealsView.vue';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useLocale } from '@/composables/useLocale';
-import type { Deal, DealPipeline, StageTotal } from '@/types/crm-deals';
+import { creatablePipelines, stageTotalsFromCounts } from '@/lib/crm-deals';
+import type {
+    CategoryOption,
+    Deal,
+    DealPipeline,
+    StageCount,
+} from '@/types/crm-deals';
 
 const props = defineProps<{
+    deals: {
+        data: Deal[];
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
     pipelines: DealPipeline[];
-    deals: Deal[];
-    stageTotals?: StageTotal[];
-    canCreate?: boolean;
-    canMove?: boolean;
+    stageCounts: StageCount[];
+    filters: {
+        pipeline_id?: number | null;
+        q?: string | null;
+        page?: number | null;
+    };
+    categoryOptions: CategoryOption[];
 }>();
 const { t } = useLocale();
-const pipelineId = ref(props.pipelines[0]?.id ?? 0);
+
+const pipelineId = ref(
+    props.filters.pipeline_id ?? props.pipelines[0]?.id ?? 0,
+);
+const formOpen = ref(false);
+const editing = ref<Deal | null>(null);
+const moveOpen = ref(false);
+const moving = ref<Deal | null>(null);
+const moveStage = ref<number | null>(null);
+const leadHelpOpen = ref(false);
+const query = ref(props.filters.q ?? '');
+
+const pipeline = computed(() =>
+    props.pipelines.find((item) => item.id === Number(pipelineId.value)),
+);
+const totals = computed(() =>
+    pipeline.value
+        ? stageTotalsFromCounts(pipeline.value, props.stageCounts)
+        : undefined,
+);
+const canCreate = computed(
+    () => creatablePipelines(props.pipelines).length > 0,
+);
+const canMove = computed(
+    () => (pipeline.value?.permissions?.move?.length ?? 0) > 0,
+);
+
+function visit(extra: Record<string, unknown> = {}): void {
+    router.get(
+        '/deals',
+        {
+            pipeline_id: pipelineId.value,
+            q: query.value || undefined,
+            ...extra,
+        },
+        { preserveScroll: true, preserveState: true, replace: true },
+    );
+}
+function reload(): void {
+    router.reload({ only: ['deals', 'stageCounts', 'pipelines'] });
+}
+function create(): void {
+    editing.value = null;
+    formOpen.value = true;
+}
+function startMove(deal: Deal, stageId: number | null): void {
+    moving.value = deal;
+    moveStage.value = stageId;
+    moveOpen.value = true;
+}
+watch(pipelineId, (value) => {
+    if (value !== props.filters.pipeline_id) {
+        visit({ page: undefined });
+    }
+});
 </script>
 
 <template>
@@ -22,11 +102,92 @@ const pipelineId = ref(props.pipelines[0]?.id ?? 0);
         <CrmDealsView
             v-model:pipeline-id="pipelineId"
             :pipelines="pipelines"
-            :deals="deals"
-            :totals="stageTotals"
+            :deals="deals.data"
+            :totals="totals"
+            :categories="categoryOptions"
             :can-create="canCreate"
             :can-move="canMove"
             linkable
+            server-search
+            :initial-query="query"
+            @create="create"
+            @create-from-lead="leadHelpOpen = true"
+            @move="startMove"
+            @search="
+                (value) => {
+                    query = value;
+                    visit({ page: undefined });
+                }
+            "
         />
+        <div
+            v-if="deals.last_page > 1"
+            class="flex items-center justify-center gap-3 text-sm"
+        >
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                :disabled="deals.current_page <= 1"
+                @click="visit({ page: deals.current_page - 1 })"
+                >{{ t('Previous') }}</Button
+            >
+            <span
+                >{{ t('Page') }} {{ deals.current_page }} {{ t('of') }}
+                {{ deals.last_page }} · {{ deals.total }} {{ t('deals') }}</span
+            >
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                :disabled="deals.current_page >= deals.last_page"
+                @click="visit({ page: deals.current_page + 1 })"
+                >{{ t('Next') }}</Button
+            >
+        </div>
+
+        <CrmDealFormSheet
+            v-model:open="formOpen"
+            :pipelines="pipelines"
+            :categories="categoryOptions"
+            :deal="editing"
+            :default-pipeline-id="pipelineId"
+            @saved="reload"
+        />
+        <CrmDealMoveDialog
+            v-model:open="moveOpen"
+            :deal="moving"
+            :stages="pipeline?.stages ?? []"
+            :initial-stage-id="moveStage"
+            @moved="reload"
+        />
+
+        <Dialog v-model:open="leadHelpOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{{
+                        t('Create a deal from a lead')
+                    }}</DialogTitle>
+                    <DialogDescription>{{
+                        t(
+                            'Open a lead that has reached a Won stage and choose Create deal. The lead stays in Leads, and the deal is linked to it.',
+                        )
+                    }}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="leadHelpOpen = false"
+                        >{{ t('Close') }}</Button
+                    >
+                    <Button as-child
+                        ><Link href="/crm/leads">{{
+                            t('Go to leads')
+                        }}</Link></Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

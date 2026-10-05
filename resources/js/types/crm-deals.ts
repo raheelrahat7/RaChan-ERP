@@ -1,5 +1,3 @@
-export type DealKind = 'off_plan' | 'secondary' | 'resale' | 'listing';
-
 export type DealStage = {
     id: number;
     name: string;
@@ -7,29 +5,59 @@ export type DealStage = {
     color: string;
     position: number;
     active: boolean;
+    is_initial?: boolean;
 };
 
 export type DealPipeline = {
     id: number;
     name: string;
-    kind: DealKind;
     active: boolean;
+    is_default?: boolean;
     stages: DealStage[];
+    /** Assignable people for this pipeline, as the server allows for the current user. */
+    members?: { id: number; name: string }[];
+    /** Action to allowed scopes, e.g. { add: ['own'], move: ['organization'] }. */
+    permissions?: Record<string, string[]>;
 };
 
 export type Deal = {
     id: number;
     title: string;
-    amount: number | null;
-    currency: string;
-    kind: DealKind;
+    category: string;
+    /** Decimal string from the server; absent when the user may not see amounts. */
+    amount?: string | number | null;
+    currency?: string | null;
     pipeline_id: number;
-    stage_id: number;
-    contact: { id: number; name: string } | null;
-    assignee: { id: number; name: string } | null;
-    lead_id: number | null;
+    current_stage_id: number;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    company?: string | null;
+    source?: string | null;
+    notes?: string | null;
+    expected_close_date?: string | null;
+    assigned_to?: number | null;
+    assignee?: { id: number; name: string } | null;
+    lead_id?: number | null;
+    version: number;
     created_at: string;
-    next_activity_at: string | null;
+    permissions?: Record<string, boolean>;
 };
 
+export type StageCount = {
+    pipeline_id: number;
+    current_stage_id: number;
+    total: number | string;
+    amount?: number | string | null;
+};
+
+/** Per-stage figures shown under the stage header. */
 export type StageTotal = { id: number; count: number; amount: number | null };
+
+export type CategoryOption = {
+    code: string;
+    name: string;
+    active: boolean;
+    id?: number | null;
+};

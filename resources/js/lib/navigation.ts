@@ -125,6 +125,12 @@ export const NAVIGATION: NavGroup[] = [
                 badge: 'crm_open_leads',
             },
             {
+                label: 'Deals Board',
+                href: '/deals',
+                icon: 'deals',
+                ability: 'crm',
+            },
+            {
                 label: 'Contacts',
                 href: '/crm/contacts',
                 icon: 'contacts',

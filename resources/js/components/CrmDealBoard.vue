@@ -1,33 +1,52 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Plus } from '@lucide/vue';
-import { computed } from 'vue';
+import { ArrowRightLeft, Plus } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import DateText from '@/components/DateText.vue';
 import Money from '@/components/Money.vue';
 import { Badge } from '@/components/ui/badge';
 import { useLocale } from '@/composables/useLocale';
 import {
+    amountOf,
+    categoryLabel,
     computeStageTotals,
+    contactName,
     groupDealsByStage,
-    kindLabel,
 } from '@/lib/crm-deals';
 import { readableOn } from '@/lib/crm-pipeline-board';
-import type { Deal, DealStage, StageTotal } from '@/types/crm-deals';
+import type {
+    CategoryOption,
+    Deal,
+    DealStage,
+    StageTotal,
+} from '@/types/crm-deals';
 
 const props = withDefaults(
     defineProps<{
         stages: DealStage[];
         deals: Deal[];
         totals?: StageTotal[];
+        categories?: CategoryOption[];
         canMove?: boolean;
         canCreate?: boolean;
         linkable?: boolean;
     }>(),
-    { totals: undefined, canMove: false, canCreate: false, linkable: false },
+    {
+        totals: undefined,
+        categories: () => [],
+        canMove: false,
+        canCreate: false,
+        linkable: false,
+    },
 );
-const emit = defineEmits<{ quick: [stageId: number] }>();
+const emit = defineEmits<{
+    quick: [];
+    move: [deal: Deal, stageId: number | null];
+}>();
 
 const { t } = useLocale();
+const dragged = ref<Deal | null>(null);
+const hovered = ref<number | null>(null);
 const columns = computed(() => groupDealsByStage(props.stages, props.deals));
 const stageTotals = computed(
     () => props.totals ?? computeStageTotals(props.stages, props.deals),
@@ -36,12 +55,23 @@ const firstStageId = computed(() => columns.value[0]?.stage.id ?? null);
 function totalFor(id: number): StageTotal | undefined {
     return stageTotals.value.find((total) => total.id === id);
 }
+function movable(deal: Deal): boolean {
+    return props.canMove && deal.permissions?.move !== false;
+}
 function initials(name: string): string {
     return name
         .split(/\s+/)
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase() ?? '')
         .join('');
+}
+function drop(stage: DealStage): void {
+    const deal = dragged.value;
+    dragged.value = null;
+    hovered.value = null;
+    if (deal && deal.current_stage_id !== stage.id && stage.active) {
+        emit('move', deal, stage.id);
+    }
 }
 </script>
 
@@ -57,6 +87,12 @@ function initials(name: string): string {
             :key="column.stage.id"
             :aria-labelledby="`deal-stage-${column.stage.id}`"
             class="bg-muted/40 flex max-h-[calc(100vh-14rem)] min-h-64 w-72 shrink-0 flex-col rounded-md"
+            :class="{
+                'ring-primary ring-2': hovered === column.stage.id && dragged,
+            }"
+            @dragover.prevent="hovered = column.stage.id"
+            @dragleave="hovered = null"
+            @drop.prevent="drop(column.stage)"
         >
             <h3
                 :id="`deal-stage-${column.stage.id}`"
@@ -66,7 +102,12 @@ function initials(name: string): string {
                     color: readableOn(column.stage.color),
                 }"
             >
-                <span class="truncate">{{ column.stage.name }}</span>
+                <span class="truncate"
+                    >{{ column.stage.name
+                    }}<span v-if="!column.stage.active">
+                        ({{ t('inactive') }})</span
+                    ></span
+                >
                 <span class="shrink-0 tabular-nums">{{
                     totalFor(column.stage.id)?.count ?? column.deals.length
                 }}</span>
@@ -87,7 +128,7 @@ function initials(name: string): string {
                     type="button"
                     class="hover:bg-muted rounded p-1"
                     :aria-label="t('Quick deal')"
-                    @click="emit('quick', column.stage.id)"
+                    @click="emit('quick')"
                 >
                     <Plus class="size-4" aria-hidden="true" />
                 </button>
@@ -103,37 +144,45 @@ function initials(name: string): string {
                     v-for="deal in column.deals"
                     :key="deal.id"
                     class="bg-card space-y-1.5 rounded-md border p-3 text-sm shadow-xs"
-                    :class="{ 'cursor-grab': canMove }"
-                    :draggable="canMove"
+                    :class="{
+                        'cursor-grab': movable(deal),
+                        'opacity-50': dragged?.id === deal.id,
+                    }"
+                    :draggable="movable(deal)"
+                    @dragstart="dragged = deal"
+                    @dragend="
+                        dragged = null;
+                        hovered = null;
+                    "
                 >
                     <p class="font-medium">
                         <Link
                             v-if="linkable"
-                            :href="`/crm/deals/${deal.id}`"
+                            :href="`/deals/${deal.id}`"
                             class="hover:underline"
                             >{{ deal.title }}</Link
                         >
                         <template v-else>{{ deal.title }}</template>
                     </p>
                     <p
-                        v-if="deal.amount !== null"
+                        v-if="amountOf(deal) !== null"
                         class="font-medium tabular-nums"
                     >
                         <Money
-                            :value="deal.amount"
-                            :currency="deal.currency"
+                            :value="amountOf(deal) ?? 0"
+                            :currency="deal.currency ?? 'AED'"
                             :decimals="0"
                         />
                     </p>
                     <p
-                        v-if="deal.contact"
+                        v-if="contactName(deal)"
                         class="text-primary truncate text-xs"
                     >
-                        {{ deal.contact.name }}
+                        {{ contactName(deal) }}
                     </p>
                     <div class="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{{
-                            t(kindLabel(deal.kind))
+                            t(categoryLabel(deal.category, categories))
                         }}</Badge>
                         <span class="text-muted-foreground text-xs"
                             ><DateText :value="deal.created_at"
@@ -142,15 +191,19 @@ function initials(name: string): string {
                     <div
                         class="flex items-center justify-between gap-2 pt-1 text-xs"
                     >
-                        <span
-                            class="text-muted-foreground inline-flex items-center gap-1"
-                            ><Plus class="size-3" aria-hidden="true" />{{
-                                t('Activity')
-                            }}<template v-if="deal.next_activity_at">
-                                ·
-                                <DateText
-                                    :value="deal.next_activity_at" /></template
-                        ></span>
+                        <button
+                            v-if="movable(deal)"
+                            type="button"
+                            class="text-primary inline-flex items-center gap-1 hover:underline"
+                            :aria-label="`${t('Move')}: ${deal.title}`"
+                            @click="emit('move', deal, null)"
+                        >
+                            <ArrowRightLeft
+                                class="size-3"
+                                aria-hidden="true"
+                            />{{ t('Move') }}
+                        </button>
+                        <span v-else />
                         <span
                             v-if="deal.assignee"
                             class="bg-primary/10 text-primary flex size-6 items-center justify-center rounded-full text-[10px] font-semibold"

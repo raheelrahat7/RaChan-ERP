@@ -39,8 +39,9 @@ export function getCell(
     roleId: number,
     key: string,
     kind: PermissionRow['kind'],
+    fallback: PermissionValue = kind === 'toggle' ? false : 'deny',
 ): PermissionValue {
-    return values[roleId]?.[key] ?? (kind === 'toggle' ? false : 'deny');
+    return values[roleId]?.[key] ?? fallback;
 }
 
 /** Returns new values with one cell changed; the input is left untouched. */
@@ -59,15 +60,18 @@ export function countChanges(
     roles: PermissionRole[],
     before: PermissionValues,
     after: PermissionValues,
+    fallbackFor: (row: PermissionRow) => PermissionValue | undefined = () =>
+        undefined,
 ): number {
     let changes = 0;
     for (const role of roles) {
         for (const group of groups) {
             for (const row of group.rows) {
                 const key = cellKey(group.key, row.key);
+                const fallback = fallbackFor(row);
                 if (
-                    getCell(before, role.id, key, row.kind) !==
-                    getCell(after, role.id, key, row.kind)
+                    getCell(before, role.id, key, row.kind, fallback) !==
+                    getCell(after, role.id, key, row.kind, fallback)
                 ) {
                     changes++;
                 }

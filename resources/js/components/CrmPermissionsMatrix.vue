@@ -6,7 +6,7 @@ import {
     Plus,
     Search,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -33,8 +33,17 @@ const props = withDefaults(
         roles: PermissionRole[];
         values: PermissionValues;
         canEdit?: boolean;
+        /** Selectable access levels for dropdown rows. */
+        levels?: readonly { value: string; label: string }[];
+        defaultLevel?: string;
+        defaultToggle?: boolean;
     }>(),
-    { canEdit: false },
+    {
+        canEdit: false,
+        levels: () => [...LEVELS],
+        defaultLevel: 'deny',
+        defaultToggle: false,
+    },
 );
 const emit = defineEmits<{ save: [values: PermissionValues]; addRole: [] }>();
 
@@ -43,8 +52,22 @@ const draft = ref<PermissionValues>(structuredClone(props.values));
 const query = ref('');
 const collapsed = ref<string[]>([]);
 const visibleGroups = computed(() => filterGroups(props.groups, query.value));
+const fallbackFor = (row: PermissionGroup['rows'][number]): PermissionValue =>
+    row.kind === 'toggle' ? props.defaultToggle : props.defaultLevel;
 const changes = computed(() =>
-    countChanges(props.groups, props.roles, props.values, draft.value),
+    countChanges(
+        props.groups,
+        props.roles,
+        props.values,
+        draft.value,
+        fallbackFor,
+    ),
+);
+watch(
+    () => props.values,
+    (next) => {
+        draft.value = structuredClone(next);
+    },
 );
 
 function value(
@@ -52,7 +75,13 @@ function value(
     group: PermissionGroup,
     row: PermissionGroup['rows'][number],
 ): PermissionValue {
-    return getCell(draft.value, roleId, cellKey(group.key, row.key), row.kind);
+    return getCell(
+        draft.value,
+        roleId,
+        cellKey(group.key, row.key),
+        row.kind,
+        fallbackFor(row),
+    );
 }
 function update(
     roleId: number,
@@ -279,7 +308,7 @@ function initials(name: string): string {
                                             "
                                         >
                                             <option
-                                                v-for="level in LEVELS"
+                                                v-for="level in levels"
                                                 :key="level.value"
                                                 :value="level.value"
                                             >
