@@ -1,14 +1,34 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
+
+const { t } = useLocale();
 const props = defineProps<{
     canManage: boolean;
     canApprove: boolean;
@@ -58,6 +78,7 @@ function submit(): void {
         onSuccess: () => {
             request.reset('amount', 'reason');
             request.operation_key = crypto.randomUUID();
+            requestOpen.value = false;
         },
     });
 }
@@ -69,53 +90,181 @@ function approve(id: number): void {
 function act(reverse: boolean): void {
     decision.post(
         `/finance/vendor-cash-refunds/${decision.refund_id}/${reverse ? 'reverse' : 'reject'}`,
-        { preserveScroll: true, onSuccess: () => decision.reset() },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                decision.reset();
+                decisionOpen.value = false;
+            },
+        },
     );
 }
+const requestOpen = ref(false);
+const decisionOpen = ref(false);
+const selectClass =
+    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
+type Refund = (typeof props.refunds.data)[number];
+type Row = {
+    id: number;
+    reference: string;
+    amount: string;
+    links: string;
+    receipt: string;
+    status: string;
+    note: string;
+    actions: string;
+};
+const rows = computed<Row[]>(() =>
+    props.refunds.data.map((refund) => ({
+        id: refund.id,
+        reference: refund.reference,
+        amount: `AED ${refund.amount}`,
+        links: `${t('Bill')} #${refund.vendor_bill_id} · ${t('Credit')} #${refund.vendor_credit_note_id}`,
+        receipt: refund.posted_on,
+        status: refund.status,
+        note: [
+            refund.reason,
+            refund.rejection_reason
+                ? `${t('Rejected')}: ${refund.rejection_reason}`
+                : '',
+            refund.reversal_reason
+                ? `${t('Reversed')}: ${refund.reversal_reason}`
+                : '',
+        ]
+            .filter(Boolean)
+            .join(' · '),
+        actions: '',
+    })),
+);
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'reference', label: t('Reference'), sortable: true },
+    { key: 'amount', label: t('Amount'), align: 'end' },
+    { key: 'links', label: t('Bill and credit') },
+    { key: 'receipt', label: t('Receipt date'), sortable: true },
+    { key: 'status', label: t('Status') },
+    { key: 'note', label: t('Reason') },
+    { key: 'actions', label: '' },
+]);
+const refundOf = (id: number): Refund | undefined =>
+    props.refunds.data.find((item) => item.id === id);
+function openDecision(id: number): void {
+    decision.reset();
+    decision.refund_id = String(id);
+    decisionOpen.value = true;
+}
 </script>
+
 <template>
-    <Head title="Vendor cash refunds" />
-    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Vendor cash refunds')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Cash received back from vendors"
             description="Owner-approved receipts against supplier credits and actual overpayments."
-        /><Link href="/vendor-bills" class="text-sm underline">{{
-            t('Vendor bills')
-        }}</Link
-        ><Card v-if="canManage"
-            ><CardHeader
-                ><CardTitle
-                    >Submit a receipt request · AED</CardTitle
-                ></CardHeader
-            ><CardContent
-                ><form
-                    class="grid gap-3 md:grid-cols-2"
+        >
+            <template #actions>
+                <Link href="/vendor-bills" class="text-sm underline">{{
+                    t('Vendor bills')
+                }}</Link>
+            </template>
+        </PageHeader>
+
+        <CrmSettingsTable
+            :show-title="false"
+            title="Requests and receipts"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.reference"
+            add-label="Submit a receipt request"
+            :selectable="false"
+            searchable
+            :can-edit="canManage"
+            @add="requestOpen = true"
+        >
+            <template #cell-status="{ row }"
+                ><Badge variant="secondary">{{ row.status }}</Badge></template
+            >
+            <template #cell-actions="{ row }">
+                <div
+                    v-if="canApprove && refundOf(row.id)"
+                    class="flex justify-end gap-2"
+                >
+                    <Button
+                        v-if="
+                            row.status === 'submitted' &&
+                            refundOf(row.id)!.requested_by !== actorId
+                        "
+                        size="sm"
+                        :disabled="approval.processing"
+                        @click="approve(row.id)"
+                        >{{ t('Approve receipt') }}</Button
+                    >
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        @click="openDecision(row.id)"
+                        >{{ t('Reject or reverse') }}</Button
+                    >
+                </div>
+            </template>
+        </CrmSettingsTable>
+        <InputError
+            v-for="(message, field) in approval.errors"
+            :key="field"
+            :message="message"
+        />
+        <Pagination :links="refunds.links" />
+
+        <Sheet v-model:open="requestOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium"
+                        >{{ t('Submit a receipt request') }} · AED</SheetTitle
+                    >
+                    <SheetDescription>{{
+                        t(
+                            'Owner-approved receipts against supplier credits and actual overpayments.',
+                        )
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="refund-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
                     @submit.prevent="submit"
                 >
-                    <label class="text-sm"
-                        >Vendor bill<select
+                    <div class="space-y-1">
+                        <Label for="cr-bill">{{ t('Vendor bill') }}</Label>
+                        <select
+                            id="cr-bill"
                             v-model="request.bill_id"
                             required
-                            class="border-input block h-9 w-full rounded-md border px-3"
+                            :class="selectClass"
                             @change="request.credit_note_id = ''"
                         >
-                            <option value="">Select bill</option>
+                            <option value="">{{ t('Select bill') }}</option>
                             <option
                                 v-for="bill in bills"
                                 :key="bill.id"
                                 :value="String(bill.id)"
                             >
-                                {{ bill.reference }} · Available AED
+                                {{ bill.reference }} · {{ t('Available') }} AED
                                 {{ bill.available }}
                             </option>
-                        </select></label
-                    ><label class="text-sm"
-                        >Supplier credit<select
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="cr-credit">{{
+                            t('Supplier credit')
+                        }}</Label>
+                        <select
+                            id="cr-credit"
                             v-model="request.credit_note_id"
                             required
-                            class="border-input block h-9 w-full rounded-md border px-3"
+                            :class="selectClass"
                         >
-                            <option value="">Select posted credit</option>
+                            <option value="">
+                                {{ t('Select posted credit') }}
+                            </option>
                             <option
                                 v-for="credit in selectedBill?.credits"
                                 :key="credit.id"
@@ -123,129 +272,102 @@ function act(reverse: boolean): void {
                             >
                                 {{ credit.reference }} · AED {{ credit.amount }}
                             </option>
-                        </select></label
-                    ><label class="text-sm"
-                        >{{ t('Amount')
-                        }}<Input
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="cr-amount">{{ t('Amount') }}</Label
+                        ><Input
+                            id="cr-amount"
                             v-model="request.amount"
                             required
-                            inputmode="decimal" /></label
-                    ><label class="text-sm"
-                        >Cash received on<Input
+                            inputmode="decimal"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="cr-date">{{ t('Cash received on') }}</Label
+                        ><Input
+                            id="cr-date"
                             v-model="request.posted_on"
                             required
-                            type="date" /></label
-                    ><label class="text-sm md:col-span-2"
-                        >Receipt reference and reason<Input
+                            type="date"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="cr-reason">{{
+                            t('Receipt reference and reason')
+                        }}</Label
+                        ><Input
+                            id="cr-reason"
                             v-model="request.reason"
                             required
                             maxlength="2000"
-                    /></label>
-                    <p
+                        />
+                    </div>
+                    <InputError
                         v-for="(message, field) in request.errors"
                         :key="field"
-                        class="text-destructive text-sm"
-                        role="alert"
-                    >
-                        {{ message }}
-                    </p>
+                        :message="message"
+                    />
+                </form>
+                <SheetFooter class="border-t">
                     <Button
-                        class="justify-self-start"
+                        type="submit"
+                        form="refund-form"
                         :disabled="request.processing"
-                        >Submit for owner approval</Button
+                        >{{ t('Submit for owner approval') }}</Button
                     >
-                </form></CardContent
-            ></Card
-        ><Card
-            ><CardHeader
-                ><CardTitle>Requests and receipts</CardTitle></CardHeader
-            ><CardContent class="space-y-3"
-                ><p v-if="!refunds.data.length">No requests recorded.</p>
-                <article
-                    v-for="refund in refunds.data"
-                    :key="refund.id"
-                    class="space-y-1 border-b pb-3 text-sm"
-                >
-                    <p>
-                        #{{ refund.id }} · {{ refund.reference }} ·
-                        {{ refund.status }} · AED {{ refund.amount }}
-                    </p>
-                    <p>
-                        Bill #{{ refund.vendor_bill_id }} · Credit #{{
-                            refund.vendor_credit_note_id
-                        }}
-                        · Receipt {{ refund.posted_on }} · Requester #{{
-                            refund.requested_by
-                        }}
-                    </p>
-                    <p>{{ refund.reason }}</p>
-                    <p v-if="refund.rejection_reason">
-                        Rejected: {{ refund.rejection_reason }}
-                    </p>
-                    <p v-if="refund.reversal_reason">
-                        Reversed: {{ refund.reversal_reason }}
-                    </p>
                     <Button
-                        v-if="
-                            canApprove &&
-                            refund.status === 'submitted' &&
-                            refund.requested_by !== actorId
-                        "
-                        :disabled="approval.processing"
-                        @click="approve(refund.id)"
-                        >Approve receipt</Button
+                        type="button"
+                        variant="outline"
+                        @click="requestOpen = false"
+                        >{{ t('Cancel') }}</Button
                     >
-                </article>
-                <p
-                    v-for="(message, field) in approval.errors"
-                    :key="field"
-                    class="text-destructive text-sm"
-                    role="alert"
-                >
-                    {{ message }}
-                </p>
-                <Pagination :links="refunds.links" /></CardContent></Card
-        ><Card v-if="canApprove"
-            ><CardHeader
-                ><CardTitle
-                    >Reject or reverse with a reason</CardTitle
-                ></CardHeader
-            ><CardContent
-                ><form
-                    class="grid gap-3 md:grid-cols-2"
-                    @submit.prevent="act(false)"
-                >
-                    <label class="text-sm"
-                        >Request ID<Input
-                            v-model="decision.refund_id"
-                            required
-                            type="number"
-                            min="1" /></label
-                    ><label class="text-sm"
-                        >{{ t('Reason')
-                        }}<Input
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
+
+        <Dialog v-model:open="decisionOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{{
+                        t('Reject or reverse with a reason')
+                    }}</DialogTitle>
+                    <DialogDescription>{{
+                        refundOf(Number(decision.refund_id))?.reference
+                    }}</DialogDescription>
+                </DialogHeader>
+                <form class="space-y-3" @submit.prevent="act(false)">
+                    <div class="space-y-1">
+                        <Label for="cd-reason">{{ t('Reason') }}</Label
+                        ><Input
+                            id="cd-reason"
                             v-model="decision.reason"
                             required
-                            maxlength="2000" /></label
-                    ><label class="text-sm"
-                        >Reversal date (for posted receipts)<Input
+                            maxlength="2000"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="cd-date">{{
+                            t('Reversal date (for posted receipts)')
+                        }}</Label
+                        ><Input
+                            id="cd-date"
                             v-model="decision.posted_on"
                             type="date"
-                    /></label>
-                    <p
+                        />
+                    </div>
+                    <InputError
                         v-for="(message, field) in decision.errors"
                         :key="field"
-                        class="text-destructive text-sm"
-                        role="alert"
-                    >
-                        {{ message }}
-                    </p>
-                    <div class="flex gap-3">
+                        :message="message"
+                    />
+                    <DialogFooter>
                         <Button
                             variant="outline"
                             :disabled="decision.processing"
-                            >Reject request</Button
-                        ><Button
+                            >{{ t('Reject request') }}</Button
+                        >
+                        <Button
                             type="button"
                             variant="outline"
                             :disabled="
@@ -255,11 +377,11 @@ function act(reverse: boolean): void {
                                 !decision.refund_id
                             "
                             @click="act(true)"
-                            >Reverse posted receipt</Button
+                            >{{ t('Reverse posted receipt') }}</Button
                         >
-                    </div>
-                </form></CardContent
-            ></Card
-        >
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

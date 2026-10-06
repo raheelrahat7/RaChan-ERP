@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { computed, reactive, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { reactive } from 'vue';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
+
+const { t } = useLocale();
 
 type PurchaseRequest = {
     id: number;
@@ -66,7 +78,10 @@ const selectedVendors = reactive<Record<number, string>>({});
 function create(): void {
     form.post('/procurement/requests', {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            form.reset();
+            createOpen.value = false;
+        },
     });
 }
 function act(url: string, data: Record<string, string> = {}): void {
@@ -95,82 +110,304 @@ function bill(id: number): void {
 function vendorName(id: number): string {
     return props.vendors.find((vendor) => vendor.id === id)?.name ?? 'Vendor';
 }
+const selectClass =
+    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
+const cellSelect =
+    'border-input bg-background h-8 rounded-md border px-2 text-sm';
+const tab = ref<'requests' | 'rfqs' | 'orders'>('requests');
+const createOpen = ref(false);
+const TABS = [
+    { key: 'requests', label: 'Purchase requests' },
+    { key: 'rfqs', label: 'RFQs and quotations' },
+    { key: 'orders', label: 'Purchase orders and receipts' },
+] as const;
+
+type Row = {
+    id: number;
+    reference: string;
+    subject: string;
+    detail: string;
+    status: string;
+    actions: string;
+};
+const requestOf = (id: number): PurchaseRequest | undefined =>
+    props.requests.find((item) => item.id === id);
+const rfqOf = (id: number): Rfq | undefined =>
+    props.rfqs.find((item) => item.id === id);
+const orderOf = (id: number): Order | undefined =>
+    props.orders.find((item) => item.id === id);
+
+const rows = computed<Row[]>(() => {
+    if (tab.value === 'requests') {
+        return props.requests.map((item) => ({
+            id: item.id,
+            reference: item.reference,
+            subject: item.purpose,
+            detail: item.lines
+                .map(
+                    (line) =>
+                        `${line.quantity} ${line.unit} ${line.description}`,
+                )
+                .join(' · '),
+            status: item.status,
+            actions: '',
+        }));
+    }
+    if (tab.value === 'rfqs') {
+        return props.rfqs.map((rfq) => ({
+            id: rfq.id,
+            reference: rfq.reference,
+            subject: vendorName(rfq.vendor_id),
+            detail: `${props.quotations.find((quote) => quote.rfq_id === rfq.id)?.total ?? t('Awaiting quote')} AED`,
+            status: rfq.status,
+            actions: '',
+        }));
+    }
+
+    return props.orders.map((order) => ({
+        id: order.id,
+        reference: order.reference,
+        subject: vendorName(order.vendor_id),
+        detail: `AED ${order.total}${order.vendor_bill_id ? ` · ${t('Bill')} #${order.vendor_bill_id}` : ''}`,
+        status: order.status,
+        actions: '',
+    }));
+});
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'reference', label: t('Reference'), sortable: true },
+    {
+        key: 'subject',
+        label: tab.value === 'requests' ? t('Purpose') : t('Vendor'),
+        sortable: true,
+    },
+    {
+        key: 'detail',
+        label: tab.value === 'requests' ? t('Items') : t('Amount'),
+    },
+    { key: 'status', label: t('Status') },
+    { key: 'actions', label: '' },
+]);
 </script>
 
 <template>
-    <Head title="Procurement" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Procurement')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Procurement"
             description="Request, compare, order, receive, and bill purchases in AED."
         />
-        <Card v-if="canManage">
-            <CardHeader><CardTitle>New purchase request</CardTitle></CardHeader>
-            <CardContent>
-                <form class="space-y-3" @submit.prevent="create">
-                    <Input
-                        v-model="form.purpose"
-                        aria-label="Purpose"
-                        placeholder="Purpose"
-                        required
-                    />
-                    <select
-                        v-model="form.property_id"
-                        aria-label="Property"
-                        class="border-input h-9 rounded-md border px-3"
+
+        <nav :aria-label="t('Procurement stages')" class="flex flex-wrap gap-2">
+            <button
+                v-for="item in TABS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+
+        <CrmSettingsTable
+            :show-title="false"
+            :title="TABS.find((item) => item.key === tab)!.label"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.reference"
+            :add-label="tab === 'requests' ? 'New purchase request' : ''"
+            :selectable="false"
+            searchable
+            :can-edit="canManage"
+            @add="createOpen = true"
+        >
+            <template #cell-status="{ row }"
+                ><Badge variant="secondary">{{ row.status }}</Badge></template
+            >
+            <template #cell-actions="{ row }">
+                <div
+                    v-if="tab === 'requests' && canManage && requestOf(row.id)"
+                    class="flex flex-wrap items-center justify-end gap-2"
+                >
+                    <Button
+                        v-if="row.status === 'draft'"
+                        size="sm"
+                        @click="act(`/procurement/requests/${row.id}/submit`)"
+                        >{{ t('Submit') }}</Button
                     >
-                        <option value="">Unallocated</option>
-                        <option
-                            v-for="property in properties"
-                            :key="property.id"
-                            :value="String(property.id)"
+                    <Button
+                        v-if="
+                            row.status === 'submitted' &&
+                            requestOf(row.id)!.requested_by !== userId
+                        "
+                        size="sm"
+                        @click="act(`/procurement/requests/${row.id}/approve`)"
+                        >{{ t('Approve') }}</Button
+                    >
+                    <template
+                        v-if="row.status === 'approved' && vendors.length"
+                    >
+                        <select
+                            v-model="selectedVendors[row.id]"
+                            :aria-label="t('RFQ vendor')"
+                            :class="cellSelect"
                         >
-                            {{ property.name }}
-                        </option>
-                    </select>
-                    <div
-                        v-for="(line, index) in form.lines"
-                        :key="index"
-                        class="flex flex-wrap gap-2"
-                    >
-                        <Input
-                            v-model="line.description"
-                            aria-label="Line description"
-                            placeholder="Item or service"
-                            required
-                        />
-                        <Input
-                            v-model="line.quantity"
-                            aria-label="Quantity"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            required
-                        />
-                        <Input
-                            v-model="line.unit"
-                            aria-label="Unit"
-                            placeholder="Unit"
-                            required
-                        />
+                            <option value="">{{ t('Select vendor') }}</option>
+                            <option
+                                v-for="vendor in vendors"
+                                :key="vendor.id"
+                                :value="String(vendor.id)"
+                            >
+                                {{ vendor.name }}
+                            </option>
+                        </select>
                         <Button
-                            v-if="form.lines.length > 1"
-                            type="button"
+                            size="sm"
                             variant="outline"
-                            @click="form.lines.splice(index, 1)"
-                            >{{ t('Remove') }}</Button
+                            :disabled="!selectedVendors[row.id]"
+                            @click="requestRfq(row.id)"
+                            >{{ t('Send RFQ') }}</Button
                         >
+                    </template>
+                </div>
+                <div
+                    v-else-if="tab === 'rfqs' && canManage && rfqOf(row.id)"
+                    class="flex justify-end gap-2"
+                >
+                    <Button
+                        v-if="row.status === 'sent'"
+                        size="sm"
+                        @click="recordQuote(row.id)"
+                        >{{ t('Record quote') }}</Button
+                    >
+                    <Button
+                        v-for="quote in quotations.filter(
+                            (item) =>
+                                item.rfq_id === row.id &&
+                                item.status === 'received',
+                        )"
+                        :key="quote.id"
+                        size="sm"
+                        variant="outline"
+                        @click="
+                            act(`/procurement/quotations/${quote.id}/order`)
+                        "
+                        >{{ t('Issue order') }}</Button
+                    >
+                </div>
+                <div
+                    v-else-if="tab === 'orders' && orderOf(row.id)"
+                    class="flex justify-end gap-2"
+                >
+                    <Button
+                        v-if="canManage && row.status === 'issued'"
+                        size="sm"
+                        @click="receive(row.id)"
+                        >{{ t('Record receipt') }}</Button
+                    >
+                    <Button
+                        v-if="canManageFinance && row.status === 'received'"
+                        size="sm"
+                        variant="outline"
+                        @click="bill(row.id)"
+                        >{{ t('Create draft bill') }}</Button
+                    >
+                </div>
+            </template>
+        </CrmSettingsTable>
+
+        <Sheet v-model:open="createOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('New purchase request')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t(
+                            'Request, compare, order, receive, and bill purchases in AED.',
+                        )
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="pr-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
+                    @submit.prevent="create"
+                >
+                    <div class="space-y-1">
+                        <Label for="pr-purpose">{{ t('Purpose') }}</Label
+                        ><Input
+                            id="pr-purpose"
+                            v-model="form.purpose"
+                            required
+                        /><InputError :message="form.errors.purpose" />
                     </div>
-                    <p
-                        v-if="form.errors.lines"
-                        class="text-destructive text-sm"
-                    >
-                        {{ form.errors.lines }}
-                    </p>
-                    <div class="flex gap-2">
+                    <div class="space-y-1">
+                        <Label for="pr-property">{{ t('Property') }}</Label>
+                        <select
+                            id="pr-property"
+                            v-model="form.property_id"
+                            :class="selectClass"
+                        >
+                            <option value="">{{ t('Unallocated') }}</option>
+                            <option
+                                v-for="property in properties"
+                                :key="property.id"
+                                :value="String(property.id)"
+                            >
+                                {{ property.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <fieldset class="space-y-3">
+                        <legend class="text-sm font-medium">
+                            {{ t('Items') }}
+                        </legend>
+                        <div
+                            v-for="(line, index) in form.lines"
+                            :key="index"
+                            class="grid grid-cols-[1fr_4.5rem_5rem_auto] gap-2"
+                        >
+                            <Input
+                                v-model="line.description"
+                                :aria-label="t('Line description')"
+                                :placeholder="t('Item or service')"
+                                required
+                            />
+                            <Input
+                                v-model="line.quantity"
+                                :aria-label="t('Quantity')"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                required
+                            />
+                            <Input
+                                v-model="line.unit"
+                                :aria-label="t('Unit')"
+                                :placeholder="t('Unit')"
+                                required
+                            />
+                            <Button
+                                v-if="form.lines.length > 1"
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                @click="form.lines.splice(index, 1)"
+                                >{{ t('Remove') }}</Button
+                            >
+                        </div>
+                        <InputError :message="form.errors.lines" />
                         <Button
                             type="button"
                             variant="outline"
+                            size="sm"
                             @click="
                                 form.lines.push({
                                     description: '',
@@ -178,177 +415,25 @@ function vendorName(id: number): string {
                                     unit: 'each',
                                 })
                             "
-                            >Add line</Button
-                        ><Button :disabled="form.processing"
-                            >Create draft</Button
+                            >{{ t('Add line') }}</Button
                         >
-                    </div>
+                    </fieldset>
                 </form>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader><CardTitle>Purchase requests</CardTitle></CardHeader>
-            <CardContent class="space-y-3">
-                <p
-                    v-if="!requests.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No purchase requests yet.
-                </p>
-                <div
-                    v-for="item in requests"
-                    :key="item.id"
-                    class="space-y-1 border-b pb-3 last:border-0"
-                >
-                    <div
-                        class="flex flex-wrap items-center justify-between gap-2"
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="pr-form"
+                        :disabled="form.processing"
+                        >{{ t('Create draft') }}</Button
                     >
-                        <strong
-                            >{{ item.reference }} · {{ item.purpose }}</strong
-                        ><span>{{ item.status }}</span>
-                    </div>
-                    <p class="text-muted-foreground text-sm">
-                        {{
-                            item.lines
-                                .map(
-                                    (line) =>
-                                        `${line.quantity} ${line.unit} ${line.description}`,
-                                )
-                                .join(' · ')
-                        }}
-                    </p>
-                    <div v-if="canManage" class="flex flex-wrap gap-2">
-                        <Button
-                            v-if="item.status === 'draft'"
-                            size="sm"
-                            @click="
-                                act(`/procurement/requests/${item.id}/submit`)
-                            "
-                            >Submit</Button
-                        >
-                        <Button
-                            v-if="
-                                item.status === 'submitted' &&
-                                item.requested_by !== userId
-                            "
-                            size="sm"
-                            @click="
-                                act(`/procurement/requests/${item.id}/approve`)
-                            "
-                            >{{ t('Approve') }}</Button
-                        >
-                        <template
-                            v-if="item.status === 'approved' && vendors.length"
-                        >
-                            <select
-                                v-model="selectedVendors[item.id]"
-                                aria-label="RFQ vendor"
-                                class="border-input h-9 rounded-md border px-3"
-                            >
-                                <option value="">Select vendor</option>
-                                <option
-                                    v-for="vendor in vendors"
-                                    :key="vendor.id"
-                                    :value="String(vendor.id)"
-                                >
-                                    {{ vendor.name }}
-                                </option>
-                            </select>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                :disabled="!selectedVendors[item.id]"
-                                @click="requestRfq(item.id)"
-                                >Send RFQ</Button
-                            >
-                        </template>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader><CardTitle>RFQs and quotations</CardTitle></CardHeader>
-            <CardContent class="space-y-3">
-                <p v-if="!rfqs.length" class="text-muted-foreground text-sm">
-                    No RFQs yet.
-                </p>
-                <div
-                    v-for="rfq in rfqs"
-                    :key="rfq.id"
-                    class="flex flex-wrap items-center justify-between gap-2 border-b pb-3 last:border-0"
-                >
-                    <span
-                        >{{ rfq.reference }} · {{ vendorName(rfq.vendor_id) }} ·
-                        {{ rfq.status }} ·
-                        {{
-                            quotations.find((q) => q.rfq_id === rfq.id)
-                                ?.total ?? 'Awaiting quote'
-                        }}
-                        AED</span
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="createOpen = false"
+                        >{{ t('Cancel') }}</Button
                     >
-                    <div v-if="canManage" class="flex gap-2">
-                        <Button
-                            v-if="rfq.status === 'sent'"
-                            size="sm"
-                            @click="recordQuote(rfq.id)"
-                            >Record quote</Button
-                        ><Button
-                            v-for="quote in quotations.filter(
-                                (q) =>
-                                    q.rfq_id === rfq.id &&
-                                    q.status === 'received',
-                            )"
-                            :key="quote.id"
-                            size="sm"
-                            variant="outline"
-                            @click="
-                                act(`/procurement/quotations/${quote.id}/order`)
-                            "
-                            >Issue order</Button
-                        >
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader
-                ><CardTitle>Purchase orders and receipts</CardTitle></CardHeader
-            >
-            <CardContent class="space-y-3">
-                <p v-if="!orders.length" class="text-muted-foreground text-sm">
-                    No purchase orders yet.
-                </p>
-                <div
-                    v-for="order in orders"
-                    :key="order.id"
-                    class="flex flex-wrap items-center justify-between gap-2 border-b pb-3 last:border-0"
-                >
-                    <span
-                        >{{ order.reference }} ·
-                        {{ vendorName(order.vendor_id) }} · AED
-                        {{ order.total }} · {{ order.status
-                        }}<span v-if="order.vendor_bill_id">
-                            · Bill #{{ order.vendor_bill_id }}</span
-                        ></span
-                    >
-                    <div class="flex gap-2">
-                        <Button
-                            v-if="canManage && order.status === 'issued'"
-                            size="sm"
-                            @click="receive(order.id)"
-                            >Record receipt</Button
-                        ><Button
-                            v-if="
-                                canManageFinance && order.status === 'received'
-                            "
-                            size="sm"
-                            variant="outline"
-                            @click="bill(order.id)"
-                            >Create draft bill</Button
-                        >
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
