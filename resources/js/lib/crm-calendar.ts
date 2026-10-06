@@ -4,6 +4,7 @@ export type ServerCalendar = {
     working_days: Record<string, { start: string; end: string }>;
     holidays: string[];
     timezone: string;
+    version: number;
 } | null;
 
 /** ISO weekdays, Monday first (the backend keys working days 1–7 this way). */

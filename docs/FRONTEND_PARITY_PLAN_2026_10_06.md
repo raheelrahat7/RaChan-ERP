@@ -40,7 +40,7 @@ Written for the backend owner. The frontend builds screens from the contract doc
 - [ ] FE+BE: decide whether `composer.json` should say `"php": "^8.4"` (lock file already needs 8.4.1).
 - [ ] Owner: decide about removing omniroute from Claude, Codex and VS Code (needs consent per config file).
 - [ ] FE: Arabic strings for everything added since 2026-10-05 (`resources/js/locales/ar.json`).
-- [ ] BE→FE: Codex changed the working-calendar API to day names; FE page `crm/WorkingCalendar.vue` and `lib/crm-calendar.ts` must follow once committed.
+- [~] BE→FE: calendar/provider version checks implemented and documented in `docs/CRM_FRONTEND_BACKEND_SETTINGS_LOCKING_2026_10_06.md`; calendar page sends `expected_version`. Weekday keys remain ISO **1–7**, not day names. Backend verified locally; browser acceptance and push pending.
 
 ## Phase 1 — CRM completeness (biggest visible gaps)
 
@@ -123,4 +123,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-Phase 0: browser check (waiting for owner consent), then Phase 1B contacts and companies screens (backend ready).
+BE: Phase 1A lead requirement fields and lead score/temperature (first open backend item; calendar/provider version checks are ready). FE: Phase 0 browser check, then Phase 1B contacts and companies screens (backend ready). Push only when the owner asks.

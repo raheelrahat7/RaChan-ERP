@@ -22,6 +22,9 @@ class ManageReferenceConfiguration
         Gate::forUser($actor)->authorize('manageSettings', $org);
         $rows = DB::table(self::TABLES[$kind])->where('organization_id', $org->id)->orderBy('id')->get();
         foreach ($rows as $row) {
+            if ($kind === 'providers') {
+                $row->permissions = ['read' => true, 'edit' => true];
+            }
             foreach (['translations', 'settings'] as $column) {
                 if (isset($row->$column)) {
                     $row->$column = json_decode($row->$column, true);
@@ -43,6 +46,9 @@ class ManageReferenceConfiguration
             'numbering' => ['kind' => ['required', 'in:invoice,estimate,document,recruitment'], 'prefix' => ['required', 'regex:/^[A-Za-z0-9_-]{1,40}$/'], 'padding' => ['required', 'integer', 'between:1,12'], 'next_number' => ['required', 'integer', 'between:1,999999999999'], 'include_year' => ['required', 'boolean'], 'active' => ['required', 'boolean']],
             default => ['capability' => ['required', 'in:'.implode(',', LocalOutboundProvider::CAPABILITIES)], 'name' => ['required', 'string', 'max:100'], 'provider' => ['nullable', 'string', 'max:100'], 'active' => ['required', 'boolean'], 'settings' => ['sometimes', 'array:sender,label,print_title,terms,daily_limit'], 'settings.sender' => ['nullable', 'string', 'max:100'], 'settings.label' => ['nullable', 'string', 'max:100'], 'settings.print_title' => ['nullable', 'string', 'max:255'], 'settings.terms' => ['nullable', 'string', 'max:2000'], 'settings.daily_limit' => ['nullable', 'integer', 'between:0,100000']],
         };
+        if ($kind === 'providers' && $id !== null) {
+            $rules['expected_version'] = ['required', 'integer', 'min:1'];
+        }
         $data = Validator::make($input, $rules)->validate();
 
         return DB::transaction(function () use ($org, $actor, $kind, $data, $id): int {
@@ -50,6 +56,13 @@ class ManageReferenceConfiguration
             $table = self::TABLES[$kind];
             $existing = $id ? DB::table($table)->where('organization_id', $org->id)->where('id', $id)->first() : null;
             abort_if($id && ! $existing, 404);
+            if ($kind === 'providers' && $existing) {
+                if ($existing->version !== (int) $data['expected_version']) {
+                    $this->fail('expected_version', 'This provider profile changed. Reload it and try again.');
+                }
+                unset($data['expected_version']);
+                $data['version'] = $existing->version + 1;
+            }
             if ($kind === 'currencies') {
                 if ($existing && $existing->code !== $data['code']) {
                     $this->fail('code', 'Currency codes cannot change. Rename the display name instead.');

@@ -117,7 +117,7 @@ class ScreenshotBackendTest extends TestCase
         $this->travelTo(now()->setDate(2026, 10, 9)->setTime(11, 0)); // Friday 16:00 in Karachi.
         $org = Organization::factory()->create(['timezone' => 'Asia/Karachi']);
         $owner = $this->member($org);
-        app(ManageWorkingCalendar::class)->save($org, $owner, ['working_days' => [1 => ['start' => '09:00', 'end' => '17:00'], 5 => ['start' => '09:00', 'end' => '17:00']], 'holidays' => []]);
+        app(ManageWorkingCalendar::class)->save($org, $owner, ['expected_version' => 0, 'working_days' => [1 => ['start' => '09:00', 'end' => '17:00'], 5 => ['start' => '09:00', 'end' => '17:00']], 'holidays' => []]);
         $deadline = app(ManageWorkingCalendar::class)->deadline($org, 120);
         $this->assertSame('2026-10-12 10:00', $deadline->setTimezone('Asia/Karachi')->format('Y-m-d H:i'));
         $this->travelBack();
@@ -258,7 +258,7 @@ class ScreenshotBackendTest extends TestCase
         $this->travelTo(now()->setDate(2026, 10, 9)->setTime(14, 0));
         $org = Organization::factory()->create(['timezone' => 'Asia/Karachi']);
         $owner = $this->member($org);
-        app(ManageWorkingCalendar::class)->save($org, $owner, ['working_days' => [1 => ['start' => '09:00', 'end' => '17:00']], 'holidays' => []]);
+        app(ManageWorkingCalendar::class)->save($org, $owner, ['expected_version' => 0, 'working_days' => [1 => ['start' => '09:00', 'end' => '17:00']], 'holidays' => []]);
         $this->assertSame('2026-10-12 09:00', app(ManageWorkingCalendar::class)->deadline($org, 0)->setTimezone('Asia/Karachi')->format('Y-m-d H:i'));
         $this->travelBack();
     }

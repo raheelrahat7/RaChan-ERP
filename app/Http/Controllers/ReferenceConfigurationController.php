@@ -7,6 +7,7 @@ use App\Domain\Integrations\Actions\PrepareProviderPacket;
 use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReferenceConfigurationController extends Controller
 {
@@ -17,7 +18,15 @@ class ReferenceConfigurationController extends Controller
 
     public function save(Request $request, string $kind, ManageReferenceConfiguration $settings, ?int $record = null): JsonResponse
     {
-        return response()->json(['id' => $settings->save($this->organization($request), $request->user(), $kind, $request->all(), $record)]);
+        $org = $this->organization($request);
+        $result = DB::transaction(function () use ($org, $request, $kind, $settings, $record): array {
+            $id = $settings->save($org, $request->user(), $kind, $request->all(), $record);
+            $version = $kind === 'providers' ? DB::table('organization_provider_profiles')->where('organization_id', $org->id)->where('id', $id)->value('version') : null;
+
+            return $kind === 'providers' ? ['id' => $id, 'version' => $version, 'permissions' => ['read' => true, 'edit' => true]] : ['id' => $id];
+        });
+
+        return response()->json($result);
     }
 
     public function rebase(Request $request, ManageReferenceConfiguration $settings): JsonResponse

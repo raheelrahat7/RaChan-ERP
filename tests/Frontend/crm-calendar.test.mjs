@@ -21,6 +21,7 @@ await test('server calendars map onto weekdays and missing days are off', () => 
         working_days: { 1: { start: '08:00', end: '12:30' } },
         holidays: [],
         timezone: 'Asia/Dubai',
+        version: 1,
     });
     assert.deepEqual(week[1], { on: true, start: '08:00', end: '12:30' });
     assert.equal(week[2].on, false);

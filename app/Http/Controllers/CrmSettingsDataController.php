@@ -48,14 +48,14 @@ class CrmSettingsDataController extends Controller
         $this->authorize('viewCrm', $org);
         $calendar = DB::table('crm_working_calendars')->where('organization_id', $org->id)->first();
 
-        return response()->json(['calendar' => $calendar ? ['working_days' => json_decode($calendar->working_days, true), 'holidays' => json_decode($calendar->holidays, true), 'timezone' => $org->timezone] : null]);
+        return response()->json(['calendar' => $calendar ? ['working_days' => json_decode($calendar->working_days, true), 'holidays' => json_decode($calendar->holidays, true), 'timezone' => $org->timezone, 'version' => $calendar->version, 'permissions' => ['read' => true, 'edit' => app(DealAccess::class)->administrator($org, $request->user())]] : null]);
     }
 
     public function saveCalendar(Request $request, ManageWorkingCalendar $calendar): JsonResponse
     {
-        $calendar->save($this->organization($request), $request->user(), $request->all());
+        $version = $calendar->save($this->organization($request), $request->user(), $request->all());
 
-        return response()->json(['saved' => true]);
+        return response()->json(['saved' => true, 'version' => $version, 'permissions' => ['read' => true, 'edit' => true]]);
     }
 
     public function section(Request $request, ManageCrmSettings $manage): JsonResponse

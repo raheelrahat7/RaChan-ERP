@@ -25,6 +25,7 @@ const { t } = useLocale();
 const week = ref<Week>(defaultWeek());
 const holidays = ref<string[]>([]);
 const timezone = ref('');
+const version = ref(0);
 const configured = ref(true);
 const newHoliday = ref('');
 const loading = ref(true);
@@ -45,6 +46,7 @@ async function load(): Promise<void> {
         week.value = weekFrom(data.calendar);
         holidays.value = data.calendar?.holidays ?? [];
         timezone.value = data.calendar?.timezone ?? '';
+        version.value = data.calendar?.version ?? 0;
         loadError.value = '';
     } catch {
         loadError.value = t('Could not load the working calendar.');
@@ -66,11 +68,15 @@ async function save(): Promise<void> {
     serverError.value = '';
     message.value = '';
     try {
-        await apiJson(
+        const result = await apiJson<{ version: number }>(
             '/crm/settings/calendar',
             'PUT',
-            calendarPayload(week.value, holidays.value),
+            {
+                ...calendarPayload(week.value, holidays.value),
+                expected_version: version.value,
+            },
         );
+        version.value = result.version;
         configured.value = true;
         message.value = t('Saved.');
     } catch (failure) {
@@ -226,7 +232,12 @@ onMounted(load);
             <div>
                 <Button
                     type="button"
-                    :disabled="busy || Object.keys(errors).length > 0"
+                    :disabled="
+                        busy ||
+                        loading ||
+                        !!loadError ||
+                        Object.keys(errors).length > 0
+                    "
                     @click="save"
                     >{{ t('Save') }}</Button
                 >
