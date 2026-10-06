@@ -1870,5 +1870,15 @@
     "Vehicle status": "حالة المركبة",
     "All vehicles": "كل المركبات",
     "Linked fixed asset": "أصل ثابت مرتبط",
-    "Fleet actions do not change depreciation or post accounting entries.": "إجراءات الأسطول لا تغيّر الإهلاك ولا ترحّل قيوداً محاسبية."
+    "Fleet actions do not change depreciation or post accounting entries.": "إجراءات الأسطول لا تغيّر الإهلاك ولا ترحّل قيوداً محاسبية.",
+    "Event": "الحدث",
+    "Actor": "المنفّذ",
+    "All modules": "كل الوحدات",
+    "All actors": "كل المنفّذين",
+    "Revoke this token? Anything using it stops working.": "هل تريد إلغاء هذا الرمز؟ سيتوقف كل ما يستخدمه عن العمل.",
+    "Copy this token now. It will only be shown once.": "انسخ هذا الرمز الآن. سيظهر مرة واحدة فقط.",
+    "Send the token in the Authorization: Bearer header to GET /api/v1/jobs, GET /api/v1/properties, GET /api/v1/leads or GET /api/v1/invoices. Page size defaults to 25 and is limited to 100. API access cannot change workflows or finances.": "أرسل الرمز في ترويسة Authorization: Bearer إلى GET /api/v1/jobs أو GET /api/v1/properties أو GET /api/v1/leads أو GET /api/v1/invoices. حجم الصفحة الافتراضي 25 وحده الأقصى 100. لا يمكن للوصول عبر الواجهة تغيير سير العمل أو الشؤون المالية.",
+    "Personal access to organization data. Current permissions and job assignments are checked on every request.": "وصول شخصي إلى بيانات المؤسسة. تُفحص الصلاحيات الحالية وتعيينات المهام عند كل طلب.",
+    "Download packet": "تنزيل الحزمة",
+    "Signers": "الموقّعون"
 }
