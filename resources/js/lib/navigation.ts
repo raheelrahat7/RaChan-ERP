@@ -137,6 +137,12 @@ export const NAVIGATION: NavGroup[] = [
                 ability: 'crm',
             },
             {
+                label: 'Companies',
+                href: '/companies',
+                icon: 'contacts',
+                ability: 'crm',
+            },
+            {
                 label: 'AI Matchmaker',
                 href: '/crm/matchmaker',
                 icon: 'matchmaker',

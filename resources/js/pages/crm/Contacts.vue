@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import CrmPartyTabs from '@/components/CrmPartyTabs.vue';
 import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -29,6 +30,7 @@ type Contact = {
 type Row = {
     id: number;
     name: string;
+    company_id: number | null;
     company: string;
     email: string;
     phone: string;
@@ -48,6 +50,7 @@ const rows = computed<Row[]>(() =>
     props.contacts.map((contact) => ({
         id: contact.id,
         name: `${contact.first_name} ${contact.last_name}`.trim(),
+        company_id: contact.account?.id ?? null,
         company: contact.account?.name ?? '',
         email: contact.email ?? '',
         phone: contact.phone ?? '',
@@ -90,7 +93,24 @@ function createContact(): void {
             searchable
             :can-edit="canManageCrm"
             @add="open = true"
-        />
+        >
+            <template #cell-name="{ row }">
+                <Link
+                    :href="`/contacts/${row.id}`"
+                    class="text-primary font-medium underline-offset-2 hover:underline"
+                    >{{ row.name }}</Link
+                >
+            </template>
+            <template #cell-company="{ row }">
+                <Link
+                    v-if="row.company_id"
+                    :href="`/companies/${row.company_id}`"
+                    class="hover:underline"
+                    >{{ row.company }}</Link
+                >
+                <span v-else>{{ row.company }}</span>
+            </template>
+        </CrmSettingsTable>
 
         <Sheet v-model:open="open">
             <SheetContent class="w-full gap-0 sm:max-w-md" side="right">

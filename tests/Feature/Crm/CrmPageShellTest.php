@@ -240,4 +240,22 @@ class CrmPageShellTest extends TestCase
         $this->putJson('/crm/deals/'.$deal['id'].'/transfer', ['expected_version' => $deal['version'], 'pipeline_id' => $second, 'stage_id' => $target, 'confirmed' => true])->assertSuccessful()->assertJsonPath('deal.pipeline_id', $second);
         $this->getJson('/crm/leads/qualified')->assertOk()->assertJsonStructure(['leads' => ['data']]);
     }
+
+    public function test_contact_and_company_pages_render_details_and_edits_use_versions(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+        $company = $this->postJson('/crm/companies', ['name' => 'Acme Realty', 'email' => 'hello@acme.test'])->assertCreated()->json('company');
+        $contact = $this->postJson('/crm/contacts', ['first_name' => 'Lina', 'last_name' => 'Karim', 'company' => 'Acme Realty'], ['Accept' => 'application/json'])->assertSuccessful()->json('contact');
+
+        $this->get(route('companies.index'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/Companies'));
+        $this->get(route('companies.show', $company['id']))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/CompanyShow')->where('company.name', 'Acme Realty')->has('customFields')->has('activities.data')->etc());
+        $this->get(route('contacts.show', $contact['id']))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/ContactShow')->where('contact.first_name', 'Lina')->has('leads')->has('deals')->etc());
+        $this->putJson('/crm/contacts/'.$contact['id'], ['expected_version' => $contact['version'], 'first_name' => 'Lena'])->assertSuccessful()->assertJsonPath('contact.first_name', 'Lena');
+        $this->putJson('/crm/contacts/'.$contact['id'], ['expected_version' => $contact['version'], 'first_name' => 'Stale'])->assertUnprocessable()->assertJsonValidationErrors('expected_version');
+
+        $other = $this->member(Organization::factory()->create(), OrganizationRole::Owner);
+        $this->actingAs($other)->get(route('contacts.show', $contact['id']))->assertNotFound();
+    }
 }

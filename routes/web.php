@@ -525,6 +525,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/settings/reference/{section}', [CrmPageController::class, 'referenceSettings'])->name('crm.settings.reference');
     Route::get('crm/settings/lists', [CrmPageController::class, 'selectionLists'])->name('crm.settings.lists');
     Route::get('crm/settings/catalog/{section}', [CrmPageController::class, 'catalogSettings'])->name('crm.settings.catalog');
+    Route::get('companies', [CrmPageController::class, 'companies'])->name('companies.index');
+    Route::get('contacts/{contact}', [CrmPageController::class, 'contact'])->whereNumber('contact')->name('contacts.show');
+    Route::get('companies/{company}', [CrmPageController::class, 'company'])->whereNumber('company')->name('companies.show');
     Route::get('workflows', [CrmPageController::class, 'workflows'])->name('workflows.index');
     Route::get('workflows/pipelines', [CrmPageController::class, 'workflowPipelines'])->name('workflows.pipelines');
     Route::get('crm/leads/preferences', [CrmLeadPreferenceController::class, 'index'])->name('crm.leads.preferences.index');

@@ -63,9 +63,9 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 ### 1B. Contacts and companies
 
 - [~] BE done (`47e4d9d`): list, detail, edit with `expected_version`, custom fields.
-- [ ] FE: contacts list upgrade (pagination, company link), contact detail page, edit.
-- [ ] FE: companies list, company detail, create, edit, linked leads/deals/activities.
-- [ ] FE: show/edit contact and company custom fields.
+- [x] FE: contacts list upgrade (company link, People tabs), contact detail page (General/Leads/Deals/Activities), edit with version check.
+- [x] FE: companies list (server search and paging), company detail (General/Contacts/Leads/Deals/Activities), create, edit.
+- [x] FE: show and edit contact and company custom fields (all 13 field types). Browser-checked on 2026-10-06 (7 flows).
 
 ### 1C. Deals
 

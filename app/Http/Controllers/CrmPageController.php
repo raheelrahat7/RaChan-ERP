@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Domain\Crm\Actions\ManageCrmSettings;
 use App\Domain\Crm\Models\Deal;
 use App\Domain\Crm\Queries\DealOverview;
+use App\Domain\Crm\Queries\PartyOverview;
 use App\Domain\Crm\Services\DealAccess;
+use App\Models\CrmAccount;
+use App\Models\CrmContact;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -104,6 +107,27 @@ class CrmPageController extends Controller
         abort_unless(in_array($section, ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products'], true), 404);
 
         return Inertia::render('crm/SettingsCatalog', ['section' => $section]);
+    }
+
+    public function companies(Request $request): Response
+    {
+        $org = $this->organization($request);
+
+        return Inertia::render('crm/Companies', ['canManageCrm' => $request->user()->can('manageCrm', $org)]);
+    }
+
+    public function contact(Request $request, int $contact, PartyOverview $overview): Response
+    {
+        $org = $this->organization($request);
+
+        return Inertia::render('crm/ContactShow', $overview->contact($org, $request->user(), CrmContact::where('organization_id', $org->id)->findOrFail($contact)));
+    }
+
+    public function company(Request $request, int $company, PartyOverview $overview): Response
+    {
+        $org = $this->organization($request);
+
+        return Inertia::render('crm/CompanyShow', $overview->company($org, $request->user(), CrmAccount::where('organization_id', $org->id)->findOrFail($company)));
     }
 
     public function workflows(Request $request): Response
