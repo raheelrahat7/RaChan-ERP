@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
 
 type Plan = { id: number; name: string; basis: string; rate: string };
 type Transaction = {
@@ -13,106 +27,190 @@ type Transaction = {
     status: string;
     broker: { name: string };
 };
-defineProps<{
+type PlanRow = { id: number; name: string; rate: string };
+type TransactionRow = {
+    id: number;
+    broker: string;
+    base: string;
+    commission: string;
+    status: string;
+};
+
+const props = defineProps<{
     plans: Plan[];
     transactions: Transaction[];
     canManage: boolean;
 }>();
-
+const { t } = useLocale();
+const tab = ref<'plans' | 'transactions'>('plans');
+const open = ref(false);
 const form = useForm({ name: '', basis: 'percentage', rate: '' });
+
+const planRows = computed<PlanRow[]>(() =>
+    props.plans.map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        rate: plan.basis === 'fixed' ? `AED ${plan.rate}` : `${plan.rate}%`,
+    })),
+);
+const transactionRows = computed<TransactionRow[]>(() =>
+    props.transactions.map((transaction) => ({
+        id: transaction.id,
+        broker: transaction.broker.name,
+        base: `AED ${transaction.base_amount}`,
+        commission: `AED ${transaction.commission_amount}`,
+        status: transaction.status,
+    })),
+);
+const planColumns = computed<DataTableColumn<PlanRow>[]>(() => [
+    { key: 'name', label: t('Plan'), sortable: true },
+    { key: 'rate', label: t('Rate'), align: 'end' },
+]);
+const transactionColumns = computed<DataTableColumn<TransactionRow>[]>(() => [
+    { key: 'broker', label: t('Broker'), sortable: true },
+    { key: 'base', label: t('Base amount'), align: 'end' },
+    { key: 'commission', label: t('Commission'), align: 'end' },
+    { key: 'status', label: t('Status') },
+]);
+
 function createPlan(): void {
     form.post('/real-estate/brokerage/commission-plans', {
         preserveScroll: true,
-        onSuccess: () => form.reset('name', 'rate'),
+        onSuccess: () => {
+            form.reset('name', 'rate');
+            open.value = false;
+        },
     });
 }
 </script>
 
 <template>
-    <Head title="Brokerage" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Brokerage')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Brokerage"
             description="Commission plans and calculated broker commissions."
         />
-        <Card v-if="canManage">
-            <CardHeader
-                ><CardTitle>Create commission plan</CardTitle></CardHeader
+        <nav :aria-label="t('Brokerage views')" class="flex gap-2">
+            <button
+                v-for="item in [
+                    { key: 'plans', label: 'Commission plans' },
+                    { key: 'transactions', label: 'Commission transactions' },
+                ] as const"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
             >
-            <CardContent>
-                <form class="flex flex-wrap gap-3" @submit.prevent="createPlan">
-                    <Input
-                        v-model="form.name"
-                        placeholder="Plan name"
-                        required
-                    />
-                    <select
-                        v-model="form.basis"
-                        class="border-input h-9 rounded-md border px-3"
-                    >
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed AED</option>
-                    </select>
-                    <Input
-                        v-model="form.rate"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        :placeholder="
-                            form.basis === 'fixed' ? 'AED amount' : 'Percent'
-                        "
-                        required
-                    />
-                    <Button :disabled="form.processing">Create plan</Button>
+                {{ t(item.label) }}
+            </button>
+        </nav>
+
+        <CrmSettingsTable
+            v-if="tab === 'plans'"
+            :show-title="false"
+            title="Commission plans"
+            :columns="planColumns"
+            :rows="planRows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.name"
+            add-label="Create commission plan"
+            :selectable="false"
+            searchable
+            :can-edit="canManage"
+            @add="open = true"
+        />
+        <CrmSettingsTable
+            v-else
+            :show-title="false"
+            title="Commission transactions"
+            add-label=""
+            :columns="transactionColumns"
+            :rows="transactionRows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.broker"
+            :selectable="false"
+            searchable
+        >
+            <template #cell-status="{ row }"
+                ><Badge variant="secondary">{{ row.status }}</Badge></template
+            >
+        </CrmSettingsTable>
+
+        <Sheet v-model:open="open">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('Create commission plan')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t('Commission plans and calculated broker commissions.')
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="plan-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
+                    @submit.prevent="createPlan"
+                >
+                    <div class="space-y-1">
+                        <Label for="bp-name">{{ t('Plan name') }}</Label
+                        ><Input
+                            id="bp-name"
+                            v-model="form.name"
+                            required
+                        /><InputError :message="form.errors.name" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="bp-basis">{{ t('Basis') }}</Label>
+                        <select
+                            id="bp-basis"
+                            v-model="form.basis"
+                            class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                        >
+                            <option value="percentage">
+                                {{ t('Percentage') }}
+                            </option>
+                            <option value="fixed">{{ t('Fixed AED') }}</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="bp-rate">{{
+                            form.basis === 'fixed'
+                                ? t('AED amount')
+                                : t('Percent')
+                        }}</Label>
+                        <Input
+                            id="bp-rate"
+                            v-model="form.rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            required
+                        />
+                        <InputError :message="form.errors.rate" />
+                    </div>
                 </form>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader><CardTitle>Commission plans</CardTitle></CardHeader>
-            <CardContent class="space-y-3">
-                <p v-if="!plans.length" class="text-muted-foreground text-sm">
-                    No commission plans yet.
-                </p>
-                <div
-                    v-for="plan in plans"
-                    :key="plan.id"
-                    class="flex justify-between border-b pb-3 last:border-0"
-                >
-                    <span>{{ plan.name }}</span
-                    ><span
-                        >AED
-                        {{
-                            plan.basis === 'fixed' ? plan.rate : `${plan.rate}%`
-                        }}</span
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="plan-form"
+                        :disabled="form.processing"
+                        >{{ t('Create plan') }}</Button
                     >
-                </div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader
-                ><CardTitle>Commission transactions</CardTitle></CardHeader
-            >
-            <CardContent class="space-y-3">
-                <p
-                    v-if="!transactions.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No calculated commissions yet.
-                </p>
-                <div
-                    v-for="transaction in transactions"
-                    :key="transaction.id"
-                    class="flex justify-between border-b pb-3 last:border-0"
-                >
-                    <span
-                        >{{ transaction.broker.name }} · base AED
-                        {{ transaction.base_amount }}</span
-                    ><span
-                        >AED {{ transaction.commission_amount }} ·
-                        {{ transaction.status }}</span
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="open = false"
+                        >{{ t('Cancel') }}</Button
                     >
-                </div>
-            </CardContent>
-        </Card>
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
