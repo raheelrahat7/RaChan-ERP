@@ -6,6 +6,20 @@ Reference system (for comparison only): DONUT ERP, brokerage edition, `https://d
 
 Owners: **FE** = frontend (Claude), **BE** = backend (Codex). Status: `[x]` done and pushed, `[~]` built but not verified in a browser, `[ ]` open, `[!]` blocked.
 
+## Codex checklist (backend, read before every change)
+
+Written for the backend owner. The frontend builds screens from the contract docs, not from the PHP.
+
+- [ ] Contract documented in `docs/CRM_FRONTEND_BACKEND_*.md`: method and URI, request body, sample response, validation errors, who may call it (`permissions`), and whether it uses `version` / `expected_version`.
+- [ ] One route per URI and handler. Use `Route::match([...])` with a single name; two routes to the same action break the generated TypeScript routes and CI.
+- [ ] Create responses include `version` and `permissions`.
+- [ ] Validation failures return `422 {message, errors:{field:[message]}}`.
+- [ ] No route names renamed or removed without telling the frontend.
+- [ ] Tests pass on CI conditions: PHP 8.4, fresh MySQL, database `testing`. Do not set `DB_DATABASE` anywhere else.
+- [ ] Full test suite, PHPStan and Pint run before pushing.
+- [ ] Commit only your own files; stage only your own lines in `routes/web.php`; check `git status` before pushing.
+- [ ] Tick the backend item in this plan in the same commit.
+
 ## Working rules (so nothing is left half done)
 
 1. One section at a time, in the phase order below. Finish it, verify it, commit it, tick it here, then move on.
