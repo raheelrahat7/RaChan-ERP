@@ -3,7 +3,8 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,14 @@ const props = defineProps<{
     canApproveSettlement: boolean;
     canPostRefund: boolean;
 }>();
+const SECTIONS = [
+    { key: 'ejari', label: 'Ejari' },
+    { key: 'deposits', label: 'Security deposits' },
+    { key: 'settlements', label: 'Deposit settlements' },
+    { key: 'charges', label: 'Service charges' },
+    { key: 'cheques', label: 'Post-dated cheques' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('ejari');
 const form = useForm({ lease_id: '', amount: '', due_on: '', notes: '' });
 const chequeForm = useForm({
     lease_id: '',
@@ -256,15 +265,40 @@ function postForfeiture(deductionId: number) {
 <template>
     <Head title="Lease compliance" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Lease compliance"
-            description="Ejari, deposits, service charges, and post-dated cheques for each lease."
-        />
-        <div class="flex gap-4 text-sm">
-            <Link href="/agreements" class="underline">Back to agreements</Link
-            ><Link href="/invoices" class="underline">View invoices</Link>
-        </div>
-        <Card v-if="canManage"
+            description="Ejari registrations, security deposits, service charges and post-dated cheques."
+        >
+            <template #actions>
+                <Link href="/agreements" class="text-sm underline">{{
+                    t('Back to agreements')
+                }}</Link>
+                <Link href="/invoices" class="text-sm underline">{{
+                    t('View invoices')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <nav
+            :aria-label="t('Compliance sections')"
+            class="flex flex-wrap gap-2"
+        >
+            <button
+                v-for="item in SECTIONS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <Card v-show="tab === 'ejari'" v-if="canManage"
             ><CardHeader><CardTitle>Apply for Ejari</CardTitle></CardHeader
             ><CardContent
                 ><form
@@ -299,7 +333,7 @@ function postForfeiture(deductionId: number) {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'ejari'"
             ><CardHeader><CardTitle>Ejari registrations</CardTitle></CardHeader
             ><CardContent class="space-y-4">
                 <p
@@ -365,7 +399,7 @@ function postForfeiture(deductionId: number) {
                 </div>
             </CardContent></Card
         >
-        <Card
+        <Card v-show="tab === 'settlements'"
             ><CardHeader><CardTitle>Deposit settlements</CardTitle></CardHeader
             ><CardContent class="space-y-4">
                 <div v-if="canManage" class="flex flex-wrap gap-2">
@@ -596,7 +630,7 @@ function postForfeiture(deductionId: number) {
                 </div>
             </CardContent></Card
         >
-        <Card v-if="canManage"
+        <Card v-show="tab === 'deposits'" v-if="canManage"
             ><CardHeader
                 ><CardTitle>Request security deposit</CardTitle></CardHeader
             ><CardContent
@@ -630,7 +664,7 @@ function postForfeiture(deductionId: number) {
                     >
                 </form></CardContent
             ></Card
-        ><Card v-if="canManage"
+        ><Card v-show="tab === 'charges'" v-if="canManage"
             ><CardHeader
                 ><CardTitle>Create service charge</CardTitle></CardHeader
             ><CardContent
@@ -699,7 +733,7 @@ function postForfeiture(deductionId: number) {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'charges'"
             ><CardHeader><CardTitle>Service charges</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p
@@ -728,7 +762,7 @@ function postForfeiture(deductionId: number) {
                     </p>
                 </div></CardContent
             ></Card
-        ><Card v-if="canManage"
+        ><Card v-show="tab === 'cheques'" v-if="canManage"
             ><CardHeader
                 ><CardTitle>{{
                     chequeForm.replacement_of_id
@@ -781,7 +815,7 @@ function postForfeiture(deductionId: number) {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'cheques'"
             ><CardHeader><CardTitle>Post-dated cheques</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p
@@ -838,7 +872,7 @@ function postForfeiture(deductionId: number) {
                     </div>
                 </div></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'deposits'"
             ><CardHeader><CardTitle>Security deposits</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p
