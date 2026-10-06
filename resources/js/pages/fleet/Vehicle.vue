@@ -4,12 +4,19 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 type Links = { label: string; url: string | null; active: boolean }[];
+const SECTIONS = [
+    { key: 'assignment', label: 'Assignment' },
+    { key: 'service', label: 'Service' },
+    { key: 'status', label: 'Vehicle status' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('assignment');
 const props = defineProps<{
     vehicle: {
         id: number;
@@ -116,18 +123,43 @@ function status(): void {
 <template>
     <Head :title="vehicle.reference" />
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="`${vehicle.reference} · ${vehicle.plate}`"
             :description="`${vehicle.make} ${vehicle.model} · ${vehicle.odometer} km · ${vehicle.status}`"
-        /><Link href="/operations/fleet" class="text-sm underline"
-            >All vehicles</Link
         >
+            <template #actions>
+                <Link href="/operations/fleet" class="text-sm underline">{{
+                    t('All vehicles')
+                }}</Link>
+            </template>
+        </PageHeader>
         <p v-if="vehicle.fixed_asset_id" class="text-sm">
-            Linked fixed asset #{{ vehicle.fixed_asset_id }}. Fleet actions do
-            not change depreciation or post accounting entries.
+            {{ t('Linked fixed asset') }} #{{ vehicle.fixed_asset_id }}.
+            {{
+                t(
+                    'Fleet actions do not change depreciation or post accounting entries.',
+                )
+            }}
         </p>
-        <Card
+        <nav :aria-label="t('Sections')" class="flex flex-wrap gap-2">
+            <button
+                v-for="item in SECTIONS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <Card v-show="tab === 'assignment'"
             ><CardHeader><CardTitle>Assign vehicle</CardTitle></CardHeader
             ><CardContent
                 ><form
@@ -172,7 +204,7 @@ function status(): void {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'assignment'"
             ><CardHeader><CardTitle>Assignment history</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p v-if="!assignments.data.length">No assignments.</p>
@@ -230,7 +262,7 @@ function status(): void {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'service'"
             ><CardHeader><CardTitle>Schedule service</CardTitle></CardHeader
             ><CardContent
                 ><form
@@ -293,7 +325,7 @@ function status(): void {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'service'"
             ><CardHeader><CardTitle>Service history</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p v-if="!services.data.length">No service scheduled.</p>
@@ -325,7 +357,7 @@ function status(): void {
                     </p>
                 </article>
                 <Pagination :links="services.links" /></CardContent></Card
-        ><Card
+        ><Card v-show="tab === 'service'"
             ><CardHeader><CardTitle>Complete service</CardTitle></CardHeader
             ><CardContent
                 ><p class="text-muted-foreground mb-3 text-sm">
@@ -370,7 +402,7 @@ function status(): void {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'service'"
             ><CardHeader
                 ><CardTitle>Cancel planned service</CardTitle></CardHeader
             ><CardContent
@@ -407,7 +439,7 @@ function status(): void {
                     >
                 </form></CardContent
             ></Card
-        ><Card
+        ><Card v-show="tab === 'status'"
             ><CardHeader><CardTitle>Vehicle status</CardTitle></CardHeader
             ><CardContent
                 ><form

@@ -1861,5 +1861,14 @@
     "Movements": "الحركات",
     "Transfers": "التحويلات",
     "Receipt valuation": "تقييم الاستلام",
-    "Record physical receipts, job issues and unused-part returns for each store.": "سجّل الاستلامات الفعلية وصرف المهام ومرتجعات القطع غير المستخدمة لكل مستودع."
+    "Record physical receipts, job issues and unused-part returns for each store.": "سجّل الاستلامات الفعلية وصرف المهام ومرتجعات القطع غير المستخدمة لكل مستودع.",
+    "Sections": "الأقسام",
+    "Overview and BOQ": "نظرة عامة وجدول الكميات",
+    "Project lifecycle": "دورة حياة المشروع",
+    "Project status": "حالة المشروع",
+    "All projects": "كل المشاريع",
+    "Vehicle status": "حالة المركبة",
+    "All vehicles": "كل المركبات",
+    "Linked fixed asset": "أصل ثابت مرتبط",
+    "Fleet actions do not change depreciation or post accounting entries.": "إجراءات الأسطول لا تغيّر الإهلاك ولا ترحّل قيوداً محاسبية."
 }

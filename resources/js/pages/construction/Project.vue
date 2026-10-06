@@ -5,7 +5,7 @@ const { t } = useLocale();
 
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,13 @@ type Item = {
     completed: string;
     reserved: string;
 };
+const SECTIONS = [
+    { key: 'overview', label: 'Overview and BOQ' },
+    { key: 'progress', label: 'Progress' },
+    { key: 'claims', label: 'Claims' },
+    { key: 'lifecycle', label: 'Project lifecycle' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('overview');
 const props = defineProps<{
     project: {
         id: number;
@@ -159,13 +166,35 @@ function status(): void {
 <template>
     <Head :title="project.reference" />
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="`${project.reference} · ${project.title}`"
-            :description="`Project status: ${project.status}`"
-        /><Link href="/operations/projects" class="text-sm underline"
-            >All projects</Link
-        ><Card
+            :description="`${t('Project status')}: ${project.status}`"
+        >
+            <template #actions>
+                <Link href="/operations/projects" class="text-sm underline">{{
+                    t('All projects')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <nav :aria-label="t('Sections')" class="flex flex-wrap gap-2">
+            <button
+                v-for="item in SECTIONS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <Card v-show="tab === 'overview'"
             ><CardHeader
                 ><CardTitle>Gross estimates · AED</CardTitle></CardHeader
             ><CardContent
@@ -188,7 +217,7 @@ function status(): void {
                 </p></CardContent
             ></Card
         >
-        <Card
+        <Card v-show="tab === 'overview'"
             ><CardHeader><CardTitle>BOQ items</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p v-if="!items.length">No BOQ items.</p>
@@ -258,7 +287,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card v-if="project.status === 'active'"
+        <Card v-show="tab === 'progress'" v-if="project.status === 'active'"
             ><CardHeader
                 ><CardTitle>Record completed work</CardTitle></CardHeader
             ><CardContent
@@ -308,7 +337,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card
+        <Card v-show="tab === 'progress'"
             ><CardHeader
                 ><CardTitle>Latest 50 progress entries</CardTitle></CardHeader
             ><CardContent class="space-y-3"
@@ -359,7 +388,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card v-if="project.status === 'active'"
+        <Card v-show="tab === 'claims'" v-if="project.status === 'active'"
             ><CardHeader
                 ><CardTitle>Submit contractor claim</CardTitle></CardHeader
             ><CardContent
@@ -417,7 +446,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card
+        <Card v-show="tab === 'claims'"
             ><CardHeader
                 ><CardTitle>{{ t('Claims') }}</CardTitle></CardHeader
             ><CardContent class="space-y-3"
@@ -469,7 +498,7 @@ function status(): void {
                 </p>
                 <Pagination :links="claims.links" /></CardContent
         ></Card>
-        <Card v-if="canApprove"
+        <Card v-show="tab === 'claims'" v-if="canApprove"
             ><CardHeader
                 ><CardTitle>Reject a submitted claim</CardTitle></CardHeader
             ><CardContent
@@ -507,7 +536,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card v-if="canFinance"
+        <Card v-show="tab === 'claims'" v-if="canFinance"
             ><CardHeader
                 ><CardTitle
                     >Create a draft vendor bill from an approved
@@ -584,7 +613,7 @@ function status(): void {
                 </form></CardContent
             ></Card
         >
-        <Card
+        <Card v-show="tab === 'lifecycle'"
             ><CardHeader><CardTitle>Project lifecycle</CardTitle></CardHeader
             ><CardContent
                 ><form

@@ -113,7 +113,8 @@ Each item = FE screen change plus BE fields. Do one section completely, then the
 Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balances header, maintenance, helpdesk, preventive maintenance, AMC, scheduled reports, fleet list, inventory imports, procurement, people, compliance docs, brokerage, reservations, agreements, contacts.
 
 - [x] Done: Construction index, Notifications inbox, HR profile header (browser-checked).
-- [ ] Remaining: Spare parts, Real-estate listings (with 2A), Fleet vehicle detail, Construction project, Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
+- [x] Done (browser-checked 2026-10-06): Handovers (tabs, plan panel, dialogs), Lease compliance (5 section tabs), Spare parts (4 tabs), Construction project (4 tabs), Fleet vehicle (3 tabs).
+- [ ] Remaining: Real-estate listings (with 2A), Operations overview/reports, Accounting pages, Documents (signatures, versions), Organization settings / API tokens / portal access, Portal pages, Search, Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
 
 ## Built, not browser-checked (all `[~]`)
 
