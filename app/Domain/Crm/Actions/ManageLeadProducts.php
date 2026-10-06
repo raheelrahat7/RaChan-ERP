@@ -7,6 +7,7 @@ use App\Domain\Crm\Services\LeadVisibility;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Domain\Workflows\Models\WorkflowRecord;
 use App\Domain\Workflows\Services\WorkflowAccess;
+use App\Domain\Workflows\Services\WorkflowOverview;
 use App\Models\CrmLead;
 use App\Models\Organization;
 use App\Models\User;
@@ -26,7 +27,7 @@ class ManageLeadProducts
         $estimates = WorkflowRecord::where('organization_id', $org->id)->where('lead_id', $lead->id)
             ->whereHas('pipeline', fn ($query) => $query->where('kind', 'estimate'))
             ->with(['pipeline', 'stage'])->latest('id')->get()
-            ->filter(fn ($record) => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline))->values();
+            ->filter(fn ($record) => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline))->map(fn (WorkflowRecord $record) => app(WorkflowOverview::class)->serialize($org, $actor, $record))->values();
 
         return ['products' => $products, 'estimates' => $estimates];
     }

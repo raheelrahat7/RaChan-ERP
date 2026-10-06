@@ -2,6 +2,7 @@
 
 namespace App\Domain\Configuration\Actions;
 
+use App\Domain\Crm\Services\CrmEditPermission;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
 use App\Models\Organization;
 use App\Models\User;
@@ -12,15 +13,17 @@ use Illuminate\Validation\ValidationException;
 
 class ManageCrmCatalog
 {
-    public const KINDS = ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products'];
+    public const KINDS = ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products', 'other-settings'];
 
     /** @return array<string, mixed> */
     public function index(Organization $org, User $actor, string $kind): array
     {
-        $this->authorize($org, $actor, $kind);
+        $this->authorize($org, $actor, $kind, true);
+
+        $editor = $kind === 'products' && ! $actor->can('manageSettings', $org);
 
         return ['kind' => $kind, 'records' => DB::table('organization_crm_settings')
-            ->where('organization_id', $org->id)->where('kind', $kind)
+            ->where('organization_id', $org->id)->where('kind', $kind)->when($editor, fn ($query) => $query->where('active', true))
             ->orderBy('position')->orderBy('id')->get()->map(function ($row) {
                 $row->settings = json_decode($row->settings ?? '{}', true);
 
@@ -42,14 +45,18 @@ class ManageCrmCatalog
             'company-details' => ['legal_name' => ['required', 'string', 'max:200'], 'address' => ['nullable', 'string', 'max:1000'], 'phone' => ['nullable', 'string', 'max:50'], 'email' => ['nullable', 'email', 'max:255'], 'tax_registration_number' => ['nullable', 'string', 'max:100']],
             'mailboxes' => ['email' => ['required', 'email', 'max:255'], 'display_name' => ['nullable', 'string', 'max:150'], 'reply_to' => ['nullable', 'email', 'max:255']],
             'products' => ['sku' => ['nullable', 'string', 'max:100'], 'unit_id' => ['nullable', 'integer'], 'tax_id' => ['nullable', 'integer'], 'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'], 'currency' => ['required', 'regex:/^[A-Z]{3}$/']],
+            'other-settings' => ['value' => ['required', 'string', 'max:2000'], 'description' => ['nullable', 'string', 'max:500']],
             default => abort(404),
         };
-        $data = Validator::make($input, [...$common, 'settings' => ['required', 'array:'.implode(',', array_keys($settings))], ...collect($settings)->mapWithKeys(fn ($rules, $field) => ['settings.'.$field => $rules])->all()])->validate();
+        $data = Validator::make($input, [...$common, 'settings' => ['required', 'array:'.implode(',', array_keys($settings))], 'expected_version' => [$kind === 'other-settings' && $id ? 'required' : 'sometimes', 'integer', 'min:1'], ...collect($settings)->mapWithKeys(fn ($rules, $field) => ['settings.'.$field => $rules])->all()])->validate();
 
         return DB::transaction(function () use ($org, $actor, $kind, $data, $id): array {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
             $existing = $id ? DB::table('organization_crm_settings')->where('organization_id', $org->id)->where('kind', $kind)->where('id', $id)->first() : null;
             abort_if($id && ! $existing, 404);
+            if ($existing && $kind === 'other-settings' && (int) $existing->version !== $data['expected_version']) {
+                throw ValidationException::withMessages(['expected_version' => 'This setting changed. Reload it and try again.']);
+            }
             if ($existing && $existing->code !== $data['code']) {
                 throw ValidationException::withMessages(['code' => 'The code cannot change after creation.']);
             }
@@ -63,7 +70,7 @@ class ManageCrmCatalog
                     }
                 }
             }
-            $row = ['organization_id' => $org->id, 'kind' => $kind, 'code' => $data['code'], 'name' => $data['name'], 'settings' => json_encode($data['settings']), 'active' => $data['active'], 'position' => $data['position'] ?? 100, 'updated_at' => now()];
+            $row = ['organization_id' => $org->id, 'kind' => $kind, 'code' => $data['code'], 'name' => $data['name'], 'settings' => json_encode($data['settings']), 'active' => $data['active'], 'position' => $data['position'] ?? 100, 'updated_at' => now(), 'version' => $existing ? ((int) $existing->version + 1) : 1];
             if ($id) {
                 DB::table('organization_crm_settings')->where('id', $id)->update($row);
             } else {
@@ -75,9 +82,12 @@ class ManageCrmCatalog
         });
     }
 
-    private function authorize(Organization $org, User $actor, string $kind): void
+    private function authorize(Organization $org, User $actor, string $kind, bool $reading = false): void
     {
         abort_unless(in_array($kind, self::KINDS, true), 404);
+        if ($reading && $kind === 'products' && app(CrmEditPermission::class)->granted($org, $actor)) {
+            return;
+        }
         Gate::forUser($actor)->authorize('manageSettings', $org);
     }
 }

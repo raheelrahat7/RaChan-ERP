@@ -29,7 +29,10 @@ class WorkflowOverview
         $query->where(fn ($q) => $q->whereNull('lead_id')->orWhereIn('lead_id', app(LeadVisibility::class)->scope(CrmLead::where('organization_id', $org->id), $org, $actor)->select('id')));
         $counts = (clone $query)->selectRaw('pipeline_id, stage_id, COUNT(*) as total')->groupBy('pipeline_id', 'stage_id')->get();
 
-        return ['pipelines' => $pipelines->values(), 'records' => $query->with(['pipeline', 'stage'])->latest('id')->paginate(50)->withQueryString(), 'stageCounts' => $counts, 'kinds' => ManageReferenceWorkflows::KINDS, 'detailFields' => ManageReferenceWorkflows::DETAIL_FIELDS, 'fieldTypes' => ['text', 'number', 'date', 'checkbox', 'select'], 'sourceInvoiceStatuses' => ['draft', 'posted', 'partial', 'paid', 'void'], 'canConfigure' => $actor->can('manageSettings', $org)];
+        $records = $query->with(['pipeline', 'stage'])->latest('id')->paginate(50)->withQueryString();
+        $records->through(fn (WorkflowRecord $record) => $this->serialize($org, $actor, $record));
+
+        return ['pipelines' => $pipelines->values(), 'records' => $records, 'stageCounts' => $counts, 'kinds' => ManageReferenceWorkflows::KINDS, 'detailFields' => ManageReferenceWorkflows::DETAIL_FIELDS, 'fieldTypes' => ['text', 'number', 'date', 'checkbox', 'select'], 'sourceInvoiceStatuses' => ['draft', 'posted', 'partial', 'paid', 'void'], 'canConfigure' => $actor->can('manageSettings', $org)];
     }
 
     /** @return array<string, mixed> */
@@ -42,6 +45,14 @@ class WorkflowOverview
             $row->snapshot = json_decode($row->snapshot, true);
         }
 
-        return ['record' => $record, 'history' => $history, 'canEdit' => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline, true), 'invoice' => $record->invoice_id && $actor->can('viewFinance', $org) ? Invoice::where('organization_id', $org->id)->findOrFail($record->invoice_id)->only('id', 'reference', 'status', 'total', 'currency') : null];
+        return ['record' => $this->serialize($org, $actor, $record), 'history' => $history, 'canEdit' => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline, true), 'invoice' => $record->invoice_id && $actor->can('viewFinance', $org) ? Invoice::where('organization_id', $org->id)->findOrFail($record->invoice_id)->only('id', 'reference', 'status', 'total', 'currency') : null];
+    }
+
+    /** @return array<string, mixed> */
+    public function serialize(Organization $org, User $actor, WorkflowRecord $record): array
+    {
+        $record->loadMissing(['pipeline', 'stage']);
+
+        return [...$record->toArray(), 'permissions' => ['read' => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline), 'edit' => app(WorkflowAccess::class)->allows($org, $actor, $record->pipeline, true)]];
     }
 }

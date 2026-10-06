@@ -91,6 +91,18 @@ class DealWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'crm.deal.stage_changed', 'subject_id' => $id]);
     }
 
+    public function test_put_transfer_alias_returns_the_move_payload_and_checks_confirmation(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org);
+        $source = $this->pipeline($org, $owner, 'Source');
+        $target = $this->pipeline($org, $owner, 'Target');
+        $id = $this->createDeal($owner, $source);
+        $stage = $target->stages()->where('is_initial', true)->firstOrFail();
+        $this->putJson(route('crm.deals.transfer.update', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id])->assertUnprocessable()->assertJsonValidationErrors('confirmed');
+        $this->putJson(route('crm.deals.transfer.update', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id, 'confirmed' => true])->assertOk()->assertJsonPath('deal.version', 2)->assertJsonPath('deal.pipeline_id', $target->id);
+    }
+
     public function test_only_final_qualified_leads_create_one_linked_deal_and_retain_original(): void
     {
         $org = Organization::factory()->create();
@@ -223,7 +235,7 @@ class DealWorkflowTest extends TestCase
         $owner = $this->member($org);
         $contact = CrmContact::create(['organization_id' => $org->id, 'first_name' => 'Test', 'last_name' => 'Contact']);
         $this->actingAs($owner)->postJson(route('crm.settings.fields.store'), ['entity' => 'contact', 'name' => 'Budget', 'key' => 'budget', 'type' => 'currency'])->assertOk();
-        $this->putJson(route('crm.records.fields.update', ['entity' => 'contact', 'record' => $contact->id]), ['custom_fields' => ['budget' => '500.25']])->assertOk()->assertJsonPath('fields.0.value', '500.25');
+        $this->putJson(route('crm.records.fields.update', ['entity' => 'contact', 'record' => $contact->id]), ['expected_version' => 1, 'custom_fields' => ['budget' => '500.25']])->assertOk()->assertJsonPath('fields.0.value', '500.25')->assertJsonPath('version', 2);
         $this->postJson(route('crm.settings.options.store'), ['list_key' => 'sources', 'name' => 'Referral', 'position' => 1, 'active' => true])->assertOk();
         $this->postJson(route('crm.settings.options.store'), ['list_key' => 'sources', 'name' => 'Referral', 'position' => 2, 'active' => true])->assertUnprocessable();
         $other = Organization::factory()->create();

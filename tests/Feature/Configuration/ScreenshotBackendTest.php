@@ -68,7 +68,7 @@ class ScreenshotBackendTest extends TestCase
         $lead = app(ManageLeadPipeline::class)->create($org, $owner, ['first_name' => 'Client', 'last_name' => 'Example', 'assigned_to' => $owner->id]);
         $line = $this->postJson(route('crm.leads.products.store', $lead->id), ['product_id' => $product, 'quantity' => 2, 'unit_price' => '10.50', 'currency' => 'AED'])->assertOk()->json('line.id');
         $workflow = app(ManageReferenceWorkflows::class)->pipeline($org, $owner, ['kind' => 'estimate', 'name' => 'Estimates']);
-        $this->postJson(route('reference-workflows.store'), ['pipeline_id' => $workflow->id, 'title' => 'Quote', 'assigned_to' => $owner->id, 'operation_key' => (string) Str::uuid(), 'lead_id' => $lead->id, 'details' => ['currency' => 'AED', 'lines' => [['description' => 'Service', 'quantity' => '2', 'unit_price' => '10.50']]]])->assertOk()->assertJsonPath('record.version', 1);
+        $this->postJson(route('reference-workflows.store'), ['pipeline_id' => $workflow->id, 'title' => 'Quote', 'assigned_to' => $owner->id, 'operation_key' => (string) Str::uuid(), 'lead_id' => $lead->id, 'details' => ['currency' => 'AED', 'lines' => [['description' => 'Service', 'quantity' => '2', 'unit_price' => '10.50']]]])->assertOk()->assertJsonPath('record.version', 1)->assertJsonPath('record.lead_id', $lead->id);
         $this->getJson(route('crm.leads.products', $lead->id))->assertOk()->assertJsonCount(1, 'products')->assertJsonCount(1, 'estimates');
         $this->actingAs($otherOwner)->getJson(route('crm-catalog.index', 'products'))->assertOk()->assertJsonCount(0, 'records');
         $this->getJson(route('crm.leads.products', $lead->id))->assertNotFound();

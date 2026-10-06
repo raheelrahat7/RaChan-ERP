@@ -23,14 +23,18 @@ class ReferenceWorkflowController extends Controller
         return response()->json($overview->show($this->organization($request), $request->user(), $record));
     }
 
-    public function save(Request $request, ManageReferenceWorkflows $workflows, ?int $record = null): JsonResponse
+    public function save(Request $request, ManageReferenceWorkflows $workflows, WorkflowOverview $overview, ?int $record = null): JsonResponse
     {
-        return response()->json(['record' => $workflows->save($this->organization($request), $request->user(), $request->all(), $record)]);
+        $org = $this->organization($request);
+
+        return response()->json(['record' => $overview->serialize($org, $request->user(), $workflows->save($org, $request->user(), $request->all(), $record))]);
     }
 
-    public function move(Request $request, int $record, ManageReferenceWorkflows $workflows): JsonResponse
+    public function move(Request $request, int $record, ManageReferenceWorkflows $workflows, WorkflowOverview $overview): JsonResponse
     {
-        return response()->json(['record' => $workflows->move($this->organization($request), $request->user(), $record, $request->all())]);
+        $org = $this->organization($request);
+
+        return response()->json(['record' => $overview->serialize($org, $request->user(), $workflows->move($org, $request->user(), $record, $request->all()))]);
     }
 
     public function pipeline(Request $request, ManageReferenceWorkflows $workflows, ?int $pipeline = null): JsonResponse

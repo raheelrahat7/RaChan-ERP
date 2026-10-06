@@ -17,6 +17,7 @@ use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CrmSettingsDataController extends Controller
 {
@@ -101,15 +102,21 @@ class CrmSettingsDataController extends Controller
         $subject = $model::where('organization_id', $org->id)->findOrFail($record);
         if ($writing) {
             $this->authorize('manageCrm', $org);
-            $input = $request->validate(['custom_fields' => ['required', 'array']]);
+            $input = $request->validate(['custom_fields' => ['required', 'array'], 'expected_version' => ['required', 'integer', 'min:1']]);
             DB::transaction(function () use ($org, $subject, $fields, $request, $input): void {
                 Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
-                $subject->newQuery()->whereKey($subject->id)->lockForUpdate()->firstOrFail();
+                $locked = $subject->newQuery()->whereKey($subject->id)->lockForUpdate()->firstOrFail();
+                if ($locked->version !== $input['expected_version']) {
+                    throw ValidationException::withMessages(['expected_version' => 'This record changed. Reload it and try again.']);
+                }
                 $fields->write($org, $request->user(), $subject, $input['custom_fields']);
+                $locked->version++;
+                $locked->save();
+                $subject->version = $locked->version;
             });
         }
 
-        return response()->json(['fields' => $fields->values($org, $request->user(), $subject)]);
+        return response()->json(['fields' => $fields->values($org, $request->user(), $subject), 'version' => $subject->version]);
     }
 
     private function organization(Request $request): Organization

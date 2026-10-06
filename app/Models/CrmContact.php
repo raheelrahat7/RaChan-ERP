@@ -7,9 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/** @property int $version */
 #[Fillable(['organization_id', 'account_id', 'first_name', 'last_name', 'email', 'phone'])]
 class CrmContact extends Model
 {
+    protected function casts(): array
+    {
+        return ['version' => 'integer'];
+    }
+
     /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
