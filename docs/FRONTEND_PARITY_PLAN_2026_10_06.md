@@ -1,0 +1,108 @@
+# Frontend parity plan and tracker — 2026-10-06
+
+Single source of truth for what is done, what is open, and the order we work in. Update the checkboxes in the same commit as the work. Do not start a new item while an earlier item in the same phase is half done.
+
+Reference system (for comparison only): DONUT ERP, brokerage edition, `https://donuterp.com/projects/brokerage3/`. Credentials are held by the owner and are never stored in this repo.
+
+Owners: **FE** = frontend (Claude), **BE** = backend (Codex). Status: `[x]` done and pushed, `[~]` built but not verified in a browser, `[ ]` open, `[!]` blocked.
+
+## Working rules (so nothing is left half done)
+
+1. One section at a time, in the phase order below. Finish it, verify it, commit it, tick it here, then move on.
+2. Definition of done for a screen: lint, vue-tsc and frontend tests pass; the backend route has a feature test; the screen was opened in a browser and the main actions clicked; labels exist in `ar.json`; this file is ticked.
+3. If a screen needs backend that does not exist, FE writes the request to Codex first (what, shape, permissions), marks the item `[!]`, and works on a different section until BE confirms.
+4. Commit only own files. Shared files (`routes/web.php`, `AGENTS.md`, docs) are edited in small separate commits.
+5. Push only when the owner asks. CI must be green before the next phase starts.
+6. Every pause ends with the first unticked item written at the bottom ("Next up").
+
+## Phase 0 — verify and stabilise (before more features)
+
+- [ ] FE: browser check of every screen built so far (list in "Built, not browser-checked" below). Needs owner consent for: rebuilding `public/build`, pulling the Playwright image, memory risk to MySQL.
+- [x] CI green on `main` (MySQL service, PHP 8.4, memory limit, route duplicates, testing database).
+- [ ] FE+BE: decide whether `composer.json` should say `"php": "^8.4"` (lock file already needs 8.4.1).
+- [ ] Owner: decide about removing omniroute from Claude, Codex and VS Code (needs consent per config file).
+- [ ] FE: Arabic strings for everything added since 2026-10-05 (`resources/js/locales/ar.json`).
+- [ ] BE→FE: Codex changed the working-calendar API to day names; FE page `crm/WorkingCalendar.vue` and `lib/crm-calendar.ts` must follow once committed.
+
+## Phase 1 — CRM completeness (biggest visible gaps)
+
+### 1A. Lead detail tabs (reference: 9 tabs; ours: 4)
+Ours today: General, Activities, Products, History. Reference: Overview, Requirement, Matched Properties, Activities, Follow-Up Timeline, Tasks, Meetings/Viewings, Offers/Contracts/Deal, Accounting Link.
+- [ ] BE: lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature.
+- [ ] FE: Requirement tab (form, save, validation).
+- [ ] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
+- [ ] FE: Matched Properties tab.
+- [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
+- [ ] BE+FE: Tasks tab (lead-linked tasks) — check `/tasks` backend for a lead link.
+- [ ] BE+FE: Meetings/Viewings tab (lead-linked meetings).
+- [ ] BE+FE: Offers, Contracts and Deal tab (linked deal, contracts, offer submitted) — deal link exists, rest needs BE.
+- [ ] BE+FE: Accounting Link tab (documents, amount, VAT, total).
+- [ ] FE: header actions "Send WhatsApp" (needs credentials from 3C), "Mark Lost" (exists in stage move; surface it).
+- [x] Products tab and linked estimates; "New estimate" from lead.
+
+### 1B. Contacts and companies
+- [~] BE done (`47e4d9d`): list, detail, edit with `expected_version`, custom fields.
+- [ ] FE: contacts list upgrade (pagination, company link), contact detail page, edit.
+- [ ] FE: companies list, company detail, create, edit, linked leads/deals/activities.
+- [ ] FE: show/edit contact and company custom fields.
+
+### 1C. Deals
+- [x] Board/list, create, edit, move, detail, history, filters, export, automation rules, qualified-lead picker, pipeline transfer, finance links (all `[~]` browser-unchecked).
+- [ ] BE+FE: reference deal status strip (Submitted, Approved, Contract In Progress/Signed, Invoice Generated, Payment Pending/Received, Commission Calculated/Approved/Paid, Disputed, Clawback Required, Refund Required) — decide whether these become default deal-pipeline stages or a separate commission status.
+- [ ] BE+FE: deal fields scenario, co-broker share, agent share, gross commission.
+
+### 1D. Settings hub
+- [x] Pipelines, deal pipelines, permissions, selection lists, currency, locations, numbering, taxes, units, templates, company details, mailboxes, products, field list (4 entities), working calendar.
+- [ ] FE: "Payment systems" tile on `organization/reference-settings/providers` (shape in `docs/CRM_FRONTEND_BACKEND_2026_10_06.md`).
+- [ ] FE: "Other settings" tile on `organization/crm-catalog/other-settings`.
+- [!] CRM applications market — out of backend scope (Codex).
+
+## Phase 2 — property and transaction sections (reference gaps)
+
+Each item = FE screen change plus BE fields. Do one section completely, then the next.
+- [ ] 2A Property & Listings: 13-status tab strip, filters (cost centre, status, category, agent, community, sort), table columns, create form fields (listing category, unit category, building, emirate, community, sub-community, unit/floor, Trakheesi/DLD permit, bedroom type, bathrooms, balconies, parking, size, plot size, furnishing, completion status, handover date, grade, loading bay, fit-out, price type/price/range/label, price per sq ft auto, owner/developer, portals), emirate summary table.
+- [ ] 2B Secondary Market: valuation price, mortgage and NOC status, transfer status, seller/buyer, status tabs.
+- [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
+- [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
+- [ ] 2E Owners & Developers: payment terms, commission notes, linked listings, edit.
+- [ ] 2F Agents & Commission: clawback, net contribution, team view.
+- [ ] 2G AI Matchmaker: AI settings (active, auto-qualify threshold), start agent, closed-by.
+
+## Phase 3 — marketing, portals, procurement, corporate
+
+- [ ] 3A Marketing campaigns: status strip (Budget Submitted … Underperforming), vendor/portal, assigned agent.
+- [ ] 3B Portals: listing sync (status tabs, last sync, run sync), subscriptions (package, credits, auto-renew, expiring soon), invoicing (generate invoice), costing figures.
+- [ ] 3C Follow-Up Automation: Templates / Rules / Credentials tabs, SMTP and WhatsApp credentials, send test. (BE needed.)
+- [ ] 3D Broker allocation (home branch, primary/co-broker, bulk reallocate) and broker performance (period, recalculate, stale listings).
+- [ ] 3E Procurement vendors: ~18 vendor fields (trade name, type, subcategory, supply type, addresses, trade licence, bank, IBAN, SWIFT, payment terms, credit limit, default expense account).
+- [ ] 3F Meetings (type, outcome notes, next task), Tasks (completion remarks, linked record), Contracts (type, party, value), HR (expiry, days left, monthly cost).
+- [ ] 3G GAIM compliance dashboard and bulletins (AI summary, affected forms, mark actioned).
+
+## Phase 4 — settings parity
+
+- [ ] Master data: 17 tables (locations/communities, emirates, bedroom types, property types, party roles, meeting types, activity types, priority levels, module registry, lead lost reasons, financing statuses, purchase timelines, languages, financing methods, amenities, furnishing types, broker performance weights).
+- [ ] Cost centres full path, chart of accounts parent account, roles matrix "Confidential" column, document numbering module keys.
+- [ ] Companies, branches, departments, users screens (compare field by field).
+
+## Phase 5 — remaining restyle of old-layout pages
+
+Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balances header, maintenance, helpdesk, preventive maintenance, AMC, scheduled reports, fleet list, inventory imports, procurement, people, compliance docs, brokerage, reservations, agreements, contacts.
+- [ ] Spare parts, Real-estate listings, Fleet vehicle detail, Construction (index, project), Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
+
+## Built, not browser-checked (all `[~]`)
+
+CRM leads/board/import/activities/automation; pipeline editor; deals (board, list, detail, filters, export, picker, transfer, finance, automation); permissions; settings hub and all settings tables; field list tabs; workflows (boards, pipelines, stage rules, estimate from lead); company chat; every restyled list page above.
+
+## Backend requests outstanding for Codex
+
+1. Lead requirement fields and lead score (1A).
+2. Matched-properties API with match % and auto-suggest (1A).
+3. Lead-linked tasks and meetings; offers/contracts on a lead (1A).
+4. Deal commission statuses and co-broker/agent share fields (1C).
+5. Listing, secondary, lease, off-plan field additions (Phase 2).
+6. Portal sync fields, credentials storage, templates/rules (Phase 3).
+7. Master-data tables (Phase 4).
+
+## Next up
+
+Phase 0: browser check (waiting for owner consent), then Phase 1B contacts and companies screens (backend ready).
