@@ -465,8 +465,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/settings/fields/{field}', [CrmSettingsDataController::class, 'saveField'])->name('crm.settings.fields.update');
     Route::get('crm/records/{entity}/{record}/fields', [CrmSettingsDataController::class, 'recordFields'])->name('crm.records.fields');
     Route::put('crm/records/{entity}/{record}/fields', [CrmSettingsDataController::class, 'updateRecordFields'])->name('crm.records.fields.update');
-    Route::put('crm/deals/{deal}/financial-links', [CrmDealController::class, 'financialLink'])->name('crm.deals.financial-links');
-    Route::post('crm/deals/{deal}/financial-links', [CrmDealController::class, 'financialLink'])->name('crm.deals.financial-links.store');
+    Route::match(['put', 'post'], 'crm/deals/{deal}/financial-links', [CrmDealController::class, 'financialLink'])->name('crm.deals.financial-links');
     Route::get('reference-workflows', [ReferenceWorkflowController::class, 'index'])->name('reference-workflows.index');
     Route::post('reference-workflows', [ReferenceWorkflowController::class, 'save'])->name('reference-workflows.store');
     Route::get('reference-workflows/{record}', [ReferenceWorkflowController::class, 'show'])->whereNumber('record')->name('reference-workflows.show');
@@ -514,8 +513,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/deals/{deal}', [CrmDealController::class, 'show'])->name('crm.deals.show');
     Route::put('crm/deals/{deal}', [CrmDealController::class, 'update'])->name('crm.deals.update');
     Route::put('crm/deals/{deal}/stage', [CrmDealController::class, 'move'])->name('crm.deals.stage');
-    Route::post('crm/deals/{deal}/transfer', [CrmDealController::class, 'transfer'])->name('crm.deals.transfer');
-    Route::put('crm/deals/{deal}/transfer', [CrmDealController::class, 'transfer'])->name('crm.deals.transfer.update');
+    Route::match(['post', 'put'], 'crm/deals/{deal}/transfer', [CrmDealController::class, 'transfer'])->name('crm.deals.transfer');
     Route::get('crm/leads', [CrmLeadController::class, 'index'])->name('crm.leads.index');
     Route::get('deals', [CrmPageController::class, 'deals'])->name('deals.index');
     Route::get('deals/{deal}', [CrmPageController::class, 'deal'])->whereNumber('deal')->name('deals.show');

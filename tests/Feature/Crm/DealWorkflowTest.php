@@ -99,8 +99,8 @@ class DealWorkflowTest extends TestCase
         $target = $this->pipeline($org, $owner, 'Target');
         $id = $this->createDeal($owner, $source);
         $stage = $target->stages()->where('is_initial', true)->firstOrFail();
-        $this->putJson(route('crm.deals.transfer.update', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id])->assertUnprocessable()->assertJsonValidationErrors('confirmed');
-        $this->putJson(route('crm.deals.transfer.update', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id, 'confirmed' => true])->assertOk()->assertJsonPath('deal.version', 2)->assertJsonPath('deal.pipeline_id', $target->id);
+        $this->putJson(route('crm.deals.transfer', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id])->assertUnprocessable()->assertJsonValidationErrors('confirmed');
+        $this->putJson(route('crm.deals.transfer', $id), ['expected_version' => 1, 'pipeline_id' => $target->id, 'stage_id' => $stage->id, 'confirmed' => true])->assertOk()->assertJsonPath('deal.version', 2)->assertJsonPath('deal.pipeline_id', $target->id);
     }
 
     public function test_only_final_qualified_leads_create_one_linked_deal_and_retain_original(): void
