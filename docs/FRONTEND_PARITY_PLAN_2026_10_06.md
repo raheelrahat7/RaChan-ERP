@@ -37,9 +37,9 @@ Written for the backend owner. The frontend builds screens from the contract doc
 
 - [x] FE: browser check (2026-10-06, headless Chromium against a seeded `testing` database, desktop 1440 and phone 390): 44 screens load with no console errors, failed requests or horizontal scroll; 22 click-through flows pass (create contact, tax, product, currency, selection option, calendar save, field tabs and add, deal filters/picker/move/transfer dialogs, deal and lead tabs, estimate from workflow board, invoice/procurement/maintenance panels, AMC tabs, deal automation rule). Bugs found and fixed: startup `locale` TypeError on every page, catalog save crash on number inputs, `pattern` attribute rejected by Chromium, `crypto.randomUUID` on plain-http hosts, Deal pipelines and Access permissions tiles not linked. Still unchecked: logged-out portal screens, Arabic/RTL layout, drag-and-drop on the deal board, file uploads.
 - [x] CI green on `main` (MySQL service, PHP 8.4, memory limit, route duplicates, testing database).
-- [ ] FE+BE: decide whether `composer.json` should say `"php": "^8.4"` (lock file already needs 8.4.1).
-- [ ] Owner: decide about removing omniroute from Claude, Codex and VS Code (needs consent per config file).
-- [ ] FE: Arabic strings for everything added since 2026-10-05 (`resources/js/locales/ar.json`).
+- [!] FE+BE: `composer.json` says `^8.3` but the lock needs 8.4.1. Changing it needs `composer update --lock` to refresh the lock hash, so Codex should do it with a composer run.
+- [!] Owner: removing omniroute from Claude, Codex and VS Code needs consent per config file (outside the project); skipped until given.
+- [x] FE: Arabic strings for every `t('…')` string in the app (698 added, `2e60a82`). Arabic/RTL layout itself still needs a visual pass.
 - [~] BE→FE: calendar/provider version checks implemented and documented in `docs/CRM_FRONTEND_BACKEND_SETTINGS_LOCKING_2026_10_06.md`; calendar page sends `expected_version`. Weekday keys remain ISO **1–7**, not day names. Backend verified locally; browser acceptance and push pending.
 
 ## Phase 1 — CRM completeness (biggest visible gaps)
