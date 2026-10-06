@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import CrmConditionEditor from '@/components/CrmConditionEditor.vue';
+import CrmLeadPicker from '@/components/CrmLeadPicker.vue';
 import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
 import CrmDealMoveDialog from '@/components/CrmDealMoveDialog.vue';
 import CrmDealsView from '@/components/CrmDealsView.vue';
@@ -53,7 +54,9 @@ const editing = ref<Deal | null>(null);
 const moveOpen = ref(false);
 const moving = ref<Deal | null>(null);
 const moveStage = ref<number | null>(null);
-const leadHelpOpen = ref(false);
+const pickerOpen = ref(false);
+const fromLeadId = ref<number | null>(null);
+const prefill = ref<Record<string, string> | undefined>(undefined);
 const query = ref(props.filters.q ?? '');
 const filterFields = computed(() => props.filterFields ?? []);
 const appliedFilters = computed(() =>
@@ -116,6 +119,17 @@ function reload(): void {
 }
 function create(): void {
     editing.value = null;
+    fromLeadId.value = null;
+    prefill.value = undefined;
+    formOpen.value = true;
+}
+function pickLead(
+    lead: { id: number },
+    values: { title: string; first_name: string; last_name: string },
+): void {
+    editing.value = null;
+    fromLeadId.value = lead.id;
+    prefill.value = values;
     formOpen.value = true;
 }
 function startMove(deal: Deal, stageId: number | null): void {
@@ -148,7 +162,7 @@ watch(pipelineId, (value) => {
             :filter-count="appliedFilters.length"
             @filters="openFilters"
             @create="create"
-            @create-from-lead="leadHelpOpen = true"
+            @create-from-lead="pickerOpen = true"
             @move="startMove"
             @search="
                 (value) => {
@@ -188,6 +202,8 @@ watch(pipelineId, (value) => {
             :pipelines="pipelines"
             :categories="categoryOptions"
             :deal="editing"
+            :lead-id="fromLeadId"
+            :prefill="prefill"
             :default-pipeline-id="pipelineId"
             @saved="reload"
         />
@@ -226,32 +242,6 @@ watch(pipelineId, (value) => {
             </DialogContent>
         </Dialog>
 
-        <Dialog v-model:open="leadHelpOpen">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{{
-                        t('Create a deal from a lead')
-                    }}</DialogTitle>
-                    <DialogDescription>{{
-                        t(
-                            'Open a lead that has reached a Won stage and choose Create deal. The lead stays in Leads, and the deal is linked to it.',
-                        )
-                    }}</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="leadHelpOpen = false"
-                        >{{ t('Close') }}</Button
-                    >
-                    <Button as-child
-                        ><Link href="/crm/leads">{{
-                            t('Go to leads')
-                        }}</Link></Button
-                    >
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <CrmLeadPicker v-model:open="pickerOpen" @pick="pickLead" />
     </div>
 </template>

@@ -195,7 +195,7 @@ class CrmPageShellTest extends TestCase
         $this->actingAs($member)->get(route('crm.settings.calendar.page'))->assertForbidden();
         $this->actingAs($owner)->get(route('crm.settings.calendar.page'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/WorkingCalendar'));
         $this->getJson('/crm/settings/calendar')->assertOk()->assertJsonPath('calendar', null);
-        $this->putJson('/crm/settings/calendar', ['working_days' => [1 => ['start' => '09:00', 'end' => '18:00'], 2 => ['start' => '09:00', 'end' => '13:00']], 'holidays' => ['2026-12-02']])->assertSuccessful();
+        $this->putJson('/crm/settings/calendar', ['expected_version' => 0, 'working_days' => [1 => ['start' => '09:00', 'end' => '18:00'], 2 => ['start' => '09:00', 'end' => '13:00']], 'holidays' => ['2026-12-02']])->assertSuccessful();
         $this->getJson('/crm/settings/calendar')->assertOk()->assertJsonPath('calendar.working_days.2.end', '13:00')->assertJsonPath('calendar.holidays.0', '2026-12-02');
     }
 
@@ -224,5 +224,20 @@ class CrmPageShellTest extends TestCase
         $this->assertSame([$first], $stage['allowed_from_stage_ids']);
         $this->assertSame(['owner'], $stage['entry_roles']);
         $this->assertSame(['lines'], $stage['required_fields']);
+    }
+
+    public function test_deal_page_supports_pipeline_transfer_and_exposes_finance_links(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+        $first = $this->postJson('/crm/deals/pipelines', ['name' => 'Sales'])->assertSuccessful()->json('pipeline.id');
+        $second = $this->postJson('/crm/deals/pipelines', ['name' => 'Listings'])->assertSuccessful()->json('pipeline.id');
+        $deal = $this->postJson('/crm/deals', ['title' => 'Villa 5', 'category' => 'listing', 'pipeline_id' => $first])->assertCreated()->json('deal');
+        $target = collect($this->getJson('/crm/deals/configuration')->json('pipelines'))->firstWhere('id', $second)['stages'][0]['id'];
+
+        $this->get(route('deals.show', $deal['id']))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/DealShow')->has('financialRecords')->where('deal.permissions.transfer', true)->etc());
+        $this->putJson('/crm/deals/'.$deal['id'].'/transfer', ['expected_version' => $deal['version'], 'pipeline_id' => $second, 'stage_id' => $target, 'confirmed' => true])->assertSuccessful()->assertJsonPath('deal.pipeline_id', $second);
+        $this->getJson('/crm/leads/qualified')->assertOk()->assertJsonStructure(['leads' => ['data']]);
     }
 }

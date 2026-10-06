@@ -2,7 +2,10 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
+import type { FinancialRecords } from '@/lib/crm-deal-finance';
+import CrmDealFinance from '@/components/CrmDealFinance.vue';
 import CrmDealMoveDialog from '@/components/CrmDealMoveDialog.vue';
+import CrmDealTransferDialog from '@/components/CrmDealTransferDialog.vue';
 import CrmDealStageBar from '@/components/CrmDealStageBar.vue';
 import DateText from '@/components/DateText.vue';
 import InputError from '@/components/InputError.vue';
@@ -65,19 +68,28 @@ const props = defineProps<{
     timeline: Page<Audit>;
     activities: Page<Activity>;
     categoryOptions?: { code: string; name: string; active: boolean }[];
+    financialRecords?: Partial<FinancialRecords> | null;
 }>();
-type Tab = 'general' | 'activities' | 'history';
+type Tab = 'general' | 'activities' | 'finance' | 'history';
 const { t } = useLocale();
-const tabs: Tab[] = ['general', 'activities', 'history'];
+const tabs: Tab[] = ['general', 'activities', 'finance', 'history'];
 const tab = ref<Tab>('general');
 const editOpen = ref(false);
 const moveOpen = ref(false);
+const transferOpen = ref(false);
 const moveStage = ref<number | null>(null);
 const pipeline = computed(() =>
     props.pipelines.find((item) => item.id === props.deal.pipeline_id),
 );
 const canEdit = computed(() => props.deal.permissions?.edit === true);
 const canMove = computed(() => props.deal.permissions?.move === true);
+const canTransfer = computed(() => props.deal.permissions?.transfer === true);
+const isFinal = computed(() =>
+    ['won', 'lost'].includes(
+        props.stages.find((stage) => stage.id === props.deal.current_stage_id)
+            ?.type ?? '',
+    ),
+);
 const stageNames = computed(
     () => new Map(props.stages.map((stage) => [stage.id, stage.name])),
 );
@@ -216,6 +228,13 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                 <Button v-if="canMove" type="button" @click="startMove(null)">{{
                     t('Move deal')
                 }}</Button>
+                <Button
+                    v-if="canTransfer"
+                    type="button"
+                    variant="outline"
+                    @click="transferOpen = true"
+                    >{{ t('Change pipeline') }}</Button
+                >
                 <Link href="/deals" class="text-sm underline">{{
                     t('Back to deals')
                 }}</Link>
@@ -536,6 +555,15 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                 </Card>
             </TabsContent>
 
+            <TabsContent value="finance">
+                <CrmDealFinance
+                    :deal-id="deal.id"
+                    :version="deal.version"
+                    :can-edit="canEdit"
+                    :records="financialRecords"
+                />
+            </TabsContent>
+
             <TabsContent value="history" class="space-y-4">
                 <Card>
                     <CardHeader
@@ -664,6 +692,13 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
             :categories="categoryOptions ?? []"
             :deal="deal"
             @saved="reload"
+        />
+        <CrmDealTransferDialog
+            v-model:open="transferOpen"
+            :deal="deal"
+            :pipelines="pipelines"
+            :is-final="isFinal"
+            @transferred="reload"
         />
         <CrmDealMoveDialog
             v-model:open="moveOpen"
