@@ -6,6 +6,10 @@ Reference system (for comparison only): DONUT ERP, brokerage edition, `https://d
 
 Owners: **FE** = frontend (Claude), **BE** = backend (Codex). Status: `[x]` done and pushed, `[~]` built but not verified in a browser, `[ ]` open, `[!]` blocked.
 
+## Golden rule: parity is additive only
+
+The reference system (DONUT) is a checklist of things we may be missing, not a template to copy. Everything we built in the CRM over the last week stays: Bitrix-style leads (board, filters, import, activities and calendar, automation, products, estimates), the separate deals module with its own pipelines, access permissions, filters, export, automation and finance links, the settings hub, workflows, and company chat. Never remove, rename or replace an existing screen, tab, field, route or flow to match the reference. Add missing tabs and fields next to what exists. If a reference item conflicts with our flow, keep ours and note the difference here for the owner to decide.
+
 ## Codex checklist (backend, read before every change)
 
 Written for the backend owner. The frontend builds screens from the contract docs, not from the PHP.
