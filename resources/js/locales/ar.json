@@ -1888,5 +1888,10 @@
     "Portal sections": "أقسام البوابة",
     "Invoice sharing": "مشاركة الفواتير",
     "Invitations and access": "الدعوات والوصول",
-    "Invite tenants and landlords through explicit party links.": "ادعُ المستأجرين والملاك عبر روابط أطراف صريحة."
+    "Invite tenants and landlords through explicit party links.": "ادعُ المستأجرين والملاك عبر روابط أطراف صريحة.",
+    "Reports and dashboards": "التقارير ولوحات المتابعة",
+    "Manage requests": "إدارة الطلبات",
+    "Manage preventive plans": "إدارة الخطط الوقائية",
+    "Review maintenance workload and upcoming preventive work.": "راجع عبء الصيانة والأعمال الوقائية القادمة.",
+    "Job status, aging, workload, costs, preventive results and SLA cycles.": "حالة المهام وأعمارها وعبء العمل والتكاليف ونتائج الصيانة الوقائية ودورات اتفاقيات الخدمة."
 }

@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,6 +124,16 @@ function apply(): void {
 <template>
     <Head title="Operations reports" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+        <PageHeader
+            title="Operations reports"
+            description="Job status, aging, workload, costs, preventive results and SLA cycles."
+        >
+            <template #actions>
+                <Link href="/operations" class="text-sm underline">{{
+                    t('Operations overview')
+                }}</Link>
+            </template>
+        </PageHeader>
         <Link
             href="/operations/scheduled-reports"
             class="self-start text-sm underline"
@@ -178,15 +188,6 @@ function apply(): void {
                 </form>
             </CardContent></Card
         >
-        <div class="flex flex-wrap justify-between gap-4">
-            <Heading
-                title="Operations reports"
-                description="Job status, aging, workload, costs, preventive results and SLA cycles."
-            />
-            <Link href="/operations" class="text-sm underline">{{
-                t('Operations overview')
-            }}</Link>
-        </div>
         <Card
             ><CardContent class="space-y-4 pt-6">
                 <form

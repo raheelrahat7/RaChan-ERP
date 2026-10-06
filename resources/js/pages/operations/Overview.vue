@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
@@ -74,23 +74,24 @@ function label(value: string): string {
 <template>
     <Head title="Operations overview" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <Heading
-                title="Operations overview"
-                description="Review maintenance workload and upcoming preventive work."
-            />
-            <div class="flex flex-wrap gap-4 text-sm">
-                <Link href="/operations/reports" class="underline"
-                    >Reports and dashboards</Link
+        <PageHeader
+            title="Operations overview"
+            description="Review maintenance workload and upcoming preventive work."
+        >
+            <template #actions>
+                <Link href="/operations/reports" class="text-sm underline">{{
+                    t('Reports and dashboards')
+                }}</Link>
+                <Link href="/maintenance" class="text-sm underline">{{
+                    t('Manage requests')
+                }}</Link>
+                <Link
+                    href="/preventive-maintenance"
+                    class="text-sm underline"
+                    >{{ t('Manage preventive plans') }}</Link
                 >
-                <Link href="/maintenance" class="underline"
-                    >Manage requests</Link
-                >
-                <Link href="/preventive-maintenance" class="underline"
-                    >Manage preventive plans</Link
-                >
-            </div>
-        </div>
+            </template>
+        </PageHeader>
         <Card>
             <CardContent class="space-y-3 pt-6">
                 <form
