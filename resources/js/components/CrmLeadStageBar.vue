@@ -41,6 +41,15 @@ const targetStage = computed(() =>
     props.pipeline.stages.find((stage) => stage.id === target.value),
 );
 
+/** Lets the page open the move dialog for a specific stage (used by "Mark lost"). */
+defineExpose({
+    openStage: (stageId: number): void => {
+        if (props.canMove) {
+            target.value = stageId;
+        }
+    },
+});
+
 function state(index: number): 'current' | 'past' | 'future' {
     if (index === currentIndex.value) {
         return 'current';

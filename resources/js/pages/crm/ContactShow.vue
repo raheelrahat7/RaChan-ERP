@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocale } from '@/composables/useLocale';
 import { apiJson } from '@/lib/crm-api';
-import { displayField, fullName } from '@/lib/crm-parties';
+import { displayField, fullName, whatsappUrl } from '@/lib/crm-parties';
 import type { PartyContact, PartyField } from '@/lib/crm-parties';
 
 type Lead = {

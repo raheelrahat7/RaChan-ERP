@@ -151,3 +151,10 @@ export function companyBody(
         ...(Object.keys(custom).length ? { custom_fields: custom } : {}),
     };
 }
+
+/** wa.me needs digits only, including the country code, with no plus or international prefix. */
+export function whatsappUrl(phone: string | null | undefined): string | null {
+    const digits = (phone ?? '').replace(/\D/g, '').replace(/^00/, '');
+
+    return digits.length >= 8 ? `https://wa.me/${digits}` : null;
+}

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import CrmLeadActivityEditor from '@/components/CrmLeadActivityEditor.vue';
 import CrmDealFormSheet from '@/components/CrmDealFormSheet.vue';
+import { whatsappUrl } from '@/lib/crm-parties';
 import CrmLeadStageBar from '@/components/CrmLeadStageBar.vue';
 import DateText from '@/components/DateText.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -92,6 +93,17 @@ function loadHistory(history_page = 1): void {
         { preserveState: true, preserveScroll: true },
     );
 }
+const stageBar = ref<InstanceType<typeof CrmLeadStageBar> | null>(null);
+/** First active lost-type stage that is not the current one, for the "Mark lost" shortcut. */
+const lostStage = computed(() =>
+    props.pipeline.stages.find(
+        (stage) =>
+            stage.active &&
+            stage.type === 'lost' &&
+            stage.id !== props.lead.current_stage_id,
+    ),
+);
+const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
 const tabs: Tab[] = ['general', 'activities', 'products', 'history'];
 const tab = ref<Tab>('general');
 const fullName = computed(
@@ -252,6 +264,21 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                     @click="startDeal"
                     >{{ t('Create deal') }}</Button
                 >
+                <Button
+                    v-if="lostStage && canManageCrm && !lead.converted"
+                    type="button"
+                    variant="outline"
+                    @click="stageBar?.openStage(lostStage.id)"
+                    >{{ t('Mark lost') }}</Button
+                >
+                <Button v-if="whatsappLink" as-child variant="outline">
+                    <a
+                        :href="whatsappLink"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >{{ t('WhatsApp') }}</a
+                    >
+                </Button>
                 <Link href="/crm/leads" class="text-sm underline">
                     {{ t('Back to leads') }}
                 </Link>
@@ -259,6 +286,7 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
         </PageHeader>
 
         <CrmLeadStageBar
+            ref="stageBar"
             :lead-id="lead.id"
             :pipeline="pipeline"
             :current-stage-id="lead.current_stage_id"

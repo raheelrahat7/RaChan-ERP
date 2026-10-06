@@ -48,16 +48,16 @@ Written for the backend owner. The frontend builds screens from the contract doc
 
 Ours today: General, Activities, Products, History. Reference: Overview, Requirement, Matched Properties, Activities, Follow-Up Timeline, Tasks, Meetings/Viewings, Offers/Contracts/Deal, Accounting Link.
 
-- [ ] BE: lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature.
-- [ ] FE: Requirement tab (form, save, validation).
-- [ ] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
-- [ ] FE: Matched Properties tab.
+- [!] BE: lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature.
+- [!] FE: Requirement tab (form, save, validation).
+- [!] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
+- [!] FE: Matched Properties tab.
 - [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
 - [ ] BE+FE: Tasks tab (lead-linked tasks) — check `/tasks` backend for a lead link.
 - [ ] BE+FE: Meetings/Viewings tab (lead-linked meetings).
 - [ ] BE+FE: Offers, Contracts and Deal tab (linked deal, contracts, offer submitted) — deal link exists, rest needs BE.
 - [ ] BE+FE: Accounting Link tab (documents, amount, VAT, total).
-- [ ] FE: header actions "Send WhatsApp" (needs credentials from 3C), "Mark Lost" (exists in stage move; surface it).
+- [~] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser check pending.
 - [x] Products tab and linked estimates; "New estimate" from lead.
 
 ### 1B. Contacts and companies

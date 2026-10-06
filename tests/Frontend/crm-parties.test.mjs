@@ -7,6 +7,7 @@ import {
     fieldDraft,
     fieldPayload,
     fullName,
+    whatsappUrl,
 } from '../../resources/js/lib/crm-parties.ts';
 
 const fields = [
@@ -120,4 +121,11 @@ await test('update bodies include the version and nulls for blank optionals', ()
             .website,
         null,
     );
+});
+
+await test('whatsapp links keep only digits and drop the 00 prefix', () => {
+    assert.equal(whatsappUrl('+971 50 123 4567'), 'https://wa.me/971501234567');
+    assert.equal(whatsappUrl('00971501234567'), 'https://wa.me/971501234567');
+    assert.equal(whatsappUrl('123'), null);
+    assert.equal(whatsappUrl(null), null);
 });
