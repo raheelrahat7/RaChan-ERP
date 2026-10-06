@@ -3,7 +3,8 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,11 @@ const props = defineProps<{
     canPrepareSignatures: boolean;
 }>();
 
+const SECTIONS = [
+    { key: 'members', label: 'Members' },
+    { key: 'tax', label: 'UAE tax settings' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('members');
 const invitationForm = useForm({ email: '', role: 'member' });
 const taxForm = useForm({
     vat_enabled: props.organization.vat_enabled,
@@ -83,33 +89,58 @@ function removeMember(member: Member): void {
     <Head title="Organization settings" />
 
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Link
-            v-if="canPrepareSignatures"
-            href="/documents/signatures"
-            class="self-start text-sm underline"
-            >Document signature requests (owner)</Link
-        >
-        <Heading
+        <PageHeader
             title="Organization settings"
-            :description="`Manage access for ${organization.name}.`"
-        />
-
-        <Link
-            v-if="canManageMembers"
-            href="/organization/api-tokens"
-            class="text-sm underline"
-            >{{ t('Read-only API tokens') }}</Link
+            :description="`${t('Manage access for')} ${organization.name}.`"
+            :translate="false"
         >
-        <Link href="/organization/activity" class="text-sm underline">{{
-            t('Organization activity')
-        }}</Link>
-        <Link
-            v-if="canManageMembers"
-            href="/organization/portal-access"
-            class="text-sm underline"
-            >Customer portal invitations and access</Link
+            <template #actions>
+                <Link
+                    v-if="canManageMembers"
+                    href="/organization/api-tokens"
+                    class="text-sm underline"
+                    >{{ t('Read-only API tokens') }}</Link
+                >
+                <Link href="/organization/activity" class="text-sm underline">{{
+                    t('Organization activity')
+                }}</Link>
+                <Link
+                    v-if="canManageMembers"
+                    href="/organization/portal-access"
+                    class="text-sm underline"
+                    >{{ t('Customer portal invitations and access') }}</Link
+                >
+                <Link
+                    v-if="canPrepareSignatures"
+                    href="/documents/signatures"
+                    class="text-sm underline"
+                    >{{ t('Document signature requests (owner)') }}</Link
+                >
+            </template>
+        </PageHeader>
+        <nav
+            :aria-label="t('Organization sections')"
+            class="flex flex-wrap gap-2"
         >
-        <Card v-if="canManageMembers">
+            <button
+                v-for="item in SECTIONS.filter(
+                    (section) => section.key !== 'tax' || canManageMembers,
+                )"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <Card v-show="tab === 'tax'" v-if="canManageMembers">
             <CardHeader><CardTitle>UAE tax settings</CardTitle></CardHeader>
             <CardContent>
                 <form
@@ -177,7 +208,7 @@ function removeMember(member: Member): void {
             </CardContent>
         </Card>
 
-        <Card>
+        <Card v-show="tab === 'members'">
             <CardHeader
                 ><CardTitle>{{ t('Members') }}</CardTitle></CardHeader
             >
@@ -223,7 +254,7 @@ function removeMember(member: Member): void {
             </CardContent>
         </Card>
 
-        <Card v-if="canManageMembers">
+        <Card v-show="tab === 'members'" v-if="canManageMembers">
             <CardHeader><CardTitle>Invite a member</CardTitle></CardHeader>
             <CardContent>
                 <form
@@ -264,7 +295,7 @@ function removeMember(member: Member): void {
             </CardContent>
         </Card>
 
-        <Card v-if="invitations.length">
+        <Card v-show="tab === 'members'" v-if="invitations.length">
             <CardHeader><CardTitle>Pending invitations</CardTitle></CardHeader>
             <CardContent class="space-y-2">
                 <div

@@ -1880,5 +1880,9 @@
     "Send the token in the Authorization: Bearer header to GET /api/v1/jobs, GET /api/v1/properties, GET /api/v1/leads or GET /api/v1/invoices. Page size defaults to 25 and is limited to 100. API access cannot change workflows or finances.": "أرسل الرمز في ترويسة Authorization: Bearer إلى GET /api/v1/jobs أو GET /api/v1/properties أو GET /api/v1/leads أو GET /api/v1/invoices. حجم الصفحة الافتراضي 25 وحده الأقصى 100. لا يمكن للوصول عبر الواجهة تغيير سير العمل أو الشؤون المالية.",
     "Personal access to organization data. Current permissions and job assignments are checked on every request.": "وصول شخصي إلى بيانات المؤسسة. تُفحص الصلاحيات الحالية وتعيينات المهام عند كل طلب.",
     "Download packet": "تنزيل الحزمة",
-    "Signers": "الموقّعون"
+    "Signers": "الموقّعون",
+    "Organization sections": "أقسام المؤسسة",
+    "Manage access for": "إدارة الوصول إلى",
+    "Customer portal invitations and access": "دعوات بوابة العملاء والوصول",
+    "UAE tax settings": "إعدادات الضريبة في الإمارات"
 }
