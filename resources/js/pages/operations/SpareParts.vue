@@ -4,7 +4,8 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,13 @@ const props = defineProps<{
         maintenance_request_id?: number;
     };
 }>();
+const SECTIONS = [
+    { key: 'stock', label: 'Stock and stores' },
+    { key: 'movements', label: 'Movements' },
+    { key: 'transfers', label: 'Transfers' },
+    { key: 'valuation', label: 'Receipt valuation' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('stock');
 const partForm = useForm({ code: '', name: '', unit: 'pcs' });
 const storeForm = useForm({ code: '', name: '' });
 const form = useForm({
@@ -164,14 +172,34 @@ function store(id: number): Store | undefined {
 <template>
     <Head title="Spare parts" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Link href="/maintenance" class="text-sm underline underline-offset-4"
-            >Back to maintenance</Link
-        >
-        <Heading
+        <PageHeader
             title="Spare parts and stores"
             description="Record physical receipts, job issues and unused-part returns for each store."
-        />
-        <div class="grid gap-6 md:grid-cols-2">
+        >
+            <template #actions>
+                <Link href="/maintenance" class="text-sm underline">{{
+                    t('Back to maintenance')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <nav :aria-label="t('Stock sections')" class="flex flex-wrap gap-2">
+            <button
+                v-for="item in SECTIONS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <div v-show="tab === 'stock'" class="grid gap-6 md:grid-cols-2">
             <Card
                 ><CardHeader><CardTitle>New part</CardTitle></CardHeader
                 ><CardContent>
@@ -240,7 +268,7 @@ function store(id: number): Store | undefined {
                 </CardContent></Card
             >
         </div>
-        <Card
+        <Card v-show="tab === 'stock'"
             ><CardHeader><CardTitle>Available stock</CardTitle></CardHeader
             ><CardContent class="space-y-3">
                 <p
@@ -270,7 +298,7 @@ function store(id: number): Store | undefined {
                 </p>
             </CardContent></Card
         >
-        <Card
+        <Card v-show="tab === 'movements'"
             ><CardHeader
                 ><CardTitle>Record stock movement</CardTitle></CardHeader
             ><CardContent>
@@ -417,7 +445,7 @@ function store(id: number): Store | undefined {
                 </form>
             </CardContent></Card
         >
-        <Card>
+        <Card v-show="tab === 'transfers'">
             <CardHeader
                 ><CardTitle>Transfer between stores</CardTitle></CardHeader
             >
@@ -510,7 +538,7 @@ function store(id: number): Store | undefined {
                 </form>
             </CardContent>
         </Card>
-        <Card>
+        <Card v-show="tab === 'transfers'">
             <CardHeader><CardTitle>Correct a transfer</CardTitle></CardHeader>
             <CardContent>
                 <p class="text-muted-foreground mb-3 text-sm">
@@ -558,7 +586,7 @@ function store(id: number): Store | undefined {
                 </form>
             </CardContent>
         </Card>
-        <Card>
+        <Card v-show="tab === 'valuation'">
             <CardHeader><CardTitle>Receipt valuation</CardTitle></CardHeader>
             <CardContent>
                 <p class="text-muted-foreground mb-3 text-sm">
@@ -614,7 +642,7 @@ function store(id: number): Store | undefined {
                 </form>
             </CardContent>
         </Card>
-        <Card
+        <Card v-show="tab === 'movements'"
             ><CardHeader><CardTitle>Movement history</CardTitle></CardHeader
             ><CardContent class="space-y-3">
                 <form

@@ -1855,5 +1855,11 @@
     "Unknown": "غير معروف",
     "No handovers planned.": "لا توجد عمليات تسليم مخططة.",
     "No inspection observations recorded.": "لا توجد ملاحظات فحص مسجلة.",
-    "Move-in and move-out": "الانتقال والإخلاء"
+    "Move-in and move-out": "الانتقال والإخلاء",
+    "Stock sections": "أقسام المخزون",
+    "Stock and stores": "المخزون والمستودعات",
+    "Movements": "الحركات",
+    "Transfers": "التحويلات",
+    "Receipt valuation": "تقييم الاستلام",
+    "Record physical receipts, job issues and unused-part returns for each store.": "سجّل الاستلامات الفعلية وصرف المهام ومرتجعات القطع غير المستخدمة لكل مستودع."
 }
