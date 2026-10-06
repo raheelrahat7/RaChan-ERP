@@ -4,7 +4,8 @@ export type CatalogKind =
     | 'detail-templates'
     | 'company-details'
     | 'mailboxes'
-    | 'products';
+    | 'products'
+    | 'other-settings';
 export type CatalogRecord = {
     id: number;
     kind: CatalogKind;
@@ -13,6 +14,8 @@ export type CatalogRecord = {
     active: boolean | number;
     position: number;
     settings: Record<string, unknown>;
+    /** Versioned kinds (other settings) require expected_version on update. */
+    version?: number;
 };
 export type CatalogField = {
     key: string;
@@ -117,6 +120,16 @@ export const CATALOG_SECTIONS: CatalogSection[] = [
             { key: 'email', label: 'Email', type: 'email', required: true },
             { key: 'display_name', label: 'Display name', type: 'text' },
             { key: 'reply_to', label: 'Reply-to', type: 'email' },
+        ],
+    },
+    {
+        key: 'other-settings',
+        title: 'Other settings',
+        addLabel: 'Add setting',
+        summaryLabel: 'Value',
+        fields: [
+            { key: 'value', label: 'Value', type: 'text', required: true },
+            { key: 'description', label: 'Description', type: 'textarea' },
         ],
     },
     {
@@ -246,6 +259,8 @@ export function catalogSummary(
             return textOf(s.legal_name);
         case 'mailboxes':
             return textOf(s.email);
+        case 'other-settings':
+            return textOf(s.value);
         default:
             return `${textOf(s.currency)} ${textOf(s.price)}`.trim();
     }

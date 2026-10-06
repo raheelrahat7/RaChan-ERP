@@ -112,10 +112,14 @@ async function persist(
     data: Record<string, unknown>,
 ): Promise<void> {
     const base = `/organization/crm-catalog/${config.value.key}`;
+    const versioned =
+        record && config.value.key === 'other-settings'
+            ? { expected_version: record.version ?? 1 }
+            : {};
     await apiJson(
         record ? `${base}/${record.id}` : base,
         record ? 'PUT' : 'POST',
-        data,
+        { ...data, ...versioned },
     );
 }
 

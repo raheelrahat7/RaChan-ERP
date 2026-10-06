@@ -104,7 +104,7 @@ class CrmPageController extends Controller
     public function catalogSettings(Request $request, string $section): Response
     {
         $this->organization($request);
-        abort_unless(in_array($section, ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products'], true), 404);
+        abort_unless(in_array($section, ['taxes', 'units', 'detail-templates', 'company-details', 'mailboxes', 'products', 'other-settings'], true), 404);
 
         return Inertia::render('crm/SettingsCatalog', ['section' => $section]);
     }
@@ -128,6 +128,14 @@ class CrmPageController extends Controller
         $org = $this->organization($request);
 
         return Inertia::render('crm/CompanyShow', $overview->company($org, $request->user(), CrmAccount::where('organization_id', $org->id)->findOrFail($company)));
+    }
+
+    public function providers(Request $request, DealAccess $access): Response
+    {
+        $org = $this->organization($request);
+        abort_unless($access->administrator($org, $request->user()), 403);
+
+        return Inertia::render('crm/SettingsProviders');
     }
 
     public function workflows(Request $request): Response

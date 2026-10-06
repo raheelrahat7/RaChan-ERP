@@ -258,4 +258,23 @@ class CrmPageShellTest extends TestCase
         $other = $this->member(Organization::factory()->create(), OrganizationRole::Owner);
         $this->actingAs($other)->get(route('contacts.show', $contact['id']))->assertNotFound();
     }
+
+    public function test_payment_systems_and_other_settings_screens_use_versions(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($member)->get(route('crm.settings.providers'))->assertForbidden();
+        $this->actingAs($owner)->get(route('crm.settings.providers'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsProviders'));
+        $this->get(route('crm.settings.catalog', 'other-settings'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsCatalog')->where('section', 'other-settings'));
+
+        $id = $this->postJson('/organization/reference-settings/providers', ['name' => 'Sales email', 'capability' => 'email', 'provider' => null, 'active' => false, 'settings' => ['label' => 'Sales']])->assertSuccessful()->json('id');
+        $this->putJson('/organization/reference-settings/providers/'.$id, ['expected_version' => 1, 'name' => 'Sales email', 'capability' => 'email', 'provider' => null, 'active' => false, 'settings' => ['label' => 'Sales', 'daily_limit' => 20]])->assertSuccessful()->assertJsonPath('version', 2);
+        $this->putJson('/organization/reference-settings/providers/'.$id, ['expected_version' => 1, 'name' => 'x', 'capability' => 'email', 'active' => false])->assertUnprocessable()->assertJsonValidationErrors('expected_version');
+        $this->getJson('/organization/reference-settings/providers')->assertOk()->assertJsonPath('records.0.version', 2);
+
+        $setting = $this->postJson('/organization/crm-catalog/other-settings', ['code' => 'week-start', 'name' => 'Week start', 'active' => true, 'settings' => ['value' => 'Monday']])->assertSuccessful()->json('record');
+        $this->putJson('/organization/crm-catalog/other-settings/'.$setting['id'], ['code' => 'week-start', 'name' => 'Week start', 'active' => true, 'settings' => ['value' => 'Sunday'], 'expected_version' => $setting['version'] ?? 1])->assertSuccessful();
+    }
 }
