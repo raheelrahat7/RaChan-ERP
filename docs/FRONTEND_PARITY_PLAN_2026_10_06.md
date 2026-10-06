@@ -76,8 +76,8 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 ### 1D. Settings hub
 
 - [x] Pipelines, deal pipelines, permissions, selection lists, currency, locations, numbering, taxes, units, templates, company details, mailboxes, products, field list (4 entities), working calendar.
-- [ ] FE: "Payment systems" tile on `organization/reference-settings/providers` (shape in `docs/CRM_FRONTEND_BACKEND_2026_10_06.md`).
-- [ ] FE: "Other settings" tile on `organization/crm-catalog/other-settings`.
+- [x] FE: "Payment systems" tile and page on the providers reference-settings endpoint with version checks (browser-checked 2026-10-06).
+- [x] FE: "Other settings" tile and page on the other-settings catalog endpoint with version checks (browser-checked 2026-10-06).
 - [!] CRM applications market — out of backend scope (Codex).
 
 ## Phase 2 — property and transaction sections (reference gaps)
