@@ -1,13 +1,35 @@
 <script setup lang="ts">
-import { uuid } from '@/lib/uuid';
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
+import { uuid } from '@/lib/uuid';
+
+const { t } = useLocale();
 const props = defineProps<{
     root: {
         id: number;
@@ -41,141 +63,221 @@ function save(): void {
         onSuccess: () => {
             upload.reset();
             upload.version_key = uuid();
+            addOpen.value = false;
         },
     });
 }
 function archive(): void {
     lifecycle.post(
         `/documents/${props.root.id}/${props.root.archived_at ? 'restore' : 'archive'}`,
-        { preserveScroll: true, onSuccess: () => lifecycle.reset() },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                lifecycle.reset();
+                archiveOpen.value = false;
+            },
+        },
     );
 }
+const addOpen = ref(false);
+const archiveOpen = ref(false);
+const PREVIEWABLE = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+];
+type Row = {
+    id: number;
+    version: string;
+    name: string;
+    size: string;
+    created: string;
+    reason: string;
+    actions: string;
+};
+const rows = computed<Row[]>(() =>
+    props.versions.map((version) => ({
+        id: version.id,
+        version: `${t('Version')} ${version.version_number}`,
+        name: version.name,
+        size: `${Math.ceil(version.size / 1024)} ${t('KB')}`,
+        created: version.created_at,
+        reason: version.version_reason ?? '',
+        actions: '',
+    })),
+);
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'version', label: t('Version'), sortable: true },
+    { key: 'name', label: t('Name') },
+    { key: 'size', label: t('Size'), align: 'end' },
+    { key: 'created', label: t('Created'), sortable: true },
+    { key: 'reason', label: t('Version reason') },
+    { key: 'actions', label: '' },
+]);
+const versionById = (id: number) =>
+    props.versions.find((item) => item.id === id)!;
 </script>
+
 <template>
     <Head :title="t('Document versions')" />
-    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
+            :translate="false"
             :title="root.name"
             :description="t('Private document versions and lifecycle history.')"
-        /><Link href="/dashboard" class="text-sm underline">{{
-            t('Dashboard')
-        }}</Link>
-        <p v-if="root.archived_at" class="rounded-md border p-3 text-sm">
-            {{ t('Archived') }} {{ root.archived_at }} ·
-            {{ root.archive_reason }}
-        </p>
-        <Card
-            ><CardHeader
-                ><CardTitle>{{
-                    t('Preserved versions')
-                }}</CardTitle></CardHeader
-            ><CardContent class="space-y-3"
-                ><article
-                    v-for="version in versions"
-                    :key="version.id"
-                    class="space-y-1 border-b pb-3 text-sm"
+        >
+            <template #actions>
+                <Button
+                    v-if="canEdit"
+                    type="button"
+                    variant="outline"
+                    @click="archiveOpen = true"
+                    >{{
+                        root.archived_at
+                            ? t('Restore document')
+                            : t('Archive document')
+                    }}</Button
                 >
-                    <p>
-                        {{ t('Version') }} {{ version.version_number }} ·
-                        {{ version.name }} ·
-                        {{ Math.ceil(version.size / 1024) }} {{ t('KB') }} ·
-                        {{ version.created_at }}
-                    </p>
-                    <p v-if="version.version_reason">
-                        {{ version.version_reason }}
-                    </p>
-                    <div class="flex gap-3">
-                        <a
-                            :href="`/documents/${version.id}/download`"
-                            class="underline"
-                            >{{ t('Download') }}</a
+                <Link href="/dashboard" class="text-sm underline">{{
+                    t('Dashboard')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <Card v-if="root.archived_at">
+            <CardContent class="flex flex-wrap items-center gap-2 text-sm">
+                <Badge variant="outline">{{ t('Archived') }}</Badge
+                >{{ root.archived_at }} · {{ root.archive_reason }}
+            </CardContent>
+        </Card>
+
+        <CrmSettingsTable
+            :show-title="false"
+            title="Preserved versions"
+            add-label="Add a version"
+            :columns="columns"
+            :rows="rows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.version"
+            :selectable="false"
+            :can-edit="canEdit && !root.archived_at"
+            @add="addOpen = true"
+        >
+            <template #cell-actions="{ row }">
+                <div class="flex justify-end gap-2">
+                    <Button as-child size="sm" variant="outline"
+                        ><a :href="`/documents/${row.id}/download`">{{
+                            t('Download')
+                        }}</a></Button
+                    >
+                    <Button
+                        v-if="
+                            PREVIEWABLE.includes(versionById(row.id).mime_type)
+                        "
+                        as-child
+                        size="sm"
+                        variant="ghost"
                         ><a
-                            v-if="
-                                [
-                                    'application/pdf',
-                                    'image/jpeg',
-                                    'image/png',
-                                    'image/webp',
-                                ].includes(version.mime_type)
-                            "
-                            :href="`/documents/${version.id}/preview`"
+                            :href="`/documents/${row.id}/preview`"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="underline"
                             >{{ t('Preview') }}</a
-                        >
+                        ></Button
+                    >
+                </div>
+            </template>
+        </CrmSettingsTable>
+
+        <Sheet v-model:open="addOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('Add a version')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t('Private document versions and lifecycle history.')
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="version-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
+                    @submit.prevent="save"
+                >
+                    <div class="space-y-1">
+                        <Label for="dv-file">{{ t('File') }}</Label
+                        ><input
+                            id="dv-file"
+                            type="file"
+                            required
+                            class="block w-full text-sm"
+                            @change="select"
+                        /><InputError :message="upload.errors.file" />
                     </div>
-                </article></CardContent
-            ></Card
-        ><Card v-if="canEdit && !root.archived_at"
-            ><CardHeader
-                ><CardTitle>{{ t('Add a version') }}</CardTitle></CardHeader
-            ><CardContent
-                ><form class="space-y-3" @submit.prevent="save">
-                    <label class="block text-sm"
-                        >{{ t('File')
-                        }}<Input type="file" required @change="select" /></label
-                    ><label class="block text-sm"
-                        >{{ t('Version reason')
-                        }}<Input
+                    <div class="space-y-1">
+                        <Label for="dv-reason">{{ t('Version reason') }}</Label
+                        ><Input
+                            id="dv-reason"
                             v-model="upload.reason"
                             required
                             maxlength="2000"
-                    /></label>
-                    <p
-                        v-for="(message, field) in upload.errors"
-                        :key="field"
-                        class="text-destructive text-sm"
-                        role="alert"
+                        /><InputError :message="upload.errors.reason" />
+                    </div>
+                    <InputError :message="upload.errors.version_key" />
+                </form>
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="version-form"
+                        :disabled="upload.processing"
+                        >{{ t('Preserve new version') }}</Button
                     >
-                        {{ message }}
-                    </p>
-                    <Button :disabled="upload.processing">{{
-                        t('Preserve new version')
-                    }}</Button>
-                </form></CardContent
-            ></Card
-        ><Card v-if="canEdit"
-            ><CardHeader
-                ><CardTitle>{{
-                    root.archived_at
-                        ? t('Restore document')
-                        : t('Archive document')
-                }}</CardTitle></CardHeader
-            ><CardContent
-                ><p class="text-muted-foreground mb-3 text-sm">
-                    {{
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="addOpen = false"
+                        >{{ t('Cancel') }}</Button
+                    >
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
+
+        <Dialog v-model:open="archiveOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{{
+                        root.archived_at
+                            ? t('Restore document')
+                            : t('Archive document')
+                    }}</DialogTitle>
+                    <DialogDescription>{{
                         t(
                             'Archiving retains every version and file. Permanent deletion is disabled.',
                         )
-                    }}
-                </p>
+                    }}</DialogDescription>
+                </DialogHeader>
                 <form class="space-y-3" @submit.prevent="archive">
-                    <label class="block text-sm"
-                        >{{ t('Reason')
-                        }}<Input
+                    <div class="space-y-1">
+                        <Label for="da-reason">{{ t('Reason') }}</Label
+                        ><Input
+                            id="da-reason"
                             v-model="lifecycle.reason"
                             required
                             maxlength="2000"
-                    /></label>
-                    <p
-                        v-for="(message, field) in lifecycle.errors"
-                        :key="field"
-                        class="text-destructive text-sm"
-                        role="alert"
-                    >
-                        {{ message }}
-                    </p>
-                    <Button
-                        variant="outline"
-                        :disabled="lifecycle.processing"
-                        >{{
+                        /><InputError :message="lifecycle.errors.reason" />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="archiveOpen = false"
+                            >{{ t('Cancel') }}</Button
+                        >
+                        <Button :disabled="lifecycle.processing">{{
                             root.archived_at ? t('Restore') : t('Archive')
-                        }}</Button
-                    >
-                </form></CardContent
-            ></Card
-        >
+                        }}</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>
