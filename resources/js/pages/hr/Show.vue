@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useLocale } from '@/composables/useLocale';
 
 type Staff = {
     id: number;
@@ -18,6 +19,7 @@ type Staff = {
     status: string;
     last_active: number | null;
 };
+const { t } = useLocale();
 const props = defineProps<{
     staff: Staff;
     canManage: boolean;
@@ -44,11 +46,17 @@ function dismiss(): void {
 <template>
     <Head :title="staff.name" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Link href="/hr/staff" class="text-sm underline">Back to staff</Link>
-        <Heading
+        <PageHeader
             :title="staff.name"
-            :description="staff.job_title || 'Employee profile'"
-        />
+            :description="staff.job_title || t('Employee profile')"
+            :translate="false"
+        >
+            <template #actions>
+                <Link href="/hr/staff" class="text-sm underline">{{
+                    t('Back to staff')
+                }}</Link>
+            </template>
+        </PageHeader>
         <div class="grid gap-6 md:grid-cols-2">
             <Card
                 ><CardHeader><CardTitle>Employment</CardTitle></CardHeader

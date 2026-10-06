@@ -3,9 +3,19 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 
 type Notification = {
     id: number;
@@ -34,8 +44,12 @@ const form = useForm({
     daily_digest_enabled: props.preferences.daily_digest_enabled,
     enabled_categories: [...props.preferences.enabled_categories],
 });
+const prefsOpen = ref(false);
 function save(): void {
-    form.put('/notifications/preferences', { preserveScroll: true });
+    form.put('/notifications/preferences', {
+        preserveScroll: true,
+        onSuccess: () => (prefsOpen.value = false),
+    });
 }
 function markRead(id: number): void {
     router.post(`/notifications/${id}/read`, {}, { preserveScroll: true });
@@ -49,98 +63,78 @@ function label(category: string): string {
 </script>
 
 <template>
-    <Head title="Notifications" />
-    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Notifications')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Notifications"
-            :description="`${unreadCount} unread · CRM and operational alerts`"
-        />
-        <Card v-if="canManageSettings">
-            <CardHeader
-                ><CardTitle
-                    >Organization delivery preferences</CardTitle
-                ></CardHeader
-            >
-            <CardContent>
-                <form class="space-y-4" @submit.prevent="save">
-                    <label class="flex items-center gap-2"
-                        ><input
-                            v-model="form.daily_digest_enabled"
-                            type="checkbox"
-                        />Enable daily in-app notifications</label
-                    >
-                    <fieldset class="space-y-2">
-                        <legend class="mb-2 font-medium">
-                            Alert categories
-                        </legend>
-                        <label
-                            v-for="category in categories"
-                            :key="category"
-                            class="flex items-center gap-2 capitalize"
-                            ><input
-                                v-model="form.enabled_categories"
-                                type="checkbox"
-                                :value="category"
-                            />{{ label(category) }}</label
-                        >
-                    </fieldset>
-                    <p
-                        v-if="form.hasErrors"
-                        role="alert"
-                        class="text-destructive text-sm"
-                    >
-                        Check your settings and try again.
-                    </p>
-                    <Button :disabled="form.processing"
-                        >Save preferences</Button
-                    >
-                </form>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader class="flex flex-row items-center justify-between"
-                ><CardTitle>History</CardTitle
-                ><Button
+            :description="`${unreadCount} ${t('unread')} · ${t('CRM and operational alerts')}`"
+            :translate="false"
+        >
+            <template #actions>
+                <Button
                     v-if="unreadCount"
-                    size="sm"
+                    type="button"
                     variant="outline"
                     @click="markAllRead"
-                    >Mark all read</Button
-                ></CardHeader
-            >
-            <CardContent class="space-y-3">
+                    >{{ t('Mark all read') }}</Button
+                >
+                <Button
+                    v-if="canManageSettings"
+                    type="button"
+                    variant="outline"
+                    @click="prefsOpen = true"
+                    >{{ t('Delivery preferences') }}</Button
+                >
+            </template>
+        </PageHeader>
+
+        <Card>
+            <CardContent class="space-y-1">
                 <p
                     v-if="!notifications.data.length"
                     class="text-muted-foreground text-sm"
                 >
-                    No notifications yet. CRM stage entries and daily alerts
-                    appear here when action is needed.
+                    {{
+                        t(
+                            'No notifications yet. CRM stage entries and daily alerts appear here when action is needed.',
+                        )
+                    }}
                 </p>
                 <div
                     v-for="notification in notifications.data"
                     :key="notification.id"
-                    class="flex flex-wrap items-center justify-between gap-3 border-b pb-3 last:border-0"
+                    class="flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-0"
+                    :class="
+                        notification.read_at
+                            ? ''
+                            : 'bg-primary/5 -mx-2 rounded-md px-2'
+                    "
                 >
-                    <div>
+                    <div class="min-w-0">
                         <Link
                             :href="notification.href"
                             class="font-medium hover:underline"
-                            >{{ notification.title
+                        >
+                            {{ notification.title
                             }}<template
                                 v-if="
                                     notification.category !== 'crm_stage_entry'
                                 "
                             >
                                 · {{ notification.count }}</template
-                            ></Link
-                        >
+                            >
+                        </Link>
                         <p class="text-muted-foreground text-sm">
+                            <Badge variant="outline" class="me-2 capitalize">{{
+                                label(notification.category)
+                            }}</Badge>
                             {{
                                 new Date(
                                     notification.created_at,
                                 ).toLocaleString()
                             }}
-                            · {{ notification.read_at ? 'Read' : 'Unread' }}
+                            ·
+                            {{ notification.read_at ? t('Read') : t('Unread') }}
                         </p>
                     </div>
                     <Button
@@ -148,16 +142,17 @@ function label(category: string): string {
                         size="sm"
                         variant="outline"
                         @click="markRead(notification.id)"
-                        >Mark read</Button
+                        >{{ t('Mark read') }}</Button
                     >
                 </div>
-                <div class="flex justify-between gap-3">
+                <div class="flex justify-between gap-3 pt-3">
                     <Link
                         v-if="notifications.prev_page_url"
                         :href="notifications.prev_page_url"
                         class="text-sm underline"
                         >{{ t('Previous') }}</Link
-                    ><span v-else /><Link
+                    ><span v-else />
+                    <Link
                         v-if="notifications.next_page_url"
                         :href="notifications.next_page_url"
                         class="text-sm underline"
@@ -166,5 +161,67 @@ function label(category: string): string {
                 </div>
             </CardContent>
         </Card>
+
+        <Sheet v-model:open="prefsOpen">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('Organization delivery preferences')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t('CRM and operational alerts')
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="prefs-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
+                    @submit.prevent="save"
+                >
+                    <label class="flex items-center gap-2 text-sm"
+                        ><input
+                            v-model="form.daily_digest_enabled"
+                            type="checkbox"
+                        />{{ t('Enable daily in-app notifications') }}</label
+                    >
+                    <fieldset class="space-y-2">
+                        <legend class="mb-2 text-sm font-medium">
+                            {{ t('Alert categories') }}
+                        </legend>
+                        <label
+                            v-for="category in categories"
+                            :key="category"
+                            class="flex items-center gap-2 text-sm capitalize"
+                        >
+                            <input
+                                v-model="form.enabled_categories"
+                                type="checkbox"
+                                :value="category"
+                            />{{ label(category) }}
+                        </label>
+                    </fieldset>
+                    <p
+                        v-if="form.hasErrors"
+                        role="alert"
+                        class="text-destructive text-sm"
+                    >
+                        {{ t('Check your settings and try again.') }}
+                    </p>
+                </form>
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="prefs-form"
+                        :disabled="form.processing"
+                        >{{ t('Save preferences') }}</Button
+                    >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="prefsOpen = false"
+                        >{{ t('Cancel') }}</Button
+                    >
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
