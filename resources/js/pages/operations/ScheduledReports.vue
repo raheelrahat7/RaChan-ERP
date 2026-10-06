@@ -1,11 +1,27 @@
 <script setup lang="ts">
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
+import InputError from '@/components/InputError.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import Pagination from '@/components/Pagination.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { useLocale } from '@/composables/useLocale';
+import type { DataTableColumn } from '@/lib/data-table';
+
 const { t } = useLocale();
 
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
-import Pagination from '@/components/Pagination.vue';
-import { Button } from '@/components/ui/button';
 const props = defineProps<{
     timezone: string;
     schedules: {
@@ -49,158 +65,317 @@ function selectFilter(event: Event): void {
 }
 function create(): void {
     form.post('/operations/scheduled-reports', {
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            form.reset();
+            open.value = false;
+        },
     });
 }
 function toggle(id: number, enabled: boolean): void {
     router.put(`/operations/scheduled-reports/${id}`, { enabled });
 }
+const selectClass =
+    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
+const WEEKDAYS = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+];
+const open = ref(false);
+const tab = ref<'schedules' | 'deliveries'>('schedules');
+
+type ScheduleRow = {
+    id: number;
+    name: string;
+    format: string;
+    when: string;
+    next: string;
+    status: string;
+    actions: string;
+};
+type DeliveryRow = {
+    id: number;
+    format: string;
+    scheduled: string;
+    status: string;
+    note: string;
+    actions: string;
+};
+const scheduleRows = computed<ScheduleRow[]>(() =>
+    props.schedules.map((schedule) => ({
+        id: schedule.id,
+        name: schedule.name,
+        format: schedule.format.toUpperCase(),
+        when: `${t(schedule.frequency)} · ${schedule.local_time}`,
+        next: schedule.next_run_at,
+        status: schedule.enabled ? t('Enabled') : t('Paused'),
+        actions: '',
+    })),
+);
+const deliveryRows = computed<DeliveryRow[]>(() =>
+    props.deliveries.data.map((delivery) => ({
+        id: delivery.id,
+        format: delivery.format.toUpperCase(),
+        scheduled: delivery.scheduled_for,
+        status: delivery.status,
+        note: delivery.failure_reason ?? '',
+        actions: '',
+    })),
+);
+const scheduleColumns = computed<DataTableColumn<ScheduleRow>[]>(() => [
+    { key: 'name', label: t('Name'), sortable: true },
+    { key: 'format', label: t('Format') },
+    { key: 'when', label: t('Frequency') },
+    { key: 'next', label: t('Next run'), sortable: true },
+    { key: 'status', label: t('Status') },
+    { key: 'actions', label: '' },
+]);
+const deliveryColumns = computed<DataTableColumn<DeliveryRow>[]>(() => [
+    { key: 'scheduled', label: t('Scheduled'), sortable: true },
+    { key: 'format', label: t('Format') },
+    { key: 'status', label: t('Status') },
+    { key: 'note', label: t('Note') },
+    { key: 'actions', label: '' },
+]);
+const scheduleOf = (id: number) =>
+    props.schedules.find((schedule) => schedule.id === id);
 </script>
+
 <template>
-    <Head title="Private scheduled reports" />
-    <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
+    <Head :title="t('Private scheduled reports')" />
+    <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-6">
+        <PageHeader
             title="Private scheduled reports"
             description="PDF and XLSX operations reports delivered inside the app to you."
-        />
-        <Link href="/operations/reports" class="underline"
-            >Operations reports and saved filters</Link
         >
-        <p>
-            Schedule times use {{ props.timezone }}. A delayed scheduler
-            generates one current report, then moves to the next scheduled time.
-            Reports include at most 1000 jobs. Permissions are checked during
-            generation and download.
+            <template #actions>
+                <Link href="/operations/reports" class="text-sm underline">{{
+                    t('Operations reports and saved filters')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <p class="text-muted-foreground text-sm">
+            {{ t('Schedule times use') }} {{ props.timezone }}.
+            {{
+                t(
+                    'A delayed scheduler generates one current report, then moves to the next scheduled time. Reports include at most 1000 jobs. Permissions are checked during generation and download.',
+                )
+            }}
         </p>
-        <form class="space-y-4 rounded border p-4" @submit.prevent="create">
-            <label class="block"
-                >{{ t('Name')
-                }}<input
-                    v-model="form.name"
-                    required
-                    maxlength="100"
-                    class="ml-3 rounded border p-2"
-            /></label>
-            <label class="block"
-                >{{ t('Format')
-                }}<select v-model="form.format" class="ml-3 rounded border p-2">
-                    <option value="pdf">PDF</option>
-                    <option value="xlsx">XLSX</option>
-                </select></label
+
+        <nav :aria-label="t('Report views')" class="flex gap-2">
+            <button
+                v-for="item in [
+                    { key: 'schedules', label: 'Your schedules' },
+                    { key: 'deliveries', label: 'Private deliveries' },
+                ] as const"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
             >
-            <label class="block"
-                >{{ t('Frequency')
-                }}<select
-                    v-model="form.frequency"
-                    class="ml-3 rounded border p-2"
-                >
-                    <option value="daily">{{ t('Daily') }}</option>
-                    <option value="weekly">{{ t('Weekly') }}</option>
-                </select></label
+                {{ t(item.label) }}
+            </button>
+        </nav>
+
+        <CrmSettingsTable
+            v-if="tab === 'schedules'"
+            :show-title="false"
+            title="Your schedules"
+            :columns="scheduleColumns"
+            :rows="scheduleRows"
+            :row-key="(row) => row.id"
+            :row-label="(row) => row.name"
+            add-label="Create schedule"
+            :selectable="false"
+            searchable
+            can-edit
+            @add="open = true"
+        >
+            <template #cell-status="{ row }"
+                ><Badge
+                    :variant="
+                        row.status === t('Enabled') ? 'secondary' : 'outline'
+                    "
+                    >{{ row.status }}</Badge
+                ></template
             >
-            <label v-if="form.frequency === 'weekly'" class="block"
-                >{{ t('Weekday')
-                }}<select
-                    v-model="form.weekday"
-                    class="ml-3 rounded border p-2"
-                >
-                    <option
-                        v-for="(day, index) in [
-                            'Monday',
-                            'Tuesday',
-                            'Wednesday',
-                            'Thursday',
-                            'Friday',
-                            'Saturday',
-                            'Sunday',
-                        ]"
-                        :key="day"
-                        :value="index + 1"
+            <template #cell-actions="{ row }">
+                <div class="flex justify-end">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        @click="toggle(row.id, !scheduleOf(row.id)?.enabled)"
+                        >{{
+                            scheduleOf(row.id)?.enabled
+                                ? t('Pause')
+                                : t('Resume')
+                        }}</Button
                     >
-                        {{ day }}
-                    </option>
-                </select></label
+                </div>
+            </template>
+        </CrmSettingsTable>
+        <template v-else>
+            <CrmSettingsTable
+                :show-title="false"
+                title="Private deliveries"
+                add-label=""
+                :columns="deliveryColumns"
+                :rows="deliveryRows"
+                :row-key="(row) => row.id"
+                :row-label="(row) => row.scheduled"
+                :selectable="false"
             >
-            <label class="block"
-                >{{ t('Local time')
-                }}<input
-                    v-model="form.local_time"
-                    type="time"
-                    required
-                    class="ml-3 rounded border p-2"
-            /></label>
-            <label class="block"
-                >{{ t('Saved filters')
-                }}<select
-                    class="ml-3 rounded border p-2"
-                    @change="selectFilter"
+                <template #cell-status="{ row }"
+                    ><Badge variant="secondary">{{
+                        row.status
+                    }}</Badge></template
                 >
-                    <option value="0">All jobs I can access</option>
-                    <option
-                        v-for="filter in props.filters"
-                        :key="filter.id"
-                        :value="filter.id"
+                <template #cell-actions="{ row }">
+                    <div class="flex justify-end">
+                        <Button
+                            v-if="row.status === 'ready'"
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            ><a
+                                :href="`/operations/scheduled-reports/deliveries/${row.id}`"
+                                >{{ t('Download report') }}</a
+                            ></Button
+                        >
+                    </div>
+                </template>
+            </CrmSettingsTable>
+            <Pagination :links="props.deliveries.links" />
+        </template>
+
+        <Sheet v-model:open="open">
+            <SheetContent class="w-full gap-0 sm:max-w-md" side="right">
+                <SheetHeader class="border-b">
+                    <SheetTitle class="font-display text-2xl font-medium">{{
+                        t('Create schedule')
+                    }}</SheetTitle>
+                    <SheetDescription>{{
+                        t(
+                            'PDF and XLSX operations reports delivered inside the app to you.',
+                        )
+                    }}</SheetDescription>
+                </SheetHeader>
+                <form
+                    id="schedule-form"
+                    class="flex-1 space-y-4 overflow-y-auto p-4"
+                    @submit.prevent="create"
+                >
+                    <div class="space-y-1">
+                        <Label for="sr-name">{{ t('Name') }}</Label
+                        ><Input
+                            id="sr-name"
+                            v-model="form.name"
+                            required
+                            maxlength="100"
+                        /><InputError :message="form.errors.name" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <Label for="sr-format">{{ t('Format') }}</Label>
+                            <select
+                                id="sr-format"
+                                v-model="form.format"
+                                :class="selectClass"
+                            >
+                                <option value="pdf">PDF</option>
+                                <option value="xlsx">XLSX</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="sr-freq">{{ t('Frequency') }}</Label>
+                            <select
+                                id="sr-freq"
+                                v-model="form.frequency"
+                                :class="selectClass"
+                            >
+                                <option value="daily">{{ t('Daily') }}</option>
+                                <option value="weekly">
+                                    {{ t('Weekly') }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div v-if="form.frequency === 'weekly'" class="space-y-1">
+                        <Label for="sr-day">{{ t('Weekday') }}</Label>
+                        <select
+                            id="sr-day"
+                            v-model="form.weekday"
+                            :class="selectClass"
+                        >
+                            <option
+                                v-for="(day, index) in WEEKDAYS"
+                                :key="day"
+                                :value="index + 1"
+                            >
+                                {{ t(day) }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="sr-time">{{ t('Local time') }}</Label
+                        ><Input
+                            id="sr-time"
+                            v-model="form.local_time"
+                            type="time"
+                            required
+                        /><InputError :message="form.errors.local_time" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="sr-filter">{{ t('Saved filters') }}</Label>
+                        <select
+                            id="sr-filter"
+                            :class="selectClass"
+                            @change="selectFilter"
+                        >
+                            <option value="0">
+                                {{ t('All jobs I can access') }}
+                            </option>
+                            <option
+                                v-for="filter in props.filters"
+                                :key="filter.id"
+                                :value="filter.id"
+                            >
+                                {{ filter.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <InputError
+                        v-for="(error, key) in form.errors"
+                        :key="key"
+                        :message="error"
+                    />
+                </form>
+                <SheetFooter class="border-t">
+                    <Button
+                        type="submit"
+                        form="schedule-form"
+                        :disabled="form.processing"
+                        >{{ t('Create schedule') }}</Button
                     >
-                        {{ filter.name }}
-                    </option>
-                </select></label
-            >
-            <p
-                v-for="(error, key) in form.errors"
-                :key="key"
-                role="alert"
-                class="text-destructive"
-            >
-                {{ error }}
-            </p>
-            <Button :disabled="form.processing">{{
-                t('Create schedule')
-            }}</Button>
-        </form>
-        <h2 class="font-semibold">{{ t('Your schedules') }}</h2>
-        <ul class="space-y-3">
-            <li
-                v-for="schedule in props.schedules"
-                :key="schedule.id"
-                class="rounded border p-4"
-            >
-                <strong>{{ schedule.name }}</strong>
-                <p>
-                    {{ schedule.format.toUpperCase() }} ·
-                    {{ schedule.frequency }} at {{ schedule.local_time }} ·
-                    {{ schedule.enabled ? 'Enabled' : 'Paused' }}
-                </p>
-                <p>Next run: {{ schedule.next_run_at }}</p>
-                <Button
-                    variant="outline"
-                    @click="toggle(schedule.id, !schedule.enabled)"
-                    >{{ schedule.enabled ? 'Pause' : 'Resume' }}</Button
-                >
-            </li>
-        </ul>
-        <h2 class="font-semibold">{{ t('Private deliveries') }}</h2>
-        <ul class="space-y-3">
-            <li
-                v-for="delivery in props.deliveries.data"
-                :key="delivery.id"
-                class="rounded border p-4"
-            >
-                <p>
-                    {{ delivery.format.toUpperCase() }} ·
-                    {{ delivery.status }} · Scheduled
-                    {{ delivery.scheduled_for }}
-                </p>
-                <p v-if="delivery.failure_reason">
-                    {{ delivery.failure_reason }}
-                </p>
-                <a
-                    v-if="delivery.status === 'ready'"
-                    :href="`/operations/scheduled-reports/deliveries/${delivery.id}`"
-                    class="underline"
-                    >{{ t('Download report') }}</a
-                >
-            </li>
-        </ul>
-        <Pagination :links="props.deliveries.links" />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="open = false"
+                        >{{ t('Cancel') }}</Button
+                    >
+                </SheetFooter>
+            </SheetContent>
+        </Sheet>
     </div>
 </template>
