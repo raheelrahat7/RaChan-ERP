@@ -3,11 +3,17 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import { ref } from 'vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+const SECTIONS = [
+    { key: 'invitations', label: 'Invitations and access' },
+    { key: 'sharing', label: 'Invoice sharing' },
+] as const;
+const tab = ref<(typeof SECTIONS)[number]['key']>('invitations');
 defineProps<{
     tenants: { id: number; name: string; reference: string | null }[];
     owners: { id: number; name: string; reference: string | null }[];
@@ -67,13 +73,34 @@ function link(): void {
 <template>
     <Head title="Customer portal access" />
     <div class="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Customer portal access"
             description="Invite tenants and landlords through explicit party links."
-        /><Link href="/organization" class="text-sm underline">{{
-            t('Organization settings')
-        }}</Link>
-        <Card
+        >
+            <template #actions>
+                <Link href="/organization" class="text-sm underline">{{
+                    t('Organization settings')
+                }}</Link>
+            </template>
+        </PageHeader>
+        <nav :aria-label="t('Portal sections')" class="flex flex-wrap gap-2">
+            <button
+                v-for="item in SECTIONS"
+                :key="item.key"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium"
+                :class="
+                    item.key === tab
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted border'
+                "
+                :aria-current="item.key === tab ? 'page' : undefined"
+                @click="tab = item.key"
+            >
+                {{ t(item.label) }}
+            </button>
+        </nav>
+        <Card v-show="tab === 'invitations'"
             ><CardHeader><CardTitle>Create invitation</CardTitle></CardHeader
             ><CardContent class="space-y-3"
                 ><p class="text-muted-foreground text-sm">
@@ -146,7 +173,7 @@ function link(): void {
                 </form>
             </CardContent></Card
         >
-        <Card
+        <Card v-show="tab === 'sharing'"
             ><CardHeader
                 ><CardTitle>Explicit lease invoice links</CardTitle></CardHeader
             ><CardContent
@@ -185,7 +212,7 @@ function link(): void {
                 </form></CardContent
             ></Card
         >
-        <Card
+        <Card v-show="tab === 'sharing'"
             ><CardHeader
                 ><CardTitle>Invoice sharing history</CardTitle></CardHeader
             ><CardContent class="space-y-3">
@@ -242,7 +269,7 @@ function link(): void {
                 </p>
             </CardContent></Card
         >
-        <Card
+        <Card v-show="tab === 'invitations'"
             ><CardHeader
                 ><CardTitle>Invitations and access</CardTitle></CardHeader
             ><CardContent class="space-y-3"
