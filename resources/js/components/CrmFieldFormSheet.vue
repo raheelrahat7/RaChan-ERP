@@ -180,7 +180,7 @@ watch(open, (isOpen) => {
                             id="field-key"
                             v-model="form.key"
                             required
-                            pattern="[A-Za-z0-9_-]+"
+                            pattern="[A-Za-z0-9_\-]+"
                             maxlength="80"
                             :disabled="editing"
                             @input="keyTouched = true"

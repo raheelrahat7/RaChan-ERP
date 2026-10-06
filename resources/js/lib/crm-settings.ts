@@ -86,7 +86,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 key: 'deal-pipelines',
                 label: 'Deal pipelines',
                 icon: 'handshake',
-                href: null,
+                href: '/crm/deal-pipelines',
             },
             {
                 key: 'templates',
@@ -140,7 +140,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 key: 'access',
                 label: 'Access permissions',
                 icon: 'shield',
-                href: null,
+                href: '/crm/permissions',
             },
         ],
     },

@@ -35,7 +35,7 @@ Written for the backend owner. The frontend builds screens from the contract doc
 
 ## Phase 0 — verify and stabilise (before more features)
 
-- [ ] FE: browser check of every screen built so far (list in "Built, not browser-checked" below). Needs owner consent for: rebuilding `public/build`, pulling the Playwright image, memory risk to MySQL.
+- [x] FE: browser check (2026-10-06, headless Chromium against a seeded `testing` database, desktop 1440 and phone 390): 44 screens load with no console errors, failed requests or horizontal scroll; 22 click-through flows pass (create contact, tax, product, currency, selection option, calendar save, field tabs and add, deal filters/picker/move/transfer dialogs, deal and lead tabs, estimate from workflow board, invoice/procurement/maintenance panels, AMC tabs, deal automation rule). Bugs found and fixed: startup `locale` TypeError on every page, catalog save crash on number inputs, `pattern` attribute rejected by Chromium, `crypto.randomUUID` on plain-http hosts, Deal pipelines and Access permissions tiles not linked. Still unchecked: logged-out portal screens, Arabic/RTL layout, drag-and-drop on the deal board, file uploads.
 - [x] CI green on `main` (MySQL service, PHP 8.4, memory limit, route duplicates, testing database).
 - [ ] FE+BE: decide whether `composer.json` should say `"php": "^8.4"` (lock file already needs 8.4.1).
 - [ ] Owner: decide about removing omniroute from Claude, Codex and VS Code (needs consent per config file).
@@ -45,7 +45,9 @@ Written for the backend owner. The frontend builds screens from the contract doc
 ## Phase 1 — CRM completeness (biggest visible gaps)
 
 ### 1A. Lead detail tabs (reference: 9 tabs; ours: 4)
+
 Ours today: General, Activities, Products, History. Reference: Overview, Requirement, Matched Properties, Activities, Follow-Up Timeline, Tasks, Meetings/Viewings, Offers/Contracts/Deal, Accounting Link.
+
 - [ ] BE: lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature.
 - [ ] FE: Requirement tab (form, save, validation).
 - [ ] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
@@ -59,17 +61,20 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [x] Products tab and linked estimates; "New estimate" from lead.
 
 ### 1B. Contacts and companies
+
 - [~] BE done (`47e4d9d`): list, detail, edit with `expected_version`, custom fields.
 - [ ] FE: contacts list upgrade (pagination, company link), contact detail page, edit.
 - [ ] FE: companies list, company detail, create, edit, linked leads/deals/activities.
 - [ ] FE: show/edit contact and company custom fields.
 
 ### 1C. Deals
+
 - [x] Board/list, create, edit, move, detail, history, filters, export, automation rules, qualified-lead picker, pipeline transfer, finance links (all `[~]` browser-unchecked).
 - [ ] BE+FE: reference deal status strip (Submitted, Approved, Contract In Progress/Signed, Invoice Generated, Payment Pending/Received, Commission Calculated/Approved/Paid, Disputed, Clawback Required, Refund Required) — decide whether these become default deal-pipeline stages or a separate commission status.
 - [ ] BE+FE: deal fields scenario, co-broker share, agent share, gross commission.
 
 ### 1D. Settings hub
+
 - [x] Pipelines, deal pipelines, permissions, selection lists, currency, locations, numbering, taxes, units, templates, company details, mailboxes, products, field list (4 entities), working calendar.
 - [ ] FE: "Payment systems" tile on `organization/reference-settings/providers` (shape in `docs/CRM_FRONTEND_BACKEND_2026_10_06.md`).
 - [ ] FE: "Other settings" tile on `organization/crm-catalog/other-settings`.
@@ -78,6 +83,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 ## Phase 2 — property and transaction sections (reference gaps)
 
 Each item = FE screen change plus BE fields. Do one section completely, then the next.
+
 - [ ] 2A Property & Listings: 13-status tab strip, filters (cost centre, status, category, agent, community, sort), table columns, create form fields (listing category, unit category, building, emirate, community, sub-community, unit/floor, Trakheesi/DLD permit, bedroom type, bathrooms, balconies, parking, size, plot size, furnishing, completion status, handover date, grade, loading bay, fit-out, price type/price/range/label, price per sq ft auto, owner/developer, portals), emirate summary table.
 - [ ] 2B Secondary Market: valuation price, mortgage and NOC status, transfer status, seller/buyer, status tabs.
 - [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
@@ -105,6 +111,7 @@ Each item = FE screen change plus BE fields. Do one section completely, then the
 ## Phase 5 — remaining restyle of old-layout pages
 
 Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balances header, maintenance, helpdesk, preventive maintenance, AMC, scheduled reports, fleet list, inventory imports, procurement, people, compliance docs, brokerage, reservations, agreements, contacts.
+
 - [ ] Spare parts, Real-estate listings, Fleet vehicle detail, Construction (index, project), Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
 
 ## Built, not browser-checked (all `[~]`)

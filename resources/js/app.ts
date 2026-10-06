@@ -47,7 +47,7 @@ initializeFlashToast();
 // so an immediate call here could fire before the page store is populated
 // and briefly stomp the server-rendered value with the 'en' fallback.
 watch(
-    () => usePage().props.locale,
+    () => usePage().props?.locale,
     (value) => {
         const locale = value === 'ar' ? 'ar' : 'en';
         document.documentElement.lang = locale;

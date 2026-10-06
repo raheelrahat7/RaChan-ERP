@@ -75,7 +75,7 @@ function create(): void {
                 id="new-field-key"
                 v-model="form.key"
                 required
-                pattern="[A-Za-z0-9_-]+"
+                pattern="[A-Za-z0-9_\-]+"
             />
         </div>
         <div class="space-y-1">

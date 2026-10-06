@@ -204,7 +204,8 @@ export function buildPayload(
 ): Record<string, unknown> {
     const settings: Record<string, unknown> = {};
     for (const field of section.fields) {
-        const raw = form.settings[field.key] ?? '';
+        // Number inputs hand back numbers, not strings, so normalise first.
+        const raw = String(form.settings[field.key] ?? '');
         if (field.type === 'lines') {
             settings[field.key] = raw
                 .split('\n')

@@ -109,3 +109,16 @@ await test('picking a product suggests its price and currency', () => {
         { unit_price: '', currency: 'AED' },
     );
 });
+
+await test('payload accepts numbers from number inputs', () => {
+    const section = findCatalogSection('taxes');
+    const form = formFor(section);
+    form.name = 'VAT';
+    form.settings.rate = 5;
+    assert.equal(buildPayload(section, form).settings.rate, 5);
+    const products = findCatalogSection('products');
+    const productForm = formFor(products);
+    productForm.name = 'Survey';
+    productForm.settings.price = 250;
+    assert.equal(buildPayload(products, productForm).settings.price, 250);
+});
