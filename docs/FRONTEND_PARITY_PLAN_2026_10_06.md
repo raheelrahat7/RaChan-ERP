@@ -114,7 +114,8 @@ Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balan
 
 - [x] Done: Construction index, Notifications inbox, HR profile header (browser-checked).
 - [x] Done (browser-checked 2026-10-06): Handovers (tabs, plan panel, dialogs), Lease compliance (5 section tabs), Spare parts (4 tabs), Construction project (4 tabs), Fleet vehicle (3 tabs).
-- [ ] Remaining: Real-estate listings (with 2A), Operations overview/reports, Accounting pages, Documents (signatures, versions), Organization settings / API tokens / portal access, Portal pages, Search, Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
+- [x] Done (2026-10-07, browser-loaded): Signatures, Document versions, API tokens, Organization activity, Organization settings (Members/tax tabs), Portal access (2 tabs), Operations overview and reports headers; the remaining 22 pages that used the old h2 Heading (accounting, inventory, portal, listings, search, job card) now use the standard h1 PageHeader.
+- [ ] Remaining: Real-estate listings body restyle (with 2A), Accounting pages body restyle (reports; header unified), Portal pages, Search results layout.
 
 ## Built, not browser-checked (all `[~]`)
 
