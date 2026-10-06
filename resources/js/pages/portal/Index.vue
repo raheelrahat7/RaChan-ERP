@@ -2,14 +2,14 @@
 import { useLocale } from '@/composables/useLocale';
 const { t, status } = useLocale();
 import { Head, Link } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 defineProps<{
     grants: { id: number; role: string; organization_name: string }[];
 }>();
 </script>
 <template>
-    <Head :title="t('Customer portal')" /><Heading
-        :translate-text="false"
+    <Head :title="t('Customer portal')" /><PageHeader
+        :translate="false"
         :title="t('Your portal access')"
         :description="t('Select an organization and role.')"
     />

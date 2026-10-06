@@ -3,7 +3,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const props = defineProps<{
@@ -30,8 +30,8 @@ function upload(): void {
 <template>
     <Head :title="`Unit ${unit.number}`" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="`Unit ${unit.number}`"
             :description="`${unit.property?.name || 'Property'} · ${unit.building?.name || 'Standalone'} · ${unit.status}`"
         /><Card

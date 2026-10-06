@@ -4,7 +4,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t, status } = useLocale();
 
 import { Head, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,8 +96,8 @@ function report(): void {
 }
 </script>
 <template>
-    <Head :title="portalOrganization.name" /><Heading
-        :translate-text="false"
+    <Head :title="portalOrganization.name" /><PageHeader
+        :translate="false"
         :title="portalOrganization.name"
         :description="`${profile.name} · ${status(grant.role)}`"
     />

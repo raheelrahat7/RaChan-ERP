@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ function apply(): void {
 <template>
     <Head title="Finance audit trail" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Finance audit trail"
             description="Organization-scoped accounting and finance actions with actor, subject, timestamp, and recorded properties."
         />

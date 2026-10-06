@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Property = {
@@ -18,7 +18,7 @@ defineProps<{ properties: Property[] }>();
 <template>
     <Head title="Property performance" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Property performance"
             description="AED operating view: active contracted rent, vendor-bill commitments, and actual maintenance costs."
         />

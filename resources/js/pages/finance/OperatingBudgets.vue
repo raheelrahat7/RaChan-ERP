@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { computed, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -194,7 +194,7 @@ function rejectBudget(): void {
 <template>
     <Head title="Operating budgets" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Operating budgets"
             description="Approved monthly operating expense budgets compared with posted AED ledger activity."
         />

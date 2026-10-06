@@ -3,7 +3,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t, status } = useLocale();
 
 import { Head, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 const props = defineProps<{
     token: string;
@@ -16,8 +16,8 @@ function accept(): void {
 }
 </script>
 <template>
-    <Head :title="t('Portal invitation')" /><Heading
-        :translate-text="false"
+    <Head :title="t('Portal invitation')" /><PageHeader
+        :translate="false"
         :title="t('Accept portal access')"
         :description="
             t(':organization invited you as a :role.', {

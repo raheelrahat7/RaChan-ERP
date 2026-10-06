@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 defineProps<{
@@ -28,8 +28,8 @@ defineProps<{
 <template>
     <Head :title="`${period.name} close readiness`" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="`${period.name} close readiness`"
             :description="`${period.starts_on}–${period.ends_on} · ${period.status}. Ledger warnings block closing; operational review items remain advisory.`"
         />

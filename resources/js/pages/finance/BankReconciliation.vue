@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { reactive, ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -127,7 +127,7 @@ function unmatch(line: BankLine): void {
 <template>
     <Head title="Bank reconciliation" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Bank reconciliation"
             description="Import AED bank rows, manually match clearing entries, then approve settlement into the linked bank ledger account."
         />

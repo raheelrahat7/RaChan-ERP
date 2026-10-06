@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -171,7 +171,7 @@ function amount(value: string): string {
 <template>
     <Head title="Accounting" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="Accounting"
             description="AED general ledger, periods, and trial balance. Historical summaries require approved account mappings."
         />

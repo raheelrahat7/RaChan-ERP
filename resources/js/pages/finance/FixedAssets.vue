@@ -4,7 +4,7 @@ const { t } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -290,7 +290,7 @@ function reverseImpairment(id: number): void {
 <template>
     <Head title="Fixed assets" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
+        <PageHeader
             title="IAS 16 fixed assets"
             description="Individually approved cost-model assets. Registration does not post or alter the source journal."
         />

@@ -3,7 +3,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 import { Head, useForm } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -45,8 +45,8 @@ function assignOwner(): void {
 <template>
     <Head :title="property.name" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="property.name"
             :description="`${property.type} · ${property.city || 'No city set'}`"
         />

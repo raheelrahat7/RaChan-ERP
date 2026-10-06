@@ -4,7 +4,7 @@ const { t, status } = useLocale();
 
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import Heading from '@/components/Heading.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import JobSla from '@/components/JobSla.vue';
 import type { SlaCycle } from '@/types/sla';
 import { Button } from '@/components/ui/button';
@@ -203,8 +203,8 @@ function chooseFile(event: Event): void {
             class="text-sm underline underline-offset-4"
             >{{ t('Back to maintenance') }}</Link
         >
-        <Heading
-            :translate-text="false"
+        <PageHeader
+            :translate="false"
             :title="`${job.reference} · ${job.title}`"
             :description="
                 t('Service work, checklist, operational costs and evidence.')
