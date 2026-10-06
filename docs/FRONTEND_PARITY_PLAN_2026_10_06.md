@@ -48,7 +48,7 @@ Written for the backend owner. The frontend builds screens from the contract doc
 
 Ours today: General, Activities, Products, History. Reference: Overview, Requirement, Matched Properties, Activities, Follow-Up Timeline, Tasks, Meetings/Viewings, Offers/Contracts/Deal, Accounting Link.
 
-- [!] BE: lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature.
+- [~] BE: backend ready — versioned lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature. Organization-editable choices and contract: `docs/CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md`. Browser acceptance and push pending.
 - [!] FE: Requirement tab (form, save, validation).
 - [!] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
 - [!] FE: Matched Properties tab.
@@ -57,7 +57,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [ ] BE+FE: Meetings/Viewings tab (lead-linked meetings).
 - [ ] BE+FE: Offers, Contracts and Deal tab (linked deal, contracts, offer submitted) — deal link exists, rest needs BE.
 - [ ] BE+FE: Accounting Link tab (documents, amount, VAT, total).
-- [~] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser check pending.
+- [x] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser-checked 2026-10-06.
 - [x] Products tab and linked estimates; "New estimate" from lead.
 
 ### 1B. Contacts and companies
@@ -112,7 +112,8 @@ Each item = FE screen change plus BE fields. Do one section completely, then the
 
 Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balances header, maintenance, helpdesk, preventive maintenance, AMC, scheduled reports, fleet list, inventory imports, procurement, people, compliance docs, brokerage, reservations, agreements, contacts.
 
-- [ ] Spare parts, Real-estate listings, Fleet vehicle detail, Construction (index, project), Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
+- [x] Done: Construction index, Notifications inbox, HR profile header (browser-checked).
+- [ ] Remaining: Spare parts, Real-estate listings (with 2A), Fleet vehicle detail, Construction project, Handovers, Lease compliance, Operations overview/reports, Accounting pages, HR, Documents (signatures, versions), Notifications, Organization settings / API tokens / portal access, Portal pages.
 
 ## Built, not browser-checked (all `[~]`)
 
@@ -120,7 +121,7 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Backend requests outstanding for Codex
 
-1. Lead requirement fields and lead score (1A).
+1. Lead requirement fields and lead score (1A): backend ready; frontend integration/browser acceptance pending (contract linked above).
 2. Matched-properties API with match % and auto-suggest (1A).
 3. Lead-linked tasks and meetings; offers/contracts on a lead (1A).
 4. Deal commission statuses and co-broker/agent share fields (1C).
@@ -130,4 +131,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1A lead requirement fields and lead score/temperature (first open backend item; calendar/provider version checks are ready). FE: Phase 0 browser check, then Phase 1B contacts and companies screens (backend ready). Push only when the owner asks.
+BE: Phase 1A matched-properties API with match percentage and auto-suggest (next open backend item; requirements and calendar/provider version checks are ready). FE: Phase 0 browser check, then Phase 1B contacts and companies screens (backend ready). Push only when the owner asks.

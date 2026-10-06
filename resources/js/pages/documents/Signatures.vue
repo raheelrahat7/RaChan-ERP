@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 import { Head, Link, useForm } from '@inertiajs/vue3';
@@ -27,7 +28,7 @@ const form = useForm({
     document_id: '',
     signers: [] as string[],
     reason: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const cancellation = useForm({ signature_id: '', reason: '' });
 function prepare(): void {
@@ -38,7 +39,7 @@ function prepare(): void {
     form.post('/documents/signatures', {
         onSuccess: () => {
             form.reset();
-            form.operation_key = crypto.randomUUID();
+            form.operation_key = uuid();
             signerText.value = '';
         },
     });

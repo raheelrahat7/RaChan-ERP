@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/sheet';
 import { useLocale } from '@/composables/useLocale';
 import type { DataTableColumn } from '@/lib/data-table';
-import { operationKey } from '@/lib/workflows';
+import { uuid } from '@/lib/uuid';
 
 const { t } = useLocale();
 const props = defineProps<{
@@ -66,7 +66,7 @@ const request = useForm({
     amount: '',
     posted_on: '',
     reason: '',
-    operation_key: operationKey(),
+    operation_key: uuid(),
 });
 const decision = useForm({ refund_id: '', reason: '', posted_on: '' });
 const approval = useForm({});
@@ -78,7 +78,7 @@ function submit(): void {
         preserveScroll: true,
         onSuccess: () => {
             request.reset('amount', 'reason');
-            request.operation_key = operationKey();
+            request.operation_key = uuid();
             requestOpen.value = false;
         },
     });

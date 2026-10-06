@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
@@ -75,14 +76,14 @@ const progressForm = useForm({
     item_id: '',
     quantity: '',
     note: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const voidForm = useForm({ progress_id: '', reason: '' });
 const claimForm = useForm({
     vendor_id: '',
     claimed_on: '',
     reason: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
     lines: [] as { item_id: number; quantity: string }[],
 });
 const claimQuantities = ref<Record<number, string>>({});
@@ -108,7 +109,7 @@ function progress(): void {
         preserveScroll: true,
         onSuccess: () => {
             progressForm.reset('quantity', 'note');
-            progressForm.operation_key = crypto.randomUUID();
+            progressForm.operation_key = uuid();
         },
     });
 }
@@ -126,7 +127,7 @@ function claim(): void {
         preserveScroll: true,
         onSuccess: () => {
             claimForm.reset('reason', 'lines');
-            claimForm.operation_key = crypto.randomUUID();
+            claimForm.operation_key = uuid();
             claimQuantities.value = {};
         },
     });

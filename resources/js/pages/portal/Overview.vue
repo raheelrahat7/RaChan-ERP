@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t, status } = useLocale();
 
@@ -78,7 +79,7 @@ const form = useForm({
     title: '',
     description: '',
     priority: 'medium',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const period = useForm({ from: props.from, to: props.to });
 function submit(): void {
@@ -86,7 +87,7 @@ function submit(): void {
         preserveScroll: true,
         onSuccess: () => {
             form.reset('title', 'description');
-            form.operation_key = crypto.randomUUID();
+            form.operation_key = uuid();
         },
     });
 }

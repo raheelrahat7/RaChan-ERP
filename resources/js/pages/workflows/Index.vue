@@ -27,8 +27,8 @@ import {
     groupByStage,
     moveTargets,
     needsReason,
-    operationKey,
 } from '@/lib/workflows';
+import { uuid } from '@/lib/uuid';
 import type {
     EstimateLine,
     WorkflowKind,
@@ -135,7 +135,7 @@ const lines = ref<EstimateLine[]>([
 ]);
 const createErrors = ref<Record<string, string>>({});
 const busy = ref(false);
-let key = operationKey();
+let key = uuid();
 
 async function prefillFromLead(): Promise<void> {
     if (!leadId.value) {
@@ -176,7 +176,7 @@ function openCreate(): void {
     };
     lines.value = [{ description: '', quantity: '1', unit_price: '' }];
     createErrors.value = {};
-    key = operationKey();
+    key = uuid();
     createOpen.value = true;
     void prefillFromLead();
 }

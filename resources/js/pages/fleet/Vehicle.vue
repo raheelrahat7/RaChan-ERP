@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
@@ -60,7 +61,7 @@ const service = useForm({
     due_on: '',
     vendor_id: '',
     maintenance_request_id: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const completion = useForm({
     service_id: '',
@@ -86,7 +87,7 @@ function schedule(): void {
         preserveScroll: true,
         onSuccess: () => {
             service.reset('description', 'due_on', 'maintenance_request_id');
-            service.operation_key = crypto.randomUUID();
+            service.operation_key = uuid();
         },
     });
 }

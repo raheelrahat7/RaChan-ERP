@@ -52,7 +52,7 @@ function dismiss(): void {
             :translate="false"
         >
             <template #actions>
-                <Link href="/hr/staff" class="text-sm underline">{{
+                <Link href="/hr" class="text-sm underline">{{
                     t('Back to staff')
                 }}</Link>
             </template>

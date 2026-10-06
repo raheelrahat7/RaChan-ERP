@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
@@ -63,7 +64,7 @@ const form = useForm({
     quantity: '',
     reference: '',
     reason: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const transferForm = useForm({
     spare_part_id: '',
@@ -72,20 +73,20 @@ const transferForm = useForm({
     quantity: '',
     reference: '',
     reason: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 const correctionForm = useForm({
     transfer_movement_id: '',
     reference: '',
     reason: '',
-    operation_key: crypto.randomUUID(),
+    operation_key: uuid(),
 });
 function transfer(): void {
     transferForm.post('/operations/spare-parts/transfers', {
         preserveScroll: true,
         onSuccess: () => {
             transferForm.reset('quantity', 'reference', 'reason');
-            transferForm.operation_key = crypto.randomUUID();
+            transferForm.operation_key = uuid();
         },
     });
 }
@@ -96,7 +97,7 @@ function correctTransfer(): void {
             preserveScroll: true,
             onSuccess: () => {
                 correctionForm.reset();
-                correctionForm.operation_key = crypto.randomUUID();
+                correctionForm.operation_key = uuid();
             },
         },
     );
@@ -144,7 +145,7 @@ function record(): void {
                 'reason',
                 'related_movement_id',
             );
-            form.operation_key = crypto.randomUUID();
+            form.operation_key = uuid();
         },
     });
 }

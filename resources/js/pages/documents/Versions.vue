@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { uuid } from '@/lib/uuid';
 import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
@@ -28,7 +29,7 @@ const props = defineProps<{
 const upload = useForm({
     file: null as File | null,
     reason: '',
-    version_key: crypto.randomUUID(),
+    version_key: uuid(),
 });
 const lifecycle = useForm({ reason: '' });
 function select(event: Event): void {
@@ -39,7 +40,7 @@ function save(): void {
         preserveScroll: true,
         onSuccess: () => {
             upload.reset();
-            upload.version_key = crypto.randomUUID();
+            upload.version_key = uuid();
         },
     });
 }
