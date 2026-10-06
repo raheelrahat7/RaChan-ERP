@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
+import CrmLeadRequirement from '@/components/CrmLeadRequirement.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
@@ -41,7 +42,7 @@ type Activity = {
     updated_at: string;
     creator: { name: string } | null;
 };
-type Tab = 'general' | 'activities' | 'products' | 'history';
+type Tab = 'general' | 'requirements' | 'activities' | 'products' | 'history';
 
 const props = defineProps<{
     lead: {
@@ -104,7 +105,13 @@ const lostStage = computed(() =>
     ),
 );
 const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
-const tabs: Tab[] = ['general', 'activities', 'products', 'history'];
+const tabs: Tab[] = [
+    'general',
+    'requirements',
+    'activities',
+    'products',
+    'history',
+];
 const tab = ref<Tab>('general');
 const fullName = computed(
     () => `${props.lead.first_name} ${props.lead.last_name}`,
@@ -524,6 +531,10 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                         </div>
                     </CardContent>
                 </Card>
+            </TabsContent>
+
+            <TabsContent value="requirements">
+                <CrmLeadRequirement :lead-id="lead.id" />
             </TabsContent>
 
             <TabsContent value="products">

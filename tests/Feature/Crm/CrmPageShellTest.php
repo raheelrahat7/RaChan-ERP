@@ -277,4 +277,20 @@ class CrmPageShellTest extends TestCase
         $setting = $this->postJson('/organization/crm-catalog/other-settings', ['code' => 'week-start', 'name' => 'Week start', 'active' => true, 'settings' => ['value' => 'Monday']])->assertSuccessful()->json('record');
         $this->putJson('/organization/crm-catalog/other-settings/'.$setting['id'], ['code' => 'week-start', 'name' => 'Week start', 'active' => true, 'settings' => ['value' => 'Sunday'], 'expected_version' => $setting['version'] ?? 1])->assertSuccessful();
     }
+
+    public function test_requirement_options_page_and_lead_requirement_round_trip(): void
+    {
+        $org = Organization::factory()->create();
+        $owner = $this->member($org, OrganizationRole::Owner);
+        $this->actingAs($owner);
+        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $owner->id, 'first_name' => 'Rana', 'last_name' => 'T'])->id;
+
+        $this->get(route('crm.settings.requirement-options'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsRequirementChoices'));
+        $first = $this->getJson('/crm/leads/'.$lead.'/requirements')->assertOk()->assertJsonPath('requirement.version', 0)->json();
+        $this->assertArrayHasKey('temperature', $first['configuration']['choices']);
+        $saved = $this->putJson('/crm/leads/'.$lead.'/requirements', ['expected_version' => 0, 'data' => ['type' => 'buyer', 'budget_min' => '1000.00', 'budget_max' => '2000.00', 'budget_currency' => 'AED', 'amenities' => ['pool']]])->assertOk()->assertJsonPath('requirement.version', 1)->json();
+        $this->assertSame('1000.00', $saved['requirement']['data']['budget_min']);
+        $this->putJson('/crm/leads/'.$lead.'/requirements', ['expected_version' => 0, 'data' => ['lead_score' => 5]])->assertUnprocessable()->assertJsonValidationErrors('expected_version');
+        $this->putJson('/crm/leads/'.$lead.'/requirements', ['expected_version' => 1, 'data' => ['budget_max' => '10.00']])->assertUnprocessable()->assertJsonValidationErrors('data.budget_max');
+    }
 }

@@ -77,6 +77,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 href: '/crm/settings/working-calendar',
             },
             {
+                key: 'requirement-options',
+                label: 'Requirement options',
+                icon: 'list',
+                href: '/crm/settings/requirement-options',
+            },
+            {
                 key: 'lists',
                 label: 'Selection lists',
                 icon: 'list',
