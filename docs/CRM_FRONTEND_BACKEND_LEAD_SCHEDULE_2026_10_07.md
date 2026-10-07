@@ -1,0 +1,32 @@
+# Lead tasks and meetings API — 2026-10-07
+
+These JSON endpoints use the existing `work_tasks` and `brokerage_appointments` records. All paths are scoped to the current organization and to a lead the caller may see. IDs are integers. Lists use Laravel pagination (`data`, `current_page`, `per_page`, `total`, `last_page`, etc.) with 30 records per page. Dates sent as ISO 8601 are stored as UTC. `version` starts at 1 on create; every edit or status change needs `expected_version` and increments it. A stale version returns HTTP 422 with `errors.expected_version`. Validation failures use Laravel's `422 {"message":"...","errors":{"field":["..."]}}` shape.
+
+## Tasks tab
+
+| Method and URI | Exact body | Response |
+|---|---|---|
+| `GET /crm/leads/{lead}/tasks?page=1` | none | `{ "tasks": Paginated<Task>, "permissions": {"view":true,"create":true} }` |
+| `POST /crm/leads/{lead}/tasks` | `{"title":"Call buyer","description":null,"priority":"normal","assigned_to":12,"due_at":"2027-01-02T12:00:00Z"}` | 201 `{ "task": Task }` |
+| `PUT /crm/leads/{lead}/tasks/{task}` | `{"expected_version":1,"title":"Call again"}`; any of `title`, `description`, `priority`, `assigned_to`, `due_at` may be sent | 200 `{ "task": Task }` |
+| `POST /crm/leads/{lead}/tasks/{task}/complete` | `{"expected_version":2}` | 200 `{ "task": Task }` |
+
+`Task` example: `{"id":7,"title":"Call buyer","description":null,"priority":"normal","status":"open","assigned_to":12,"assignee_name":"Agent","due_at":"2027-01-02 12:00:00","completed_at":null,"created_at":"2026-10-07 10:00:00","version":1,"permissions":{"view":true,"edit":true,"complete":true}}`. Priorities are `low`, `normal`, `high`, `urgent`; status is `open` or `completed`. The lead link is fixed by the URI and cannot be changed through these routes. Creation and editing require an Owner, Administrator, or Manager who can see the lead. Completion also allows the assigned task owner. A non-manager list includes only tasks assigned to them. The assignee must belong to the organization and be able to see the lead.
+
+Possible validation keys: `title`, `description`, `priority`, `assigned_to`, `due_at`, `related_id`, `expected_version`, `status`, and `lead`. Inaccessible lead or task IDs return 404; unauthorized edits return 403. Converted leads cannot receive new tasks.
+
+## Meetings and Viewings tab
+
+| Method and URI | Exact body | Response |
+|---|---|---|
+| `GET /crm/leads/{lead}/meetings?page=1` | none | `{ "meetings": Paginated<Meeting>, "permissions": {"view":true,"create":true} }` |
+| `POST /crm/leads/{lead}/meetings` | `{"type":"viewing","title":"Villa viewing","assigned_to":12,"starts_at":"2027-01-02T10:00:00Z","ends_at":"2027-01-02T11:00:00Z","location":"Lobby","listing_id":null,"cost_centre_id":null}` | 201 `{ "meeting": Meeting }` |
+| `PUT /crm/leads/{lead}/meetings/{meeting}` | `{"expected_version":1,"title":"Rescheduled viewing","starts_at":"2027-01-03T10:00:00Z","ends_at":"2027-01-03T11:00:00Z"}`; any create field except `lead_id` may be sent | 200 `{ "meeting": Meeting }` |
+| `POST /crm/leads/{lead}/meetings/{meeting}/complete` | `{"expected_version":2,"outcome":"Interested"}`; optional paired `stage_id` and `expected_stage_id` move the lead | 200 `{ "meeting": Meeting }` |
+| `POST /crm/leads/{lead}/meetings/{meeting}/cancel` | `{"expected_version":1}` | 200 `{ "meeting": Meeting }` |
+
+`Meeting` example: `{"id":9,"type":"viewing","title":"Villa viewing","assigned_to":12,"assignee_name":"Agent","listing_id":null,"cost_centre_id":null,"starts_at":"2027-01-02 10:00:00","ends_at":"2027-01-02 11:00:00","location":"Lobby","status":"scheduled","outcome":null,"completed_at":null,"created_at":"2026-10-07 10:00:00","version":1,"permissions":{"view":true,"edit":true,"complete":true,"cancel":true}}`. Types are `meeting` and `viewing`; status is `scheduled`, `completed`, or `cancelled`. A CRM editor who can see the lead may create, edit, or cancel; the assigned person may also complete. Non-editors see only meetings assigned to them. The assignee must belong to the organization and see the lead. Referenced listings must belong to the organization and be visible to both actor and assignee. Converted leads cannot receive new meetings.
+
+Possible validation keys: `type`, `title`, `assigned_to`, `starts_at`, `ends_at`, `location`, `listing_id`, `cost_centre_id`, `expected_version`, `outcome`, `stage_id`, `expected_stage_id`, `status`, and `lead`. Inaccessible IDs return 404; unauthorized mutations return 403. Completion with stage movement uses the existing lead stage rules.
+
+The existing global `/tasks` and `/meetings` pages remain available. Their updates now increment `version`; their legacy mutations do not require `expected_version`. The lead-scoped routes always require it on updates and status changes.

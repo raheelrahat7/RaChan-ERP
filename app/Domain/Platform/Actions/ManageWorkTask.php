@@ -10,6 +10,7 @@ use App\Models\CrmLead;
 use App\Models\MaintenanceRequest;
 use App\Models\Organization;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -39,7 +40,7 @@ class ManageWorkTask
             $id = DB::table('work_tasks')->insertGetId([
                 'organization_id' => $org->id, 'assigned_to' => $input['assigned_to'], 'created_by' => $actor->id,
                 'title' => $input['title'], 'description' => $input['description'] ?? null,
-                'priority' => $input['priority'] ?? 'normal', 'due_at' => $input['due_at'] ?? null,
+                'priority' => $input['priority'] ?? 'normal', 'due_at' => empty($input['due_at']) ? null : CarbonImmutable::parse($input['due_at'])->utc()->toDateTimeString(),
                 'related_type' => $input['related_type'] ?? null, 'related_id' => $input['related_id'] ?? null,
                 'status' => 'open', 'created_at' => now(), 'updated_at' => now(),
             ]);
@@ -56,7 +57,10 @@ class ManageWorkTask
         DB::transaction(function () use ($org, $actor, $id, $input): void {
             $task = DB::table('work_tasks')->where('organization_id', $org->id)->where('id', $id)->lockForUpdate()->first();
             abort_unless($task !== null, 404);
-            abort_unless($task->status === 'open', 422);
+            if ($task->status !== 'open') {
+                throw ValidationException::withMessages(['status' => 'Only open tasks can be edited.']);
+            }
+            $this->checkVersion($task->version, $input['expected_version'] ?? null);
             $assigneeId = $input['assigned_to'] ?? $task->assigned_to;
             $assignee = $org->users()->whereKey($assigneeId)->first();
             if (! $assignee) {
@@ -69,24 +73,34 @@ class ManageWorkTask
                 'assigned_to' => $assigneeId, 'title' => $input['title'] ?? $task->title,
                 'description' => array_key_exists('description', $input) ? $input['description'] : $task->description,
                 'priority' => $input['priority'] ?? $task->priority,
-                'due_at' => array_key_exists('due_at', $input) ? $input['due_at'] : $task->due_at,
+                'due_at' => array_key_exists('due_at', $input) ? (empty($input['due_at']) ? null : CarbonImmutable::parse($input['due_at'])->utc()->toDateTimeString()) : $task->due_at,
                 'related_type' => $relatedType, 'related_id' => $relatedId,
-                'updated_at' => now(),
+                'version' => $task->version + 1, 'updated_at' => now(),
             ]);
             $this->audit->handle($org, $actor, 'tasks.updated', $org, ['task_id' => $id]);
         });
     }
 
-    public function complete(Organization $org, User $actor, int $id): void
+    public function complete(Organization $org, User $actor, int $id, ?int $expectedVersion = null): void
     {
-        DB::transaction(function () use ($org, $actor, $id): void {
+        DB::transaction(function () use ($org, $actor, $id, $expectedVersion): void {
             $task = DB::table('work_tasks')->where('organization_id', $org->id)->where('id', $id)->lockForUpdate()->first();
             abort_unless($task !== null, 404);
             abort_unless($task->assigned_to === $actor->id || $this->manages($org, $actor), 403);
-            abort_unless($task->status === 'open', 422);
-            DB::table('work_tasks')->where('id', $id)->update(['status' => 'completed', 'completed_at' => now(), 'completed_by' => $actor->id, 'updated_at' => now()]);
+            if ($task->status !== 'open') {
+                throw ValidationException::withMessages(['status' => 'Only open tasks can be completed.']);
+            }
+            $this->checkVersion($task->version, $expectedVersion);
+            DB::table('work_tasks')->where('id', $id)->update(['status' => 'completed', 'completed_at' => now(), 'completed_by' => $actor->id, 'version' => $task->version + 1, 'updated_at' => now()]);
             $this->audit->handle($org, $actor, 'tasks.completed', $org, ['task_id' => $id]);
         });
+    }
+
+    private function checkVersion(int $current, ?int $expected): void
+    {
+        if ($expected !== null && $current !== $expected) {
+            throw ValidationException::withMessages(['expected_version' => 'This task changed. Refresh before editing it.']);
+        }
     }
 
     private function validateRelated(Organization $org, User $actor, User $assignee, ?string $type, ?int $id): void

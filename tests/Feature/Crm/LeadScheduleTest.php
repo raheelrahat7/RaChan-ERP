@@ -26,8 +26,8 @@ class LeadScheduleTest extends TestCase
         $org = Organization::factory()->create();
         $owner = $this->member($org, OrganizationRole::Owner);
         $assignee = $this->member($org, OrganizationRole::Member);
-        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $assignee->id, 'first_name' => 'Task']);
-        $other = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $assignee->id, 'first_name' => 'Other']);
+        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $assignee->id, 'first_name' => 'Task', 'last_name' => 'Lead']);
+        $other = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $assignee->id, 'first_name' => 'Other', 'last_name' => 'Lead']);
         $base = "/crm/leads/{$lead->id}/tasks";
         $this->actingAs($owner);
         $id = $this->postJson($base, ['title' => 'Call buyer', 'assigned_to' => $assignee->id, 'due_at' => '2027-01-02T12:00:00Z'])->assertCreated()->assertJsonPath('task.version', 1)->assertJsonPath('task.permissions.edit', true)->json('task.id');
@@ -46,9 +46,9 @@ class LeadScheduleTest extends TestCase
     {
         $org = Organization::factory()->create();
         $owner = $this->member($org, OrganizationRole::Owner);
-        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $owner->id, 'first_name' => 'Meeting']);
+        $lead = CrmLead::create(['organization_id' => $org->id, 'assigned_to' => $owner->id, 'first_name' => 'Meeting', 'last_name' => 'Lead']);
         $foreignOrg = Organization::factory()->create();
-        $foreign = CrmLead::create(['organization_id' => $foreignOrg->id, 'assigned_to' => $this->member($foreignOrg, OrganizationRole::Owner)->id, 'first_name' => 'Foreign']);
+        $foreign = CrmLead::create(['organization_id' => $foreignOrg->id, 'assigned_to' => $this->member($foreignOrg, OrganizationRole::Owner)->id, 'first_name' => 'Foreign', 'last_name' => 'Lead']);
         $base = "/crm/leads/{$lead->id}/meetings";
         $this->actingAs($owner);
         $input = ['type' => 'viewing', 'title' => 'Villa viewing', 'assigned_to' => $owner->id, 'starts_at' => '2027-01-02T10:00:00Z', 'ends_at' => '2027-01-02T11:00:00Z'];
