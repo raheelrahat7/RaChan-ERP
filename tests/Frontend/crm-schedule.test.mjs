@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
     completeMeetingBody,
+    defaultEnd,
     endsBeforeStart,
     fromLocalInput,
     hasChanges,
@@ -114,4 +115,11 @@ await test('completing a meeting pairs the stage with the one it left', () => {
     assert.equal('stage_id' in completeMeetingBody(meeting, '', 4, 4), false);
     assert.equal(endsBeforeStart('2027-01-02T10:00', '2027-01-02T09:00'), true);
     assert.equal(endsBeforeStart('2027-01-02T10:00', ''), false);
+});
+
+await test('the default end is one hour after the start, across midnight too', () => {
+    assert.equal(defaultEnd('2027-01-02T10:00'), '2027-01-02T11:00');
+    assert.equal(defaultEnd('2027-01-02T23:30'), '2027-01-03T00:30');
+    assert.equal(defaultEnd(''), '');
+    assert.equal(defaultEnd('nope'), '');
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { ApiError, apiJson } from '@/lib/crm-api';
 import {
     MEETING_TYPES,
     completeMeetingBody,
+    defaultEnd,
     endsBeforeStart,
     hasChanges,
     meetingCreateBody,
@@ -99,6 +100,16 @@ async function loadListings(): Promise<void> {
         listings.value = [];
     }
 }
+
+// Fill the required end time as soon as a start is chosen, unless one is already set.
+watch(
+    () => form.value.starts_at,
+    (start) => {
+        if (start && !form.value.ends_at) {
+            form.value.ends_at = defaultEnd(start);
+        }
+    },
+);
 
 function startAdd(): void {
     editing.value = null;

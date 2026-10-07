@@ -203,3 +203,17 @@ export function completeMeetingBody(
 export function endsBeforeStart(starts: string, ends: string): boolean {
     return starts !== '' && ends !== '' && ends <= starts;
 }
+
+/** One hour after a datetime-local start, so the required end time is never left blank by accident. */
+export function defaultEnd(start: string): string {
+    if (!start.trim()) {
+        return '';
+    }
+    const date = new Date(start);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+    date.setHours(date.getHours() + 1);
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
