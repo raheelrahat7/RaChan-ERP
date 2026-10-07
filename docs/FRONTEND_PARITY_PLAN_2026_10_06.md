@@ -53,8 +53,8 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [~] BE: matched properties API ready — tenant-scoped saved matches, ranked suggestions, dynamic match %, manual overrides, internal shared flag, viewing progress, versioned edits/removal and organization-editable viewing statuses. Community is `null` until Phase 2 listing data exists. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_MATCHES_2026_10_07.md`. Local migration applied; PHP 8.4 isolated MySQL suite 489 tests / 7,294 assertions, PHPStan, Pint, route generation and TypeScript passed. Browser acceptance and push pending.
 - [x] FE: Matched Properties tab (saved matches with score and viewing status, ranked suggestions with search, add/edit/remove with versions) and Settings > Viewing statuses. Browser-checked 2026-10-07.
 - [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
-- [x] BE: lead-linked tasks JSON API on existing `/tasks` records, with scoped list/create/edit/complete, record permissions, version locking and audit. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_SCHEDULE_2026_10_07.md`. FE tab integration remains.
-- [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed. FE tab integration remains.
+- [x] BE: lead-linked tasks JSON API on existing `/tasks` records, with scoped list/create/edit/complete, record permissions, version locking and audit. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_SCHEDULE_2026_10_07.md`. FE: Tasks tab done (add/edit/complete with versions, priority, assignee, due), browser-checked 2026-10-07.
+- [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. FE: Meetings tab done (schedule, edit, complete with optional lead stage move, cancel; end time required), browser-checked 2026-10-07. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed. FE tab integration remains.
 - [ ] BE+FE: Offers, Contracts and Deal tab (linked deal, contracts, offer submitted) — deal link exists, rest needs BE.
 - [ ] BE+FE: Accounting Link tab (documents, amount, VAT, total).
 - [x] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser-checked 2026-10-06.
@@ -133,4 +133,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1A offers/contracts on a lead. FE: Matched Properties, Tasks, and Meetings/Viewings tab integration and browser acceptance (backends ready). Push only when the owner asks.
+BE: Phase 1A offers/contracts and accounting link on a lead. FE: lead Follow-Up Timeline tab (optional), then Offers/Contracts and Accounting Link once Codex publishes them. Matched Properties, Tasks and Meetings tabs are done and browser-checked.

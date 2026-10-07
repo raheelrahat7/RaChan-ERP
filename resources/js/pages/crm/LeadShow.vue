@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import CrmLeadMeetings from '@/components/CrmLeadMeetings.vue';
+import CrmLeadTasks from '@/components/CrmLeadTasks.vue';
 import CrmLeadMatches from '@/components/CrmLeadMatches.vue';
 import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
 import CrmLeadRequirement from '@/components/CrmLeadRequirement.vue';
@@ -47,6 +49,8 @@ type Tab =
     | 'general'
     | 'requirements'
     | 'matches'
+    | 'tasks'
+    | 'meetings'
     | 'activities'
     | 'products'
     | 'history';
@@ -114,11 +118,14 @@ const lostStage = computed(() =>
 const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
 const tabLabels: Partial<Record<Tab, string>> = {
     matches: 'Matched properties',
+    meetings: 'Meetings and viewings',
 };
 const tabs: Tab[] = [
     'general',
     'requirements',
     'matches',
+    'tasks',
+    'meetings',
     'activities',
     'products',
     'history',
@@ -550,6 +557,26 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 
             <TabsContent value="matches">
                 <CrmLeadMatches :lead-id="lead.id" />
+            </TabsContent>
+
+            <TabsContent value="tasks">
+                <CrmLeadTasks
+                    :lead-id="lead.id"
+                    :members="members"
+                    :default-assignee="lead.assigned_to"
+                    :can-create="canManageCrm && !lead.converted"
+                />
+            </TabsContent>
+
+            <TabsContent value="meetings">
+                <CrmLeadMeetings
+                    :lead-id="lead.id"
+                    :members="members"
+                    :default-assignee="lead.assigned_to"
+                    :can-create="canManageCrm && !lead.converted"
+                    :current-stage-id="lead.current_stage_id"
+                    :stages="pipeline.stages"
+                />
             </TabsContent>
 
             <TabsContent value="products">
