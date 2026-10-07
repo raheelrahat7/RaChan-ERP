@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import CrmLeadMeetings from '@/components/CrmLeadMeetings.vue';
 import CrmLeadTasks from '@/components/CrmLeadTasks.vue';
+import CrmLeadAccounting from '@/components/CrmLeadAccounting.vue';
+import CrmLeadCommercial from '@/components/CrmLeadCommercial.vue';
 import CrmLeadMatches from '@/components/CrmLeadMatches.vue';
 import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
 import CrmLeadRequirement from '@/components/CrmLeadRequirement.vue';
@@ -53,6 +55,8 @@ type Tab =
     | 'meetings'
     | 'activities'
     | 'products'
+    | 'commercial'
+    | 'accounting'
     | 'history';
 
 const props = defineProps<{
@@ -119,6 +123,8 @@ const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
 const tabLabels: Partial<Record<Tab, string>> = {
     matches: 'Matched properties',
     meetings: 'Meetings and viewings',
+    commercial: 'Offers, contracts and deal',
+    accounting: 'Accounting link',
 };
 const tabs: Tab[] = [
     'general',
@@ -128,6 +134,8 @@ const tabs: Tab[] = [
     'meetings',
     'activities',
     'products',
+    'commercial',
+    'accounting',
     'history',
 ];
 const tab = ref<Tab>('general');
@@ -553,6 +561,17 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 
             <TabsContent value="requirements">
                 <CrmLeadRequirement :lead-id="lead.id" />
+            </TabsContent>
+
+            <TabsContent value="commercial">
+                <CrmLeadCommercial
+                    :lead-id="lead.id"
+                    :converted="lead.converted"
+                />
+            </TabsContent>
+
+            <TabsContent value="accounting">
+                <CrmLeadAccounting :lead-id="lead.id" />
             </TabsContent>
 
             <TabsContent value="matches">

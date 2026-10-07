@@ -301,5 +301,7 @@ class CrmPageShellTest extends TestCase
 
         $this->actingAs($member)->get(route('crm.settings.viewing-statuses'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsMatchStatuses'));
         $this->getJson('/crm/settings/lead-matches')->assertOk()->assertJsonPath('configuration.permissions.edit', false);
+        $this->get(route('crm.settings.commercial-statuses'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsCommercialStatuses'));
+        $this->getJson('/crm/settings/lead-commercial')->assertOk()->assertJsonPath('configuration.permissions.edit', false);
     }
 }

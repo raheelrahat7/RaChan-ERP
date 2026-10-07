@@ -89,6 +89,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 href: '/crm/settings/viewing-statuses',
             },
             {
+                key: 'commercial-statuses',
+                label: 'Offer and contract statuses',
+                icon: 'list',
+                href: '/crm/settings/commercial-statuses',
+            },
+            {
                 key: 'lists',
                 label: 'Selection lists',
                 icon: 'list',

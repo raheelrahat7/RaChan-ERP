@@ -57,6 +57,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. FE: Meetings tab done (schedule, edit, complete with optional lead stage move, cancel; end time required), browser-checked 2026-10-07. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed.
 - [x] BE: lead Offers/Contracts/Deal API — versioned CRM offer and contract tracking, organization-editable statuses, linked-deal validation and record permissions. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_COMMERCIAL_2026_10_08.md`. FE tab integration remains.
 - [x] BE: read-only lead Accounting Link API — authorized lead estimates and invoices, with amount, VAT and total from saved records. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (494 tests / 7,397 assertions), PHPStan and Pint passed. FE tab integration remains.
+- [x] FE: Offers, Contracts and Deal tab (offers and contracts with status choices, amount and currency together, dates, deal link, versioned edits), read-only Accounting Link tab (estimates and invoices with VAT and totals), and Settings > Offer and contract statuses. Browser-checked 2026-10-08.
 - [x] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser-checked 2026-10-06.
 - [x] Products tab and linked estimates; "New estimate" from lead.
 
@@ -133,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1C deal status strip and commission fields. FE: lead Follow-Up Timeline tab (optional), Offers/Contracts and Accounting Link integration and browser acceptance. Matched Properties, Tasks and Meetings tabs are done and browser-checked. Push only when the owner asks.
+BE: Phase 1C deal status strip and commission fields. FE: lead Follow-Up Timeline tab (optional). Requirement, Matched Properties, Tasks, Meetings, Offers/Contracts and Accounting Link tabs are done and browser-checked. Push only when the owner asks.
