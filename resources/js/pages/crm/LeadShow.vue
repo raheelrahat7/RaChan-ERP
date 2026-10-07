@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import CrmLeadMatches from '@/components/CrmLeadMatches.vue';
 import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
 import CrmLeadRequirement from '@/components/CrmLeadRequirement.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -42,7 +43,13 @@ type Activity = {
     updated_at: string;
     creator: { name: string } | null;
 };
-type Tab = 'general' | 'requirements' | 'activities' | 'products' | 'history';
+type Tab =
+    | 'general'
+    | 'requirements'
+    | 'matches'
+    | 'activities'
+    | 'products'
+    | 'history';
 
 const props = defineProps<{
     lead: {
@@ -105,9 +112,13 @@ const lostStage = computed(() =>
     ),
 );
 const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
+const tabLabels: Partial<Record<Tab, string>> = {
+    matches: 'Matched properties',
+};
 const tabs: Tab[] = [
     'general',
     'requirements',
+    'matches',
     'activities',
     'products',
     'history',
@@ -309,7 +320,7 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                     :value="section"
                     class="capitalize"
                 >
-                    {{ t(section) }}
+                    {{ t(tabLabels[section] ?? section) }}
                 </TabsTrigger>
             </TabsList>
 
@@ -535,6 +546,10 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 
             <TabsContent value="requirements">
                 <CrmLeadRequirement :lead-id="lead.id" />
+            </TabsContent>
+
+            <TabsContent value="matches">
+                <CrmLeadMatches :lead-id="lead.id" />
             </TabsContent>
 
             <TabsContent value="products">

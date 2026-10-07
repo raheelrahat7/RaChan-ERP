@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
+import CrmChoiceListEditor from '@/components/CrmChoiceListEditor.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
-import {
-    CHOICE_FIELDS,
-    FIELD_LABELS,
-    choiceCode,
-    moveChoice,
-} from '@/lib/crm-requirements';
+import { CHOICE_FIELDS, FIELD_LABELS } from '@/lib/crm-requirements';
 import type {
     ChoiceDraft,
     RequirementConfiguration,
@@ -24,7 +19,6 @@ const configuration = ref<RequirementConfiguration | null>(null);
 const field = ref<string>(CHOICE_FIELDS[0]);
 const list = ref<ChoiceDraft[]>([]);
 const original = ref<Set<string>>(new Set());
-const newLabel = ref('');
 const errors = ref<Record<string, string>>({});
 const loadError = ref('');
 const message = ref('');
@@ -57,27 +51,6 @@ async function load(): Promise<void> {
     } catch {
         loadError.value = t('Could not load these settings.');
     }
-}
-
-function add(): void {
-    const label = newLabel.value.trim();
-    const value = choiceCode(label);
-    if (!label || !value) {
-        errors.value = { new: t('Enter a name that starts with a letter.') };
-
-        return;
-    }
-    if (list.value.some((choice) => choice.value === value)) {
-        errors.value = { new: t('This option already exists.') };
-
-        return;
-    }
-    list.value = [...list.value, { value, label, active: true }];
-    newLabel.value = '';
-    errors.value = {};
-}
-function remove(index: number): void {
-    list.value = list.value.filter((_, position) => position !== index);
 }
 
 async function save(): Promise<void> {
@@ -170,83 +143,12 @@ onMounted(load);
                     </p>
                     <InputError :message="errors.form" />
                     <InputError :message="errors.expected_version" />
-                    <InputError :message="errors[`choices.${field}`]" />
-                    <p
-                        v-if="!list.length"
-                        class="text-muted-foreground text-sm"
-                    >
-                        {{
-                            t(
-                                'No options yet. New selections are disabled for this field.',
-                            )
-                        }}
-                    </p>
-                    <div
-                        v-for="(choice, index) in list"
-                        :key="choice.value"
-                        class="grid grid-cols-[1fr_auto] items-center gap-2 border-b pb-2 sm:grid-cols-[12rem_1fr_auto_auto]"
-                    >
-                        <code class="text-muted-foreground text-xs">{{
-                            choice.value
-                        }}</code>
-                        <Input
-                            v-model="choice.label"
-                            :disabled="!canEdit"
-                            maxlength="120"
-                            :aria-label="`${t('Name')} ${choice.value}`"
-                        />
-                        <label class="flex items-center gap-1 text-sm"
-                            ><input
-                                v-model="choice.active"
-                                type="checkbox"
-                                :disabled="!canEdit"
-                            />{{ t('Active') }}</label
-                        >
-                        <div v-if="canEdit" class="flex gap-1">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                :disabled="index === 0"
-                                :aria-label="t('Move up')"
-                                @click="list = moveChoice(list, index, -1)"
-                                >↑</Button
-                            >
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                :disabled="index === list.length - 1"
-                                :aria-label="t('Move down')"
-                                @click="list = moveChoice(list, index, 1)"
-                                >↓</Button
-                            >
-                            <Button
-                                v-if="!original.has(choice.value)"
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                @click="remove(index)"
-                                >{{ t('Remove') }}</Button
-                            >
-                        </div>
-                    </div>
-                    <div
-                        v-if="canEdit"
-                        class="flex flex-wrap items-end gap-2 pt-1"
-                    >
-                        <Input
-                            v-model="newLabel"
-                            class="max-w-xs"
-                            :placeholder="t('New option name')"
-                            :aria-label="t('New option name')"
-                            @keydown.enter.prevent="add"
-                        />
-                        <Button type="button" variant="outline" @click="add">{{
-                            t('Add option')
-                        }}</Button>
-                    </div>
-                    <InputError :message="errors.new" />
+                    <CrmChoiceListEditor
+                        v-model="list"
+                        :can-edit="canEdit"
+                        :saved-values="original"
+                        :error="errors[`choices.${field}`]"
+                    />
                     <div v-if="canEdit" class="flex items-center gap-3 pt-2">
                         <Button
                             type="button"

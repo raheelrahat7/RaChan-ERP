@@ -293,4 +293,13 @@ class CrmPageShellTest extends TestCase
         $this->putJson('/crm/leads/'.$lead.'/requirements', ['expected_version' => 0, 'data' => ['lead_score' => 5]])->assertUnprocessable()->assertJsonValidationErrors('expected_version');
         $this->putJson('/crm/leads/'.$lead.'/requirements', ['expected_version' => 1, 'data' => ['budget_max' => '10.00']])->assertUnprocessable()->assertJsonValidationErrors('data.budget_max');
     }
+
+    public function test_viewing_statuses_page_renders_for_crm_users(): void
+    {
+        $org = Organization::factory()->create();
+        $member = $this->member($org, OrganizationRole::Member);
+
+        $this->actingAs($member)->get(route('crm.settings.viewing-statuses'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('crm/SettingsMatchStatuses'));
+        $this->getJson('/crm/settings/lead-matches')->assertOk()->assertJsonPath('configuration.permissions.edit', false);
+    }
 }

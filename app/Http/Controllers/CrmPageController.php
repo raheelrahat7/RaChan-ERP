@@ -145,6 +145,13 @@ class CrmPageController extends Controller
         return Inertia::render('crm/SettingsRequirementChoices');
     }
 
+    public function matchStatuses(Request $request): Response
+    {
+        $this->organization($request);
+
+        return Inertia::render('crm/SettingsMatchStatuses');
+    }
+
     public function workflows(Request $request): Response
     {
         abort_unless($request->user()->currentOrganization !== null, 404);

@@ -83,6 +83,12 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
                 href: '/crm/settings/requirement-options',
             },
             {
+                key: 'viewing-statuses',
+                label: 'Viewing statuses',
+                icon: 'list',
+                href: '/crm/settings/viewing-statuses',
+            },
+            {
                 key: 'lists',
                 label: 'Selection lists',
                 icon: 'list',

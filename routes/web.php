@@ -537,6 +537,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crm/settings', [CrmPageController::class, 'settings'])->name('crm.settings');
     Route::get('crm/settings/reference/{section}', [CrmPageController::class, 'referenceSettings'])->name('crm.settings.reference');
     Route::get('crm/settings/lists', [CrmPageController::class, 'selectionLists'])->name('crm.settings.lists');
+    Route::get('crm/settings/viewing-statuses', [CrmPageController::class, 'matchStatuses'])->name('crm.settings.viewing-statuses');
     Route::get('crm/settings/requirement-options', [CrmPageController::class, 'requirementOptions'])->name('crm.settings.requirement-options');
     Route::get('crm/settings/payment-systems', [CrmPageController::class, 'providers'])->name('crm.settings.providers');
     Route::get('crm/settings/catalog/{section}', [CrmPageController::class, 'catalogSettings'])->name('crm.settings.catalog');
