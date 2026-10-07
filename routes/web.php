@@ -26,6 +26,7 @@ use App\Http\Controllers\CrmLeadController;
 use App\Http\Controllers\CrmLeadExportController;
 use App\Http\Controllers\CrmLeadImportController;
 use App\Http\Controllers\CrmLeadPreferenceController;
+use App\Http\Controllers\CrmLeadRequirementController;
 use App\Http\Controllers\CrmPageController;
 use App\Http\Controllers\CrmPipelineController;
 use App\Http\Controllers\CrmPipelineReportController;
@@ -483,6 +484,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('organization/crm-catalog/{kind}', [CrmCatalogController::class, 'save'])->name('crm-catalog.store');
     Route::put('organization/crm-catalog/{kind}/{record}', [CrmCatalogController::class, 'save'])->name('crm-catalog.update');
     Route::get('crm/leads/{lead}/products', [CrmCatalogController::class, 'leadProducts'])->name('crm.leads.products');
+    Route::get('crm/leads/{lead}/requirements', [CrmLeadRequirementController::class, 'show'])->name('crm.leads.requirements.show');
+    Route::put('crm/leads/{lead}/requirements', [CrmLeadRequirementController::class, 'update'])->name('crm.leads.requirements.update');
+    Route::get('crm/settings/lead-requirements', [CrmLeadRequirementController::class, 'configuration'])->name('crm.settings.lead-requirements.show');
+    Route::put('crm/settings/lead-requirements', [CrmLeadRequirementController::class, 'updateConfiguration'])->name('crm.settings.lead-requirements.update');
     Route::post('crm/leads/{lead}/products', [CrmCatalogController::class, 'saveLeadProduct'])->name('crm.leads.products.store');
     Route::put('crm/leads/{lead}/products/{line}', [CrmCatalogController::class, 'saveLeadProduct'])->name('crm.leads.products.update');
     Route::delete('crm/leads/{lead}/products/{line}', [CrmCatalogController::class, 'removeLeadProduct'])->name('crm.leads.products.destroy');

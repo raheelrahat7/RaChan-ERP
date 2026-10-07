@@ -48,7 +48,7 @@ Written for the backend owner. The frontend builds screens from the contract doc
 
 Ours today: General, Activities, Products, History. Reference: Overview, Requirement, Matched Properties, Activities, Follow-Up Timeline, Tasks, Meetings/Viewings, Offers/Contracts/Deal, Accounting Link.
 
-- [~] BE: backend ready — versioned lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature. Organization-editable choices and contract: `docs/CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md`. Browser acceptance and push pending.
+- [~] BE: backend ready — versioned lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature. Organization-editable choices and contract: `docs/CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md`. Local migration applied; PHP 8.4 isolated MySQL suite 484 tests / 7,140 assertions, PHPStan, Pint, route generation and TypeScript passed. Push pending.
 - [x] FE: Requirement tab (5 sections, partial saves with version, inline errors) and Settings > Requirement options editor. Browser-checked 2026-10-06.
 - [!] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
 - [!] FE: Matched Properties tab.

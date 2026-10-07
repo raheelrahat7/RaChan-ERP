@@ -38,6 +38,7 @@ class LeadTimeline
                 'crm.lead.imported' => 'Lead imported',
                 'crm.lead.viewed' => 'Lead opened',
                 'crm.lead.details_updated' => 'Changed: '.implode(', ', $properties['changed_fields'] ?? []),
+                'crm.lead.requirements_updated' => 'Requirements changed: '.implode(', ', $properties['changed_fields'] ?? []),
                 'crm.lead.custom_field_changed' => 'Custom field changed: '.($properties['field_key'] ?? ''),
                 'crm.lead.assigned' => 'Assigned user #'.($properties['previous_assigned_to'] ?? 'none').' → #'.($properties['assigned_to'] ?? 'none'),
                 'crm.lead.stage_changed' => ($properties['from'] ?? 'Initial stage').' → '.($properties['to'] ?? 'stage'),
