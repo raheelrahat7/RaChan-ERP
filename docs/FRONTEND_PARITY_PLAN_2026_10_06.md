@@ -54,9 +54,9 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [x] FE: Matched Properties tab (saved matches with score and viewing status, ranked suggestions with search, add/edit/remove with versions) and Settings > Viewing statuses. Browser-checked 2026-10-07.
 - [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
 - [x] BE: lead-linked tasks JSON API on existing `/tasks` records, with scoped list/create/edit/complete, record permissions, version locking and audit. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_SCHEDULE_2026_10_07.md`. FE: Tasks tab done (add/edit/complete with versions, priority, assignee, due), browser-checked 2026-10-07.
-- [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. FE: Meetings tab done (schedule, edit, complete with optional lead stage move, cancel; end time required), browser-checked 2026-10-07. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed. FE tab integration remains.
-- [ ] BE+FE: Offers, Contracts and Deal tab (linked deal, contracts, offer submitted) — deal link exists, rest needs BE.
-- [ ] BE+FE: Accounting Link tab (documents, amount, VAT, total).
+- [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. FE: Meetings tab done (schedule, edit, complete with optional lead stage move, cancel; end time required), browser-checked 2026-10-07. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed.
+- [x] BE: lead Offers/Contracts/Deal API — versioned CRM offer and contract tracking, organization-editable statuses, linked-deal validation and record permissions. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_COMMERCIAL_2026_10_08.md`. FE tab integration remains.
+- [x] BE: read-only lead Accounting Link API — authorized lead estimates and invoices, with amount, VAT and total from saved records. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (494 tests / 7,397 assertions), PHPStan and Pint passed. FE tab integration remains.
 - [x] FE: lead header "Mark lost" (opens the stage move dialog on the lost stage) and "WhatsApp" (wa.me link, also on contacts). In-app WhatsApp sending still needs credentials from 3C. Browser-checked 2026-10-06.
 - [x] Products tab and linked estimates; "New estimate" from lead.
 
@@ -133,4 +133,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1A offers/contracts and accounting link on a lead. FE: lead Follow-Up Timeline tab (optional), then Offers/Contracts and Accounting Link once Codex publishes them. Matched Properties, Tasks and Meetings tabs are done and browser-checked.
+BE: Phase 1C deal status strip and commission fields. FE: lead Follow-Up Timeline tab (optional), Offers/Contracts and Accounting Link integration and browser acceptance. Matched Properties, Tasks and Meetings tabs are done and browser-checked. Push only when the owner asks.
