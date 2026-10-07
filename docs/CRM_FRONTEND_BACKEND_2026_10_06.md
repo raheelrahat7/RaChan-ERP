@@ -34,3 +34,7 @@ Every newly versioned party, Other Settings, calendar, and provider profile upda
 ## Lead requirements (Phase 1A)
 
 Backend ready: `GET/PUT /crm/leads/{lead}/requirements` and `GET/PUT /crm/settings/lead-requirements`. Full field list, exact bodies, response examples, permission rules, version checks and organization-editable choices are documented in [CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md](CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md). This is additive; existing lead and custom-field contracts are unchanged.
+
+## Lead matched properties (Phase 1A)
+
+Backend ready: saved matches, ranked local suggestions, manual score override, viewing progress and versioned organization viewing-status choices. Full request/response shapes, errors, permissions and route names are in [CRM_FRONTEND_BACKEND_LEAD_MATCHES_2026_10_07.md](CRM_FRONTEND_BACKEND_LEAD_MATCHES_2026_10_07.md).

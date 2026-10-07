@@ -50,7 +50,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 
 - [~] BE: backend ready — versioned lead requirement fields (type, purpose, unit category, emirate, property type, location, bedrooms min/max, bathrooms min, furnishing, size min/max, budget min/max, rent frequency, timeline, ready/off-plan, handover, payment method, down payment %, ROI %, financing status, language, amenities, preferences) + lead score and temperature. Organization-editable choices and contract: `docs/CRM_FRONTEND_BACKEND_LEAD_REQUIREMENTS_2026_10_06.md`. Local migration applied; PHP 8.4 isolated MySQL suite 484 tests / 7,140 assertions, PHPStan, Pint, route generation and TypeScript passed. Push pending.
 - [x] FE: Requirement tab (5 sections, partial saves with version, inline errors) and Settings > Requirement options editor. Browser-checked 2026-10-06.
-- [!] BE: matched properties API (listing, community, price, match %, shared, viewing status; add match; auto-suggest).
+- [~] BE: matched properties API ready — tenant-scoped saved matches, ranked suggestions, dynamic match %, manual overrides, internal shared flag, viewing progress, versioned edits/removal and organization-editable viewing statuses. Community is `null` until Phase 2 listing data exists. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_MATCHES_2026_10_07.md`. Local migration applied; PHP 8.4 isolated MySQL suite 489 tests / 7,294 assertions, PHPStan, Pint, route generation and TypeScript passed. Browser acceptance and push pending.
 - [!] FE: Matched Properties tab.
 - [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
 - [ ] BE+FE: Tasks tab (lead-linked tasks) — check `/tasks` backend for a lead link.
@@ -124,7 +124,7 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 ## Backend requests outstanding for Codex
 
 1. Lead requirement fields and lead score (1A): backend ready; frontend integration/browser acceptance pending (contract linked above).
-2. Matched-properties API with match % and auto-suggest (1A).
+2. Matched-properties API with match % and auto-suggest (1A): backend ready; frontend integration/browser acceptance pending (contract linked above).
 3. Lead-linked tasks and meetings; offers/contracts on a lead (1A).
 4. Deal commission statuses and co-broker/agent share fields (1C).
 5. Listing, secondary, lease, off-plan field additions (Phase 2).
@@ -133,4 +133,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1A matched-properties API with match percentage and auto-suggest (next open backend item; requirements and calendar/provider version checks are ready). FE: Phase 0 browser check, then Phase 1B contacts and companies screens (backend ready). Push only when the owner asks.
+BE: Phase 1A lead-linked tasks and meetings, beginning by checking the existing `/tasks` and appointments backends for a lead link. FE: Matched Properties tab integration and browser acceptance (backend ready). Push only when the owner asks.
