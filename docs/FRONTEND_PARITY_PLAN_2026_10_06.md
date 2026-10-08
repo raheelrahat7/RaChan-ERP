@@ -85,7 +85,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 
 Each item = FE screen change plus BE fields. Do one section completely, then the next.
 
-- [~] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE screen and browser acceptance remain. Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip.
+- [~] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE screen and browser acceptance remain. Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
 - [ ] 2B Secondary Market: valuation price, mortgage and NOC status, transfer status, seller/buyer, status tabs.
 - [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-FE: Phase 1C deal status strip and commission fields, then Phase 2A Property & Listings screen using the new backend contract. BE: finish Phase 2A verification; do not begin 2B until 2A screen and browser acceptance are complete. Push only when the owner asks.
+FE: finish Phase 1C strip click and create-form browser checks, then Phase 2A Property & Listings screen using the new backend contract. BE: Phase 2A ready for FE; do not begin 2B until 2A screen and browser acceptance are complete. Push only when the owner asks.
