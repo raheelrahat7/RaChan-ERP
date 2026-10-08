@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
 import {
+    CODED_LISTS,
     SELECTION_LISTS,
     codeFromName,
     listLabel,
@@ -48,7 +49,7 @@ const errors = ref<Record<string, string>>({});
 const busy = ref(false);
 
 const current = computed(() => optionsFor(list.value, options.value));
-const isCategory = computed(() => list.value === 'deal_categories');
+const isCategory = computed(() => CODED_LISTS.includes(list.value));
 const active = (option: SelectionOption): boolean =>
     option.active === true || option.active === 1;
 const rows = computed<Row[]>(() =>
@@ -229,7 +230,9 @@ onMounted(load);
             class="text-muted-foreground text-xs"
         >
             {{
-                t('Until you add a category, the built-in categories are used.')
+                t(
+                    'Until you add an option, the built-in options are used. Adding the first one copies the built-ins so they stay editable.',
+                )
             }}
         </p>
 

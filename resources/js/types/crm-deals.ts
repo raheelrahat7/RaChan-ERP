@@ -40,6 +40,11 @@ export type Deal = {
     assigned_to?: number | null;
     assignee?: { id: number; name: string } | null;
     lead_id?: number | null;
+    deal_status?: string | null;
+    scenario?: string | null;
+    gross_commission?: string | number | null;
+    co_broker_share?: string | number | null;
+    agent_share?: string | number | null;
     version: number;
     created_at: string;
     permissions?: Record<string, boolean>;

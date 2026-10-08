@@ -14,6 +14,13 @@ import {
 } from '@/components/ui/sheet';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
+import {
+    commercialFields,
+    commercialPayload,
+    optionChoices,
+    sharesTooHigh,
+} from '@/lib/crm-deal-commercial';
+import type { DealOption } from '@/lib/crm-deal-commercial';
 import { creatablePipelines } from '@/lib/crm-deals';
 import type { CategoryOption, Deal, DealPipeline } from '@/types/crm-deals';
 
@@ -63,7 +70,19 @@ const form = reactive({
     expected_close_date: '',
     assigned_to: '' as string | number,
     notes: '',
+    ...commercialFields(),
 });
+const statusOptions = ref<DealOption[]>([]);
+const scenarioOptions = ref<DealOption[]>([]);
+const canSeeAmounts = computed(
+    () => !props.deal || props.deal.permissions?.amount === true,
+);
+const statusChoices = computed(() =>
+    optionChoices(statusOptions.value, props.deal?.deal_status),
+);
+const scenarioChoices = computed(() =>
+    optionChoices(scenarioOptions.value, props.deal?.scenario),
+);
 const errors = ref<Record<string, string>>({});
 const message = ref('');
 const processing = ref(false);
@@ -98,7 +117,23 @@ function load(): void {
         expected_close_date: deal?.expected_close_date ?? '',
         assigned_to: deal?.assigned_to ?? '',
         notes: deal?.notes ?? '',
+        ...commercialFields(deal),
     });
+}
+async function loadOptions(): Promise<void> {
+    if (statusOptions.value.length) {
+        return;
+    }
+    try {
+        const data = await apiJson<{
+            dealStatusOptions?: DealOption[];
+            dealScenarioOptions?: DealOption[];
+        }>('/crm/deals/configuration');
+        statusOptions.value = data.dealStatusOptions ?? [];
+        scenarioOptions.value = data.dealScenarioOptions ?? [];
+    } catch {
+        // The commercial fields simply stay empty; the rest of the form still works.
+    }
 }
 function payload(): Record<string, unknown> {
     const optional: Record<string, unknown> = {};
@@ -124,12 +159,35 @@ function payload(): Record<string, unknown> {
         optional.assigned_to = Number(form.assigned_to);
     }
 
-    return { title: form.title, category: form.category, ...optional };
+    const commercial = commercialPayload(form, canSeeAmounts.value);
+    if (!editing.value) {
+        for (const key of Object.keys(commercial)) {
+            if (commercial[key] === null) {
+                delete commercial[key];
+            }
+        }
+    }
+
+    return {
+        title: form.title,
+        category: form.category,
+        ...optional,
+        ...commercial,
+    };
 }
 async function save(): Promise<void> {
-    processing.value = true;
     errors.value = {};
     message.value = '';
+    if (sharesTooHigh(form)) {
+        errors.value = {
+            agent_share: t(
+                'The co-broker and agent shares cannot add up to more than 100%.',
+            ),
+        };
+
+        return;
+    }
+    processing.value = true;
     try {
         const result = props.deal
             ? await apiJson<{ deal: Deal }>(
@@ -167,6 +225,7 @@ async function save(): Promise<void> {
 watch(open, (isOpen) => {
     if (isOpen) {
         load();
+        void loadOptions();
     }
 });
 </script>
@@ -336,6 +395,102 @@ watch(open, (isOpen) => {
                         ><InputError :message="errors.assigned_to" />
                     </div>
                 </div>
+                <fieldset class="space-y-3 rounded-md border p-3">
+                    <legend class="px-1 text-sm font-medium">
+                        {{ t('Commercial tracking') }}
+                    </legend>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1">
+                            <Label for="deal-status">{{
+                                t('Deal status')
+                            }}</Label>
+                            <select
+                                id="deal-status"
+                                v-model="form.deal_status"
+                                class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                            >
+                                <option value="">—</option>
+                                <option
+                                    v-for="option in statusChoices"
+                                    :key="option.code"
+                                    :value="option.code"
+                                >
+                                    {{ option.name }}
+                                </option></select
+                            ><InputError :message="errors.deal_status" />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="deal-scenario">{{
+                                t('Scenario')
+                            }}</Label>
+                            <select
+                                id="deal-scenario"
+                                v-model="form.scenario"
+                                class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                            >
+                                <option value="">—</option>
+                                <option
+                                    v-for="option in scenarioChoices"
+                                    :key="option.code"
+                                    :value="option.code"
+                                >
+                                    {{ option.name }}
+                                </option></select
+                            ><InputError :message="errors.scenario" />
+                        </div>
+                        <template v-if="canSeeAmounts">
+                            <div class="space-y-1">
+                                <Label for="deal-gross">{{
+                                    t('Gross commission')
+                                }}</Label
+                                ><Input
+                                    id="deal-gross"
+                                    v-model="form.gross_commission"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                /><InputError
+                                    :message="errors.gross_commission"
+                                />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="deal-cobroker">{{
+                                    t('Co-broker share (%)')
+                                }}</Label
+                                ><Input
+                                    id="deal-cobroker"
+                                    v-model="form.co_broker_share"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                /><InputError
+                                    :message="errors.co_broker_share"
+                                />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="deal-agent">{{
+                                    t('Agent share (%)')
+                                }}</Label
+                                ><Input
+                                    id="deal-agent"
+                                    v-model="form.agent_share"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                /><InputError :message="errors.agent_share" />
+                            </div>
+                        </template>
+                    </div>
+                    <p class="text-muted-foreground text-xs">
+                        {{
+                            t(
+                                'These are tracking and planning figures. They do not post payments or change finance records.',
+                            )
+                        }}
+                    </p>
+                </fieldset>
                 <div class="space-y-1">
                     <Label for="deal-notes">{{ t('Notes') }}</Label
                     ><textarea

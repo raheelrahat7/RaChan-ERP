@@ -71,8 +71,8 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 ### 1C. Deals
 
 - [x] Board/list, create, edit, move, detail, history, filters, export, automation rules, qualified-lead picker, pipeline transfer, finance links (all `[~]` browser-unchecked).
-- [~] BE done: reference deal status strip is a separate organization-configurable tracking status; FE remains. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
-- [~] BE done: deal scenario, co-broker share, agent share and gross commission; FE remains. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
+- [x] FE: deal status strip on the deal page (click to change, versioned) and Deal statuses list in Settings > Selection lists. Edit flow browser-checked 2026-10-09; strip click and create-form not yet (shared test DB was in use by Codex's runs). BE done: reference deal status strip is a separate organization-configurable tracking status. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
+- [x] FE: Commercial tracking fieldset on the deal form (status, scenario, gross commission, shares with the 100% check) and card on the deal page, Deal scenarios list in settings. BE done: deal scenario, co-broker share, agent share and gross commission. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
 
 ### 1D. Settings hub
 
@@ -85,7 +85,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 
 Each item = FE screen change plus BE fields. Do one section completely, then the next.
 
-- [ ] 2A Property & Listings: 13-status tab strip, filters (cost centre, status, category, agent, community, sort), table columns, create form fields (listing category, unit category, building, emirate, community, sub-community, unit/floor, Trakheesi/DLD permit, bedroom type, bathrooms, balconies, parking, size, plot size, furnishing, completion status, handover date, grade, loading bay, fit-out, price type/price/range/label, price per sq ft auto, owner/developer, portals), emirate summary table.
+- [~] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE screen and browser acceptance remain. Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip.
 - [ ] 2B Secondary Market: valuation price, mortgage and NOC status, transfer status, seller/buyer, status tabs.
 - [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: next unticked backend item in the tracker (listing field additions). FE: Phase 1C deal status strip and commission fields, then lead Follow-Up Timeline tab (optional). Requirement, Matched Properties, Tasks, Meetings, Offers/Contracts and Accounting Link tabs are done and browser-checked. Push only when the owner asks.
+FE: Phase 1C deal status strip and commission fields, then Phase 2A Property & Listings screen using the new backend contract. BE: finish Phase 2A verification; do not begin 2B until 2A screen and browser acceptance are complete. Push only when the owner asks.

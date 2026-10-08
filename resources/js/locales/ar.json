@@ -1963,5 +1963,17 @@
     "Offer and contract statuses": "حالات العروض والعقود",
     "Offer statuses": "حالات العروض",
     "Contract statuses": "حالات العقود",
-    "The statuses offered on lead offers and contracts. Archive a status to stop new use while keeping it on existing records.": "الحالات المتاحة لعروض وعقود العملاء المحتملين. أرشف الحالة لإيقاف استخدامها الجديد مع إبقائها على السجلات الحالية."
+    "The statuses offered on lead offers and contracts. Archive a status to stop new use while keeping it on existing records.": "الحالات المتاحة لعروض وعقود العملاء المحتملين. أرشف الحالة لإيقاف استخدامها الجديد مع إبقائها على السجلات الحالية.",
+    "Deal statuses": "حالات الصفقات",
+    "Deal scenarios": "سيناريوهات الصفقات",
+    "Until you add an option, the built-in options are used. Adding the first one copies the built-ins so they stay editable.": "إلى أن تضيف خيارًا، تُستخدم الخيارات المدمجة. إضافة أول خيار تنسخ الخيارات المدمجة لتبقى قابلة للتعديل.",
+    "Commercial tracking": "التتبع التجاري",
+    "Deal status": "حالة الصفقة",
+    "Scenario": "السيناريو",
+    "Gross commission": "إجمالي العمولة",
+    "Co-broker share (%)": "حصة الوسيط المشارك (%)",
+    "Agent share (%)": "حصة الوكيل (%)",
+    "The co-broker and agent shares cannot add up to more than 100%.": "لا يمكن أن يتجاوز مجموع حصتي الوسيط المشارك والوكيل 100%.",
+    "These are tracking and planning figures. They do not post payments or change finance records.": "هذه أرقام للتتبع والتخطيط. لا تسجل مدفوعات ولا تغير السجلات المالية.",
+    "A tracking label only. It does not post payments or change finance records.": "وسم للتتبع فقط. لا يسجل مدفوعات ولا يغير السجلات المالية."
 }

@@ -18,6 +18,15 @@ export const SELECTION_LISTS: { key: string; label: string }[] = [
     { key: 'industries', label: 'Industries' },
     { key: 'salutations', label: 'Salutations' },
     { key: 'call_statuses', label: 'Call statuses' },
+    { key: 'deal_statuses', label: 'Deal statuses' },
+    { key: 'deal_scenarios', label: 'Deal scenarios' },
+];
+
+/** Lists whose options carry a permanent code and start from built-in defaults. */
+export const CODED_LISTS = [
+    'deal_categories',
+    'deal_statuses',
+    'deal_scenarios',
 ];
 
 export function listLabel(key: string): string {

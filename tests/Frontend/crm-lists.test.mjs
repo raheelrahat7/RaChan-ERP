@@ -32,7 +32,8 @@ await test('options are filtered to one list and ordered', () => {
 });
 
 await test('every backend list has a label', () => {
-    assert.equal(SELECTION_LISTS.length, 9);
+    assert.equal(SELECTION_LISTS.length, 11);
+    assert.equal(listLabel('deal_statuses'), 'Deal statuses');
     assert.equal(listLabel('sources'), 'Lead sources');
     assert.equal(listLabel('other'), 'other');
 });

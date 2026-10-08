@@ -7,6 +7,7 @@ import CrmDealFinance from '@/components/CrmDealFinance.vue';
 import CrmDealMoveDialog from '@/components/CrmDealMoveDialog.vue';
 import CrmDealTransferDialog from '@/components/CrmDealTransferDialog.vue';
 import CrmDealStageBar from '@/components/CrmDealStageBar.vue';
+import CrmDealStatusStrip from '@/components/CrmDealStatusStrip.vue';
 import DateText from '@/components/DateText.vue';
 import InputError from '@/components/InputError.vue';
 import Money from '@/components/Money.vue';
@@ -19,6 +20,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocale } from '@/composables/useLocale';
 import { ApiError, apiJson } from '@/lib/crm-api';
+import { optionLabel } from '@/lib/crm-deal-commercial';
+import type { DealOption } from '@/lib/crm-deal-commercial';
 import { amountOf, categoryLabel, contactName } from '@/lib/crm-deals';
 import type { Deal, DealPipeline, DealStage } from '@/types/crm-deals';
 
@@ -68,6 +71,8 @@ const props = defineProps<{
     timeline: Page<Audit>;
     activities: Page<Activity>;
     categoryOptions?: { code: string; name: string; active: boolean }[];
+    dealStatusOptions?: DealOption[];
+    dealScenarioOptions?: DealOption[];
     financialRecords?: Partial<FinancialRecords> | null;
 }>();
 type Tab = 'general' | 'activities' | 'finance' | 'history';
@@ -248,6 +253,15 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
             @move="startMove"
         />
 
+        <CrmDealStatusStrip
+            :deal-id="deal.id"
+            :version="deal.version"
+            :status="deal.deal_status"
+            :options="dealStatusOptions ?? []"
+            :can-edit="canEdit"
+            @changed="reload"
+        />
+
         <Tabs v-model="tab" class="gap-4">
             <TabsList :aria-label="t('Deal sections')"
                 ><TabsTrigger
@@ -264,6 +278,57 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
                 class="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]"
             >
                 <div class="flex flex-col gap-6">
+                    <Card v-if="deal.permissions?.amount">
+                        <CardHeader
+                            ><CardTitle>{{
+                                t('Commercial tracking')
+                            }}</CardTitle></CardHeader
+                        >
+                        <CardContent class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Scenario') }}
+                                </p>
+                                <p class="text-sm">
+                                    {{
+                                        optionLabel(
+                                            dealScenarioOptions ?? [],
+                                            deal.scenario,
+                                        )
+                                    }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Gross commission') }}
+                                </p>
+                                <p class="text-sm">
+                                    <Money
+                                        v-if="deal.gross_commission"
+                                        :value="Number(deal.gross_commission)"
+                                        :currency="deal.currency ?? 'AED'"
+                                        :decimals="2"
+                                    /><template v-else>—</template>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Co-broker share (%)') }}
+                                </p>
+                                <p class="text-sm">
+                                    {{ deal.co_broker_share ?? '—' }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-muted-foreground text-xs">
+                                    {{ t('Agent share (%)') }}
+                                </p>
+                                <p class="text-sm">
+                                    {{ deal.agent_share ?? '—' }}
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader
                             ><CardTitle>{{
