@@ -60,7 +60,7 @@ class DealOverview
                 return ['pipeline_id' => $row->pipeline_id, 'current_stage_id' => $row->current_stage_id, 'total' => (int) $row->getAttribute('total'), 'amount' => $amount];
             });
 
-        return ['deals' => $deals, 'pipelines' => $this->pipelines($org, $actor), 'stageCounts' => $counts, 'filters' => $filters, 'categories' => app(ManageCrmSettings::class)->activeCategories($org), 'categoryOptions' => app(ManageCrmSettings::class)->categories($org), 'timezone' => $org->timezone, 'filterFields' => app(DealConditions::class)->catalog($org, $actor), 'canConfigure' => $this->access->administrator($org, $actor)];
+        return ['deals' => $deals, 'pipelines' => $this->pipelines($org, $actor), 'stageCounts' => $counts, 'filters' => $filters, 'categories' => app(ManageCrmSettings::class)->activeCategories($org), 'categoryOptions' => app(ManageCrmSettings::class)->categories($org), 'dealStatusOptions' => app(ManageCrmSettings::class)->dealOptions($org, 'deal_statuses'), 'dealScenarioOptions' => app(ManageCrmSettings::class)->dealOptions($org, 'deal_scenarios'), 'timezone' => $org->timezone, 'filterFields' => app(DealConditions::class)->catalog($org, $actor), 'canConfigure' => $this->access->administrator($org, $actor)];
     }
 
     /** @return array<string, mixed> */
@@ -71,7 +71,7 @@ class DealOverview
         $canSeeLead = $lead && $this->leadVisibility->canSeeLead($org, $actor, $lead->assigned_to);
 
         return ['deal' => $this->serialize($org, $actor, $deal), 'sourceLead' => $canSeeLead ? $lead->only('id', 'first_name', 'last_name', 'current_stage_id', 'converted_at') : null,
-            'financialRecords' => app(ManageDealFinancialLinks::class)->summary($org, $actor, $deal), 'customFields' => $this->fields->values($org, $actor, $deal), 'stages' => $deal->pipeline->stages()->get(), 'pipelines' => $this->pipelines($org, $actor),
+            'financialRecords' => app(ManageDealFinancialLinks::class)->summary($org, $actor, $deal), 'customFields' => $this->fields->values($org, $actor, $deal), 'stages' => $deal->pipeline->stages()->get(), 'pipelines' => $this->pipelines($org, $actor), 'dealStatusOptions' => app(ManageCrmSettings::class)->dealOptions($org, 'deal_statuses'), 'dealScenarioOptions' => app(ManageCrmSettings::class)->dealOptions($org, 'deal_scenarios'),
             'history' => $deal->history()->where('organization_id', $org->id)->paginate(100, ['*'], 'history_page'),
             'timeline' => AuditLog::where('organization_id', $org->id)->where('subject_type', $deal->getMorphClass())->where('subject_id', $deal->id)->with('actor:id,name')->latest('id')->paginate(100, ['*'], 'timeline_page'),
             'activities' => $deal->activities()->where('organization_id', $org->id)->with('creator:id,name')->latest('id')->paginate(50, ['*'], 'activity_page'), 'timezone' => $org->timezone];
@@ -84,7 +84,7 @@ class DealOverview
         $values = $deal->toArray();
         unset($values['lead']);
         if (! $this->access->allows($org, $actor, $deal->pipeline, 'amount', $deal->assigned_to)) {
-            unset($values['amount'], $values['currency']);
+            unset($values['amount'], $values['currency'], $values['gross_commission'], $values['co_broker_share'], $values['agent_share']);
         }
         if ($deal->lead_id && ! $this->leadVisibility->canSeeLead($org, $actor, $deal->lead->assigned_to)) {
             unset($values['lead_id']);

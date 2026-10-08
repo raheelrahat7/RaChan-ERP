@@ -18,7 +18,7 @@ class Deal extends Model
 
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'expected_close_date' => 'date:Y-m-d', 'stage_changed_at' => 'datetime', 'closed_at' => 'datetime', 'version' => 'integer'];
+        return ['amount' => 'decimal:2', 'gross_commission' => 'decimal:2', 'co_broker_share' => 'decimal:2', 'agent_share' => 'decimal:2', 'expected_close_date' => 'date:Y-m-d', 'stage_changed_at' => 'datetime', 'closed_at' => 'datetime', 'version' => 'integer'];
     }
 
     /** @return BelongsTo<DealPipeline, $this> */

@@ -71,8 +71,8 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 ### 1C. Deals
 
 - [x] Board/list, create, edit, move, detail, history, filters, export, automation rules, qualified-lead picker, pipeline transfer, finance links (all `[~]` browser-unchecked).
-- [ ] BE+FE: reference deal status strip (Submitted, Approved, Contract In Progress/Signed, Invoice Generated, Payment Pending/Received, Commission Calculated/Approved/Paid, Disputed, Clawback Required, Refund Required) — decide whether these become default deal-pipeline stages or a separate commission status.
-- [ ] BE+FE: deal fields scenario, co-broker share, agent share, gross commission.
+- [~] BE done: reference deal status strip is a separate organization-configurable tracking status; FE remains. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
+- [~] BE done: deal scenario, co-broker share, agent share and gross commission; FE remains. See `CRM_FRONTEND_BACKEND_DEAL_COMMERCIAL_2026_10_08.md`.
 
 ### 1D. Settings hub
 
@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-BE: Phase 1C deal status strip and commission fields. FE: lead Follow-Up Timeline tab (optional). Requirement, Matched Properties, Tasks, Meetings, Offers/Contracts and Accounting Link tabs are done and browser-checked. Push only when the owner asks.
+BE: next unticked backend item in the tracker (listing field additions). FE: Phase 1C deal status strip and commission fields, then lead Follow-Up Timeline tab (optional). Requirement, Matched Properties, Tasks, Meetings, Offers/Contracts and Accounting Link tabs are done and browser-checked. Push only when the owner asks.

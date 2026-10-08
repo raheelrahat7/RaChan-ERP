@@ -25,6 +25,10 @@ class ManageDeals
 {
     public const CATEGORIES = ['offplan', 'secondary', 'resale', 'listing', 'leasing', 'other'];
 
+    public const STATUSES = ['submitted' => 'Submitted', 'approved' => 'Approved', 'contract_in_progress' => 'Contract In Progress', 'contract_signed' => 'Contract Signed', 'invoice_generated' => 'Invoice Generated', 'payment_pending' => 'Payment Pending', 'payment_received' => 'Payment Received', 'commission_calculated' => 'Commission Calculated', 'commission_approved' => 'Commission Approved', 'commission_paid' => 'Commission Paid', 'disputed' => 'Disputed', 'clawback_required' => 'Clawback Required', 'refund_required' => 'Refund Required'];
+
+    public const SCENARIOS = ['direct' => 'Direct', 'co_broker' => 'Co-broker', 'referral' => 'Referral', 'other' => 'Other'];
+
     public const REQUIRED_FIELDS = ['title', 'first_name', 'last_name', 'email', 'phone', 'company', 'source', 'amount', 'expected_close_date', 'listing_id'];
 
     public function __construct(private DealAccess $access, private LeadVisibility $visibility, private RecordOrganizationAuditLog $audit, private ManageRecordFields $fields) {}
@@ -57,9 +61,10 @@ class ManageDeals
                 $this->fail('pipeline_id', 'Select an active deal pipeline in this organization.');
             }
             $this->category($org, $data['category']);
+            $this->dealOptions($org, $data);
             $assignee = $data['assigned_to'] ?? $actor->id;
             $this->assignee($org, $assignee);
-            if (isset($data['amount'])) {
+            if (array_intersect(['amount', 'gross_commission', 'co_broker_share', 'agent_share'], array_keys($data))) {
                 abort_unless($this->access->allows($org, $actor, $pipeline, 'amount', $assignee), 403);
             }
             abort_unless($this->access->allows($org, $actor, $pipeline, 'read', $assignee) && $this->access->allows($org, $actor, $pipeline, 'add', $assignee), 403);
@@ -107,12 +112,18 @@ class ManageDeals
             if (isset($data['category']) && $data['category'] !== $deal->category) {
                 $this->category($org, $data['category']);
             }
+            $this->dealOptions($org, $data);
+            $coBrokerShare = array_key_exists('co_broker_share', $data) ? $data['co_broker_share'] : $deal->co_broker_share;
+            $agentShare = array_key_exists('agent_share', $data) ? $data['agent_share'] : $deal->agent_share;
+            if (($coBrokerShare ?? 0) + ($agentShare ?? 0) > 100) {
+                $this->fail('agent_share', 'Combined shares cannot exceed 100%.');
+            }
             $before = $deal->only(array_keys($data));
             if (array_key_exists('assigned_to', $data)) {
                 $this->assignee($org, $data['assigned_to']);
                 abort_unless($this->access->allows($org, $actor, $deal->pipeline, 'assign', $deal->assigned_to) && $this->access->allows($org, $actor, $deal->pipeline, 'read', $data['assigned_to']) && $this->access->allows($org, $actor, $deal->pipeline, 'edit', $data['assigned_to']), 403);
             }
-            if (array_key_exists('amount', $data)) {
+            if (array_intersect(['amount', 'gross_commission', 'co_broker_share', 'agent_share'], array_keys($data))) {
                 abort_unless($this->access->allows($org, $actor, $deal->pipeline, 'amount', $deal->assigned_to), 403);
             }
             $this->listing($org, $data['listing_id'] ?? null);
@@ -183,7 +194,23 @@ class ManageDeals
             'phone' => ['sometimes', 'nullable', 'string', 'max:50'], 'company' => ['sometimes', 'nullable', 'string', 'max:255'], 'source' => ['sometimes', 'nullable', 'string', 'max:100'], 'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'amount' => ['sometimes', 'nullable', 'decimal:0,2', 'regex:/^\d{1,16}(?:\.\d{1,2})?$/', 'min:0'], 'currency' => ['sometimes', 'string', 'regex:/^[A-Z]{3}$/'], 'expected_close_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'assigned_to' => ['sometimes', 'required', 'integer'], 'listing_id' => ['sometimes', 'nullable', 'integer'],
+            'deal_status' => ['sometimes', 'nullable', 'string', 'max:24'], 'scenario' => ['sometimes', 'nullable', 'string', 'max:24'],
+            'gross_commission' => ['sometimes', 'nullable', 'decimal:0,2', 'regex:/^\d{1,16}(?:\.\d{1,2})?$/', 'min:0'],
+            'co_broker_share' => ['sometimes', 'nullable', 'numeric', 'between:0,100'], 'agent_share' => ['sometimes', 'nullable', 'numeric', 'between:0,100'],
         ])->validate();
+    }
+
+    /** @param array<string, mixed> $data */
+    private function dealOptions(Organization $org, array $data): void
+    {
+        foreach (['deal_status' => 'deal_statuses', 'scenario' => 'deal_scenarios'] as $field => $list) {
+            if (isset($data[$field]) && ! in_array($data[$field], array_column(array_filter(app(ManageCrmSettings::class)->dealOptions($org, $list), fn ($option) => $option['active']), 'code'), true)) {
+                $this->fail($field, 'Select an active organization option.');
+            }
+        }
+        if (($data['co_broker_share'] ?? 0) + ($data['agent_share'] ?? 0) > 100) {
+            $this->fail('agent_share', 'Combined shares cannot exceed 100%.');
+        }
     }
 
     /** @param array<string, mixed> $input */

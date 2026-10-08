@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class ManageCrmSettings
 {
-    public const LISTS = ['sources', 'contact_types', 'company_types', 'company_sizes', 'industries', 'deal_types', 'salutations', 'call_statuses', 'deal_categories'];
+    public const LISTS = ['sources', 'contact_types', 'company_types', 'company_sizes', 'industries', 'deal_types', 'salutations', 'call_statuses', 'deal_categories', 'deal_statuses', 'deal_scenarios'];
 
     public function __construct(private DealAccess $access, private RecordOrganizationAuditLog $audit) {}
 
@@ -28,9 +28,14 @@ class ManageCrmSettings
 
         return DB::transaction(function () use ($org, $actor, $data, $id): SelectionOption {
             Organization::whereKey($org->id)->lockForUpdate()->firstOrFail();
-            if ($data['list_key'] === 'deal_categories' && ! SelectionOption::where('organization_id', $org->id)->where('list_key', 'deal_categories')->exists()) {
-                foreach (ManageDeals::CATEGORIES as $position => $code) {
-                    SelectionOption::create(['organization_id' => $org->id, 'list_key' => 'deal_categories', 'code' => $code, 'name' => ucfirst($code), 'position' => $position, 'active' => true]);
+            if (in_array($data['list_key'], ['deal_categories', 'deal_statuses', 'deal_scenarios'], true) && ! SelectionOption::where('organization_id', $org->id)->where('list_key', $data['list_key'])->exists()) {
+                $defaults = match ($data['list_key']) {
+                    'deal_categories' => array_combine(ManageDeals::CATEGORIES, array_map('ucfirst', ManageDeals::CATEGORIES)),
+                    'deal_statuses' => ManageDeals::STATUSES,
+                    default => ManageDeals::SCENARIOS,
+                };
+                foreach (array_keys($defaults) as $position => $code) {
+                    SelectionOption::create(['organization_id' => $org->id, 'list_key' => $data['list_key'], 'code' => $code, 'name' => $defaults[$code], 'position' => $position, 'active' => true]);
                 }
             }
             $option = $id ? SelectionOption::where('organization_id', $org->id)->findOrFail($id) : new SelectionOption(['organization_id' => $org->id]);
@@ -40,10 +45,10 @@ class ManageCrmSettings
             if (SelectionOption::where('organization_id', $org->id)->where('list_key', $data['list_key'])->where('name', $data['name'])->whereKeyNot($id ?? 0)->exists()) {
                 throw ValidationException::withMessages(['name' => 'This option already exists.']);
             }
-            if ($data['list_key'] === 'deal_categories') {
+            if (in_array($data['list_key'], ['deal_categories', 'deal_statuses', 'deal_scenarios'], true)) {
                 $code = $id ? $option->code : ($data['code'] ?? null);
-                if (! $code || ($id && isset($data['code']) && $data['code'] !== $code) || SelectionOption::where('organization_id', $org->id)->where('list_key', 'deal_categories')->where('code', $code)->whereKeyNot($id ?? 0)->exists()) {
-                    throw ValidationException::withMessages(['code' => 'Provide a unique category code; existing codes cannot change.']);
+                if (! $code || ($id && isset($data['code']) && $data['code'] !== $code) || SelectionOption::where('organization_id', $org->id)->where('list_key', $data['list_key'])->where('code', $code)->whereKeyNot($id ?? 0)->exists()) {
+                    throw ValidationException::withMessages(['code' => 'Provide a unique code; existing codes cannot change.']);
                 }
                 $data['code'] = $code;
             } else {
@@ -71,6 +76,17 @@ class ManageCrmSettings
     public function activeCategories(Organization $org): array
     {
         return array_column(array_filter($this->categories($org), fn ($category) => $category['active']), 'code');
+    }
+
+    /** @return list<array{code: string, name: string, active: bool, id: int|null}> */
+    public function dealOptions(Organization $org, string $list): array
+    {
+        $defaults = $list === 'deal_statuses' ? ManageDeals::STATUSES : ManageDeals::SCENARIOS;
+        $options = SelectionOption::where('organization_id', $org->id)->where('list_key', $list)->orderBy('position')->orderBy('id')->get();
+
+        return $options->isEmpty()
+            ? array_map(fn ($code, $name) => ['code' => $code, 'name' => $name, 'active' => true, 'id' => null], array_keys($defaults), array_values($defaults))
+            : array_values($options->map(fn (SelectionOption $option) => ['code' => (string) $option->code, 'name' => $option->name, 'active' => $option->active, 'id' => $option->id])->all());
     }
 
     /** @param array<string, mixed> $input */
