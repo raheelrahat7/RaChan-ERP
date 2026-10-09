@@ -90,11 +90,16 @@ class ManageListingDetails
             'grade' => ['sometimes', 'nullable', 'string', 'max:40'], 'loading_bay' => ['sometimes', 'nullable', 'boolean'], 'fit_out' => ['sometimes', 'nullable', 'string', 'max:80'],
             'price_type' => ['sometimes', 'nullable', 'string', 'max:40'], 'price_min' => ['sometimes', 'nullable', 'numeric', 'between:0,999999999999.99'], 'price_max' => ['sometimes', 'nullable', 'numeric', 'between:0,999999999999.99'], 'price_label' => ['sometimes', 'nullable', 'string', 'max:100'],
             'developer_name' => ['sometimes', 'nullable', 'string', 'max:160'], 'portals' => ['sometimes', 'nullable', 'array', 'max:30'], 'portals.*' => ['string', 'max:80', 'distinct'],
+            'valuation_price' => ['sometimes', 'nullable', 'numeric', 'between:0,99999999999999.99'],
+            'mortgage_status' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'noc_status' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'transfer_status' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'buyer_contact_id' => ['sometimes', 'nullable', 'integer'],
         ])->validate();
         if (isset($data['workflow_status']) && ! in_array($data['workflow_status'], array_column(array_filter($this->statuses($org), fn ($status) => $status['active']), 'code'), true)) {
             throw ValidationException::withMessages(['workflow_status' => 'Select an active organization listing status.']);
         }
-        foreach (['cost_centre_id' => 'accounting_cost_centres', 'owner_id' => 'owners', 'broker_id' => 'brokers'] as $field => $table) {
+        foreach (['cost_centre_id' => 'accounting_cost_centres', 'owner_id' => 'owners', 'broker_id' => 'brokers', 'buyer_contact_id' => 'crm_contacts'] as $field => $table) {
             if (isset($data[$field]) && ! DB::table($table)->where('organization_id', $org->id)->where('id', $data[$field])->exists()) {
                 throw ValidationException::withMessages([$field => 'Select a record in this organization.']);
             }
@@ -112,6 +117,8 @@ class ManageListingDetails
         abort_unless($actor->can('manageCrm', $org), 403);
         $version = Validator::make($input, ['expected_version' => ['required', 'integer', 'min:1']])->validate()['expected_version'];
         $data = $this->validateDetails($org, $input);
+
+        $this->validateSecondaryFields($listing->market_segment === 'secondary' || $listing->purpose === 'rent', $data);
 
         return DB::transaction(function () use ($org, $actor, $listing, $version, $data): Listing {
             $listing = Listing::where('organization_id', $org->id)->lockForUpdate()->findOrFail($listing->id);
@@ -133,5 +140,19 @@ class ManageListingDetails
 
             return $listing;
         });
+    }
+
+    /** @param array<string, mixed> $data */
+    public function validateSecondaryFields(bool $secondary, array $data): void
+    {
+        if ($secondary) {
+            return;
+        }
+
+        foreach (['valuation_price', 'mortgage_status', 'noc_status', 'transfer_status', 'buyer_contact_id'] as $field) {
+            if (array_key_exists($field, $data)) {
+                throw ValidationException::withMessages([$field => 'This field is available only for secondary-market listings.']);
+            }
+        }
     }
 }

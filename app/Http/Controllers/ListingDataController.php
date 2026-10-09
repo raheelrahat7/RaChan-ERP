@@ -17,10 +17,10 @@ class ListingDataController extends Controller
         $this->authorize('viewCrm', $org);
         $filters = $this->filters($request);
         $canManage = $request->user()->can('manageCrm', $org);
-        $listings = $overview->query($org, $filters)->with(['unit.property', 'unit.building'])->paginate(50)->withQueryString();
+        $listings = $overview->query($org, $filters)->with(['unit.property', 'unit.building', 'seller', 'buyerContact'])->paginate(50)->withQueryString();
         $listings->through(fn (Listing $listing) => $overview->serialize($listing, $canManage));
 
-        return response()->json(['listings' => $listings, 'workflowStatuses' => $details->statuses($org), 'emirateSummary' => $overview->emirateSummary($org, $filters), 'filters' => $filters, 'permissions' => ['read' => true, 'create' => $canManage, 'configure' => $canManage]]);
+        return response()->json(['listings' => $listings, 'workflowStatuses' => $details->statuses($org), 'emirateSummary' => $overview->emirateSummary($org, $filters), 'secondaryStatusSummary' => ($filters['market_segment'] ?? null) === 'secondary' ? $overview->secondaryStatusSummary($org, $filters) : null, 'filters' => $filters, 'permissions' => ['read' => true, 'create' => $canManage, 'configure' => $canManage]]);
     }
 
     public function show(Request $request, Listing $listing, ListingOverview $overview, ManageListingDetails $details): JsonResponse

@@ -86,7 +86,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 Each item = FE screen change plus BE fields. Do one section completely, then the next.
 
 - [~] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE screen and browser acceptance remain. Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
-- [ ] 2B Secondary Market: valuation price, mortgage and NOC status, transfer status, seller/buyer, status tabs.
+- [~] 2B Secondary Market: BE valuation price, mortgage and NOC status, transfer status, seller/buyer, and status-tab counts ready; FE screen and browser acceptance remain. Backend contract: `docs/CRM_FRONTEND_BACKEND_SECONDARY_MARKET_2026_10_09.md`.
 - [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
 - [ ] 2E Owners & Developers: payment terms, commission notes, linked listings, edit.

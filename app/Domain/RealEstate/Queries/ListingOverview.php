@@ -29,12 +29,15 @@ class ListingOverview
     /** @return array<string, mixed> */
     public function serialize(Listing $listing, bool $canManage): array
     {
-        $listing->loadMissing(['unit.property', 'unit.building']);
+        $listing->loadMissing(['unit.property', 'unit.building', 'seller', 'buyerContact']);
         $values = $listing->toArray();
         $values['workflow_status'] = $listing->workflow_status ?? 'draft';
         $values['property'] = $listing->unit->property?->only('id', 'name', 'city', 'type');
         $values['unit'] = $listing->unit->only('id', 'number', 'floor', 'type', 'area', 'area_unit', 'building_id');
         $values['building'] = $listing->unit->building?->only('id', 'name', 'floors');
+        $values['seller'] = $listing->seller?->only('id', 'name', 'phone', 'email');
+        $values['buyer'] = $listing->buyerContact?->only('id', 'first_name', 'last_name', 'phone', 'email');
+        unset($values['buyer_contact']);
         $sizeSqft = $listing->size_sqft ?: ($listing->unit->area_unit === 'sq_ft' ? $listing->unit->area : null);
         $values['price_per_sqft'] = $sizeSqft && (float) $sizeSqft > 0 ? number_format((float) $listing->price / (float) $sizeSqft, 2, '.', '') : null;
         $values['public_url'] = $listing->public_token ? route('public.listings.show', $listing->public_token) : null;
@@ -50,5 +53,19 @@ class ListingOverview
     public function emirateSummary(Organization $org, array $filters): array
     {
         return $this->query($org, $filters)->reorder()->selectRaw('emirate, COUNT(*) as total')->groupBy('emirate')->orderBy('emirate')->get()->map(fn ($row) => ['emirate' => $row->emirate, 'total' => (int) $row->getAttribute('total')])->all();
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<int, array{code: string, total: int}>
+     */
+    public function secondaryStatusSummary(Organization $org, array $filters): array
+    {
+        unset($filters['workflow_status']);
+        $filters['market_segment'] = 'secondary';
+
+        return $this->query($org, $filters)->reorder()
+            ->selectRaw("COALESCE(workflow_status, 'draft') as code, COUNT(*) as total")
+            ->groupBy('code')->orderBy('code')->get()
+            ->map(fn ($row) => ['code' => $row->getAttribute('code'), 'total' => (int) $row->getAttribute('total')])->all();
     }
 }

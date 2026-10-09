@@ -9,6 +9,7 @@ use App\Domain\RealEstate\Actions\RecordListingInquiry;
 use App\Domain\RealEstate\Queries\ListingOverview;
 use App\Models\Broker;
 use App\Models\Building;
+use App\Models\CrmContact;
 use App\Models\Listing;
 use App\Models\Owner;
 use App\Models\Property;
@@ -67,9 +68,9 @@ class ListingController extends Controller
         $filters['market_segment'] = $segment;
         $overview = app(ListingOverview::class);
         $canManage = $request->user()->can('manageCrm', $organization);
-        $listings = $overview->query($organization, $filters)->with(['unit.property', 'unit.building'])->get()->map(fn (Listing $listing) => $overview->serialize($listing, $canManage));
+        $listings = $overview->query($organization, $filters)->with(['unit.property', 'unit.building', 'seller', 'buyerContact'])->get()->map(fn (Listing $listing) => $overview->serialize($listing, $canManage));
 
-        return Inertia::render('real-estate/Listings', ['listings' => $listings, 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'properties' => Property::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name', 'type', 'city']), 'buildings' => Building::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'property_id', 'name', 'floors']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'owners' => Owner::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']), 'costCentres' => DB::table('accounting_cost_centres')->where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']), 'workflowStatuses' => app(ManageListingDetails::class)->statuses($organization), 'emirateSummary' => $overview->emirateSummary($organization, $filters), 'filters' => $filters, 'marketSegment' => $segment, 'canManage' => $canManage, 'canManageTransactions' => $request->user()->can('manageTransactions', $organization), 'canManageInventory' => $request->user()->can('manageInventory', $organization)]);
+        return Inertia::render('real-estate/Listings', ['listings' => $listings, 'units' => Unit::where('organization_id', $organization->id)->where('status', 'available')->get(['id', 'number']), 'properties' => Property::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name', 'type', 'city']), 'buildings' => Building::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'property_id', 'name', 'floors']), 'brokers' => Broker::where('organization_id', $organization->id)->get(['id', 'name']), 'owners' => Owner::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']), 'buyerContacts' => $segment === 'secondary' ? CrmContact::where('organization_id', $organization->id)->orderBy('first_name')->get(['id', 'first_name', 'last_name']) : [], 'costCentres' => DB::table('accounting_cost_centres')->where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']), 'workflowStatuses' => app(ManageListingDetails::class)->statuses($organization), 'emirateSummary' => $overview->emirateSummary($organization, $filters), 'secondaryStatusSummary' => $segment === 'secondary' ? $overview->secondaryStatusSummary($organization, $filters) : null, 'filters' => $filters, 'marketSegment' => $segment, 'canManage' => $canManage, 'canManageTransactions' => $request->user()->can('manageTransactions', $organization), 'canManageInventory' => $request->user()->can('manageInventory', $organization)]);
     }
 
     public function store(Request $request, CreateListingWithInventory $create, RecordOrganizationAuditLog $audit, ManageListingDetails $details, ListingOverview $overview): RedirectResponse|JsonResponse
@@ -101,6 +102,7 @@ class ListingController extends Controller
         ]);
         $input['inventory_mode'] = $newUnit ? 'new_unit' : 'existing_unit';
         $input = [...$input, ...$details->validateDetails($organization, $request->all())];
+        $details->validateSecondaryFields($input['purpose'] === 'rent' || ($input['market_segment'] ?? 'primary') === 'secondary', $input);
         if ($input['broker_id'] ?? null) {
             Broker::where('organization_id', $organization->id)->findOrFail((int) $input['broker_id']);
         }
