@@ -71,6 +71,7 @@ const INTEGER = [
 const IDS = [
     'cost_centre_id',
     'owner_id',
+    'developer_id',
     'broker_id',
     'buyer_contact_id',
 ] as const;

@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import InputError from '@/components/InputError.vue';
+import PartiesPanel from '@/components/PartiesPanel.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ type Person = {
     email: string | null;
     phone: string | null;
 };
-type Group = 'owners' | 'tenants' | 'brokers';
+type Group = 'owners' | 'developers' | 'tenants' | 'brokers';
 type Row = { id: number; name: string; email: string; phone: string };
 
 const props = defineProps<{
@@ -36,6 +37,7 @@ const props = defineProps<{
 const { t } = useLocale();
 const GROUPS: { key: Group; title: string; addLabel: string }[] = [
     { key: 'owners', title: 'Owners', addLabel: 'Add owner' },
+    { key: 'developers', title: 'Developers', addLabel: 'Add developer' },
     { key: 'tenants', title: 'Tenants', addLabel: 'Add tenant' },
     { key: 'brokers', title: 'Brokers', addLabel: 'Add broker' },
 ];
@@ -46,13 +48,18 @@ const form = useForm({ name: '', email: '', phone: '', reference: '' });
 const current = computed(() =>
     GROUPS.find((item) => item.key === group.value)!,
 );
+const smallGroup = computed(
+    () => group.value === 'tenants' || group.value === 'brokers',
+);
 const rows = computed<Row[]>(() =>
-    props[group.value].map((person) => ({
-        id: person.id,
-        name: person.name,
-        email: person.email ?? '',
-        phone: person.phone ?? '',
-    })),
+    (smallGroup.value ? props[group.value as 'tenants' | 'brokers'] : []).map(
+        (person) => ({
+            id: person.id,
+            name: person.name,
+            email: person.email ?? '',
+            phone: person.phone ?? '',
+        }),
+    ),
 );
 const columns = computed<DataTableColumn<Row>[]>(() => [
     { key: 'name', label: t('Name'), sortable: true },
@@ -93,10 +100,18 @@ function create(): void {
                 @click="group = item.key"
             >
                 {{ t(item.title) }}
-                <span class="opacity-70"> ({{ props[item.key].length }})</span>
+                <span v-if="item.key !== 'developers'" class="opacity-70">
+                    ({{ props[item.key].length }})</span
+                >
             </button>
         </nav>
+        <PartiesPanel
+            v-if="group === 'owners' || group === 'developers'"
+            :type="group"
+            :can-create="canManage"
+        />
         <CrmSettingsTable
+            v-else
             :show-title="false"
             :title="current.title"
             :columns="columns"

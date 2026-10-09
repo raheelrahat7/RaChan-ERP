@@ -2138,5 +2138,19 @@
     "Handover cannot be before the launch date.": "لا يمكن أن يسبق التسليم تاريخ الإطلاق.",
     "Project workflow statuses": "حالات مراحل المشروع",
     "Labels for the project status tabs. Archive a status to stop new use.": "تسميات تبويبات حالة المشروع. أرشف الحالة لإيقاف استخدامها الجديد.",
-    "Built-in status. Add a custom status first to make the built-in ones editable.": "حالة مدمجة. أضف حالة مخصصة أولًا لتصبح الحالات المدمجة قابلة للتعديل."
+    "Built-in status. Add a custom status first to make the built-in ones editable.": "حالة مدمجة. أضف حالة مخصصة أولًا لتصبح الحالات المدمجة قابلة للتعديل.",
+    "Developers": "المطورون",
+    "Edit owner": "تعديل المالك",
+    "Edit developer": "تعديل المطوّر",
+    "Add owner": "إضافة مالك",
+    "Add developer": "إضافة مطوّر",
+    "Could not load this record.": "تعذر تحميل هذا السجل.",
+    "Payment terms": "شروط الدفع",
+    "Commission notes": "ملاحظات العمولة",
+    "Linked listings": "الإعلانات المرتبطة",
+    "No listings linked yet.": "لا توجد إعلانات مرتبطة بعد.",
+    "Off-plan projects": "مشاريع على الخارطة",
+    "Could not load this list.": "تعذر تحميل هذه القائمة.",
+    "Name or reference": "الاسم أو المرجع",
+    "Nothing here yet.": "لا شيء هنا بعد."
 }

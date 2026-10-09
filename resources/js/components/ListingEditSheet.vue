@@ -47,6 +47,7 @@ const selectClass =
     'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
 
 const form = reactive<DetailForm>(detailForm());
+const developers = ref<Person[]>([]);
 const errors = ref<Record<string, string>>({});
 const message = ref('');
 const processing = ref(false);
@@ -178,9 +179,24 @@ async function save(): Promise<void> {
     }
 }
 
+async function loadDevelopers(): Promise<void> {
+    if (developers.value.length) {
+        return;
+    }
+    try {
+        const data = await apiJson<{ records: { data: Person[] } }>(
+            '/real-estate/people/developers/data',
+        );
+        developers.value = data.records.data;
+    } catch {
+        // The developer select simply stays empty.
+    }
+}
+
 watch(open, (isOpen) => {
     if (isOpen) {
         load();
+        void loadDevelopers();
     }
 });
 </script>
@@ -261,6 +277,26 @@ watch(open, (isOpen) => {
                                 </option>
                             </select>
                             <InputError :message="errors.owner_id" />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="ls-developer">{{
+                                t('Developer')
+                            }}</Label>
+                            <select
+                                id="ls-developer"
+                                v-model="form.developer_id"
+                                :class="selectClass"
+                            >
+                                <option value="">—</option>
+                                <option
+                                    v-for="developer in developers"
+                                    :key="developer.id"
+                                    :value="String(developer.id)"
+                                >
+                                    {{ developer.name }}
+                                </option>
+                            </select>
+                            <InputError :message="errors.developer_id" />
                         </div>
                         <div class="space-y-1">
                             <Label for="ls-broker">{{ t('Broker') }}</Label>
