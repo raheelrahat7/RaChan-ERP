@@ -27,6 +27,7 @@ class OffPlanController extends Controller
             'workflowStatuses' => $details->statuses($org),
             'statusCounts' => $overview->statusCounts($org, []),
             'developers' => DB::table('offplan_developers')->where('organization_id', $org->id)->orderBy('name')->get(['id', 'name']),
+            'brokers' => DB::table('brokers')->where('organization_id', $org->id)->orderBy('name')->get(['id', 'name']),
             'canManage' => $request->user()->can('manageCrm', $org),
         ]);
     }
@@ -42,6 +43,7 @@ class OffPlanController extends Controller
         return Inertia::render('real-estate/OffPlanProject', [
             'project' => $overview->serialize($record, $request->user()->can('manageCrm', $org)),
             'workflowStatuses' => $details->statuses($org),
+            'brokers' => DB::table('brokers')->where('organization_id', $org->id)->orderBy('name')->get(['id', 'name']),
             'units' => DB::table('offplan_units')->where('organization_id', $org->id)->where('project_id', $project)->orderBy('number')->paginate(50),
             'milestones' => DB::table('offplan_payment_milestones')->where('organization_id', $org->id)->where('project_id', $project)->orderBy('sequence')->get(),
             'deals' => DB::table('offplan_deals')->where('organization_id', $org->id)->where('project_id', $project)

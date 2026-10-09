@@ -1,0 +1,5 @@
+# Off-plan assigned-broker choices — Phase 2D addendum
+
+The existing `GET /real-estate/off-plan` (`offplan.index`) and `GET /real-estate/off-plan/{project}` (`offplan.show`) Inertia responses now include `brokers: [{"id": 9, "name": "Nadia Agent"}]`. The array contains current-organization brokers sorted by name. It is empty when none exist. Both pages require `viewCrm`; the existing `canManage` prop determines whether the assignment input may be edited.
+
+The project JSON create/update contract remains in `CRM_FRONTEND_BACKEND_OFFPLAN_2026_10_10.md`: send `assigned_broker_id` as an organization broker ID or `null`. `POST /real-estate/off-plan/projects` accepts it on create; `PUT /real-estate/off-plan/projects/{project}` requires `expected_version` and accepts it on update. The project response includes `version`, `assigned_broker_id`, `assigned_broker_name`, and `permissions`. Invalid or foreign broker IDs return `422 {"message":"...","errors":{"assigned_broker_id":["Select a broker in this organization."]}}`.

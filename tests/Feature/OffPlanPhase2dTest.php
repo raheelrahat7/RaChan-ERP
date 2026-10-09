@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class OffPlanPhase2dTest extends TestCase
@@ -19,13 +20,17 @@ class OffPlanPhase2dTest extends TestCase
         $owner = User::factory()->create(['current_organization_id' => $org->id]);
         $org->users()->attach($owner, ['role' => OrganizationRole::Owner->value]);
         $developer = DB::table('offplan_developers')->insertGetId(['organization_id' => $org->id, 'name' => 'Harbour', 'created_at' => now(), 'updated_at' => now()]);
+        $broker = DB::table('brokers')->insertGetId(['organization_id' => $org->id, 'name' => 'Nadia Agent', 'created_at' => now(), 'updated_at' => now()]);
 
         $response = $this->actingAs($owner)->postJson(route('offplan.projects.store'), [
             'developer_id' => $developer, 'code' => 'HB', 'name' => 'Harbour Bay', 'emirate' => 'Dubai',
-            'launch_on' => '2027-01-01', 'handover_on' => '2030-01-01', 'commission_rate' => '2.50',
+            'launch_on' => '2027-01-01', 'handover_on' => '2030-01-01', 'commission_rate' => '2.50', 'assigned_broker_id' => $broker,
         ])->assertCreated()->assertJsonPath('project.version', 1)->assertJsonPath('project.units_total', 0)
             ->assertJsonPath('project.permissions.edit', true);
         $id = $response->json('project.id');
+        $this->withoutVite();
+        $this->get(route('offplan.index'))->assertInertia(fn (Assert $page) => $page->where('brokers.0.name', 'Nadia Agent')->etc());
+        $this->get(route('offplan.show', $id))->assertInertia(fn (Assert $page) => $page->where('brokers.0.name', 'Nadia Agent')->etc());
 
         $this->post(route('offplan.units.store', $id), ['number' => 'A1', 'price_aed' => '1200000.00'])->assertRedirect();
         $this->post(route('offplan.units.store', $id), ['number' => 'A2', 'price_aed' => '1500000.00'])->assertRedirect();
