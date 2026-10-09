@@ -2083,5 +2083,11 @@
     "Done": "منجز",
     "Task": "مهمة",
     "Could not load the follow-up timeline.": "تعذر تحميل الجدول الزمني للمتابعة.",
-    "Nothing to follow up. Tasks, meetings and dated activities appear here.": "لا شيء للمتابعة. تظهر هنا المهام والاجتماعات والأنشطة المؤرخة."
+    "Nothing to follow up. Tasks, meetings and dated activities appear here.": "لا شيء للمتابعة. تظهر هنا المهام والاجتماعات والأنشطة المؤرخة.",
+    "Result types": "أنواع النتائج",
+    "Search records": "بحث في السجلات",
+    "Name, reference, city, or description": "الاسم أو المرجع أو المدينة أو الوصف",
+    "Enter at least two characters to search.": "أدخل حرفين على الأقل للبحث.",
+    "No matching records.": "لا توجد سجلات مطابقة.",
+    "Find records in your current organization.": "ابحث عن السجلات في مؤسستك الحالية."
 }

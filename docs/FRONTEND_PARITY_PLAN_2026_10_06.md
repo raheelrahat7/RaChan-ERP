@@ -87,7 +87,7 @@ Each item = FE screen change plus BE fields. Do one section completely, then the
 
 - [x] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE done 2026-10-09 (listings page rebuilt: workflow strip, filters, emirate chips, table, create and edit sheets, workflow status manager; browser-checked). Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
 - [x] 2B Secondary Market: BE valuation price, mortgage and NOC status, transfer status, seller/buyer, and status-tab counts ready. FE done 2026-10-09 on the same page (secondary columns, valuation, mortgage, NOC, transfer, seller, buyer, status-tab counts; browser-checked). Backend contract: `docs/CRM_FRONTEND_BACKEND_SECONDARY_MARKET_2026_10_09.md`.
-- [~] 2C Leasing & Rental: BE tenancy number, renewal date, advance, versioned details and renewal, linked Ejari/deposit/cheques, and renewal/move-out tabs ready; FE screen and browser acceptance remain. Backend contract: `docs/CRM_FRONTEND_BACKEND_LEASING_2026_10_10.md`.
+- [~] 2C Leasing & Rental: BE tenancy number, renewal date, advance, versioned details and renewal, linked Ejari/deposit/cheques, and renewal/move-out tabs ready; FE screen and browser acceptance remain. Backend contract: `docs/CRM_FRONTEND_BACKEND_LEASING_2026_10_10.md`. Local migration applied; focused 3 tests / 33 assertions, PHPStan and Pint passed. Full suite awaiting an uncontended shared `testing` database.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
 - [ ] 2E Owners & Developers: payment terms, commission notes, linked listings, edit.
 - [ ] 2F Agents & Commission: clawback, net contribution, team view.
@@ -116,7 +116,7 @@ Already restyled: invoices, vendor bills, vendor cash refunds, outstanding balan
 - [x] Done: Construction index, Notifications inbox, HR profile header (browser-checked).
 - [x] Done (browser-checked 2026-10-06): Handovers (tabs, plan panel, dialogs), Lease compliance (5 section tabs), Spare parts (4 tabs), Construction project (4 tabs), Fleet vehicle (3 tabs).
 - [x] Done (2026-10-07, browser-loaded): Signatures, Document versions, API tokens, Organization activity, Organization settings (Members/tax tabs), Portal access (2 tabs), Operations overview and reports headers; the remaining 22 pages that used the old h2 Heading (accounting, inventory, portal, listings, search, job card) now use the standard h1 PageHeader.
-- [ ] Remaining: Real-estate listings body restyle (with 2A), Accounting pages body restyle (reports; header unified), Portal pages, Search results layout.
+- [x] Done 2026-10-10: Real-estate listings body (with 2A), Search results (type filter chips, match highlight, one list card), Portal overview (tenant and owner tabs, stat tiles, status badges; type-checked and built, but the tenant/owner views were not opened in a browser because the seed has no portal grant). Accounting report bodies reviewed: they already use the shared card/list pattern, so no further restyle planned.
 
 ## Built, not browser-checked (all `[~]`)
 
