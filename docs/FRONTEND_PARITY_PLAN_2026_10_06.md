@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-FE: Phase 2E Owners & Developers once Codex publishes the backend contract (2E to 2G and Phases 3-4 need backend first). Push only when the owner asks.
+FE: Phase 2E Owners & Developers on the published backend contract, then 2F Agents & Commission. BE: Phase 2G AI Matchmaker is the next backend item; Phases 3 and 4 follow in order. Push only when the owner asks.
