@@ -1,24 +1,57 @@
 <script setup lang="ts">
-import { useLocale } from '@/composables/useLocale';
-const { t } = useLocale();
-
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import DataTable from '@/components/DataTable.vue';
+import ListingCreateSheet from '@/components/ListingCreateSheet.vue';
+import ListingEditSheet from '@/components/ListingEditSheet.vue';
+import ListingStatusesSheet from '@/components/ListingStatusesSheet.vue';
+import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-type Listing = {
-    id: number;
-    reference: string;
-    purpose: string;
-    status: string;
-    price: string;
-    public_url: string | null;
-    market_segment: 'primary' | 'secondary' | null;
+import { useLocale } from '@/composables/useLocale';
+import { apiJson } from '@/lib/crm-api';
+import {
+    activeFilterCount,
+    countFor,
+    emptyFilters,
+    filtersQuery,
+    moneyText,
+    personName,
+    segmentLabel,
+    statusName,
+    stripStatuses,
+} from '@/lib/listings';
+import type { DataTableColumn } from '@/lib/data-table';
+import type { Filters, ListingRow, WorkflowStatus } from '@/lib/listings';
+
+type Person = { id: number; name: string };
+type Paged = {
+    data: ListingRow[];
+    current_page: number;
+    last_page: number;
+    total: number;
 };
+type Row = ListingRow & {
+    where: string;
+    segment: string;
+    priceText: string;
+    sqft: string;
+    seller_name: string;
+    buyer_name: string;
+    actions: string;
+};
+
 const props = defineProps<{
-    listings: Listing[];
     units: { id: number; number: string }[];
     properties: {
         id: number;
@@ -32,105 +65,42 @@ const props = defineProps<{
         name: string;
         floors: number | null;
     }[];
-    brokers: { id: number; name: string }[];
+    brokers: Person[];
+    owners?: Person[];
+    costCentres?: Person[];
+    buyerContacts?: { id: number; first_name: string; last_name: string }[];
+    workflowStatuses?: WorkflowStatus[];
     canManage: boolean;
     canManageTransactions: boolean;
     canManageInventory: boolean;
     marketSegment: 'primary' | 'secondary' | null;
 }>();
+const { t } = useLocale();
+const selectClass =
+    'border-input bg-background h-9 rounded-md border px-3 text-sm';
+
 const secondaryPage = computed(() => props.marketSegment === 'secondary');
-const selectedListingId = ref<number | null>(null);
-const selectedListing = computed(() =>
-    props.listings.find((listing) => listing.id === selectedListingId.value),
-);
-const form = useForm({
-    inventory_mode: props.canManageInventory ? 'new_unit' : 'existing_unit',
-    unit_id: '',
-    property_id:
-        props.properties.length === 1 ? String(props.properties[0].id) : '',
-    property_name: '',
-    property_type: 'residential',
-    property_city: '',
-    building_id: '',
-    building_name: '',
-    building_floors: '',
-    floor: '',
-    unit_number: '',
-    unit_type: 'apartment',
-    broker_id: '',
-    purpose: secondaryPage.value ? 'sale' : 'rent',
-    market_segment: secondaryPage.value ? 'secondary' : '',
-    price: '',
+const listings = ref<Paged>({
+    data: [],
+    current_page: 1,
+    last_page: 1,
+    total: 0,
 });
-const buildingMode = ref<'none' | 'existing' | 'new'>('none');
-const availableBuildings = computed(() =>
-    props.buildings.filter(
-        (building) => String(building.property_id) === form.property_id,
-    ),
-);
-watch(
-    () => form.property_id,
-    () => {
-        form.building_id = '';
-        form.building_name = '';
-        form.building_floors = '';
-        form.floor = '';
-        buildingMode.value = 'none';
-    },
-);
-watch(buildingMode, () => {
-    form.building_id = '';
-    form.building_name = '';
-    form.building_floors = '';
-    form.floor = '';
-});
-watch(
-    () => form.purpose,
-    (purpose) => {
-        form.market_segment =
-            purpose === 'rent'
-                ? 'secondary'
-                : secondaryPage.value
-                  ? 'secondary'
-                  : 'primary';
-    },
-);
-function create(): void {
-    form.post('/real-estate/listings', {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset(
-                'unit_id',
-                'property_id',
-                'property_name',
-                'property_type',
-                'property_city',
-                'building_id',
-                'building_name',
-                'building_floors',
-                'unit_number',
-                'unit_type',
-                'floor',
-                'price',
-            );
-            buildingMode.value = 'none';
-        },
-    });
-}
-function updateStatus(listing: Listing, status: string): void {
-    router.put(
-        `/real-estate/listings/${listing.id}/status`,
-        { status },
-        { preserveScroll: true },
-    );
-}
-function updateMarketSegment(listing: Listing, marketSegment: string): void {
-    router.put(
-        `/real-estate/listings/${listing.id}/market-segment`,
-        { market_segment: marketSegment },
-        { preserveScroll: true },
-    );
-}
+const statuses = ref<WorkflowStatus[]>(props.workflowStatuses ?? []);
+const emirates = ref<{ emirate: string | null; total: number }[]>([]);
+const summary = ref<{ code: string; total: number }[] | null>(null);
+const filters = ref<Filters>(emptyFilters());
+const loading = ref(true);
+const loadError = ref('');
+const notice = ref('');
+let timer: number | null = null;
+
+const createOpen = ref(false);
+const statusesOpen = ref(false);
+const editing = ref<ListingRow | null>(null);
+const editOpen = ref(false);
+const inquiryFor = ref<ListingRow | null>(null);
+const inquiryOpen = ref(false);
 const inquiryForm = useForm({
     listing_id: '',
     first_name: '',
@@ -139,20 +109,154 @@ const inquiryForm = useForm({
     phone: '',
     notes: '',
 });
+
+const strip = computed(() =>
+    stripStatuses(statuses.value, filters.value.workflow_status),
+);
+const canCreate = computed(
+    () =>
+        props.canManage && (props.canManageInventory || props.units.length > 0),
+);
+const rows = computed<Row[]>(() =>
+    listings.value.data.map((listing) => ({
+        ...listing,
+        where: [listing.property?.name, listing.unit?.number]
+            .filter(Boolean)
+            .join(' · '),
+        segment: t(segmentLabel(listing)),
+        priceText: moneyText(listing.price, listing.currency),
+        sqft: listing.price_per_sqft ?? '—',
+        seller_name: listing.seller?.name ?? '—',
+        buyer_name: personName(listing.buyer),
+        actions: '',
+    })),
+);
+const columns = computed<DataTableColumn<Row>[]>(() => [
+    { key: 'reference', label: t('Reference') },
+    { key: 'where', label: t('Property and unit') },
+    { key: 'segment', label: t('Type') },
+    { key: 'priceText', label: t('Price'), align: 'end' },
+    { key: 'sqft', label: t('Per sq ft'), align: 'end' },
+    { key: 'workflow_status', label: t('Workflow') },
+    { key: 'status', label: t('Status') },
+    ...(secondaryPage.value
+        ? ([
+              { key: 'valuation_price', label: t('Valuation'), align: 'end' },
+              { key: 'mortgage_status', label: t('Mortgage') },
+              { key: 'noc_status', label: t('NOC') },
+              { key: 'transfer_status', label: t('Transfer') },
+              { key: 'seller_name', label: t('Seller') },
+              { key: 'buyer_name', label: t('Buyer') },
+          ] as DataTableColumn<Row>[])
+        : []),
+    { key: 'actions', label: '' },
+]);
+const filterCount = computed(() => activeFilterCount(filters.value));
+
+async function load(page = 1): Promise<void> {
+    loading.value = true;
+    try {
+        const data = await apiJson<{
+            listings: Paged;
+            workflowStatuses: WorkflowStatus[];
+            emirateSummary: { emirate: string | null; total: number }[];
+            secondaryStatusSummary: { code: string; total: number }[] | null;
+        }>(
+            `/real-estate/listings/data?${filtersQuery(filters.value, props.marketSegment, page)}`,
+        );
+        listings.value = data.listings;
+        statuses.value = data.workflowStatuses;
+        emirates.value = data.emirateSummary;
+        summary.value = data.secondaryStatusSummary;
+        loadError.value = '';
+    } catch {
+        loadError.value = t('Could not load listings.');
+    } finally {
+        loading.value = false;
+    }
+}
+function refreshAll(): void {
+    router.reload({
+        only: ['units', 'properties', 'buildings', 'owners', 'buyerContacts'],
+    });
+    void load(listings.value.current_page);
+}
+
+watch(
+    () => ({ ...filters.value, q: undefined }),
+    () => void load(1),
+);
+watch(
+    () => filters.value.q,
+    () => {
+        if (timer) {
+            clearTimeout(timer);
+        }
+        timer = window.setTimeout(() => void load(1), 300);
+    },
+);
+onMounted(() => void load());
+onBeforeUnmount(() => timer && clearTimeout(timer));
+
+function pickStatus(code: string): void {
+    filters.value.workflow_status = code;
+}
+function clearFilters(): void {
+    filters.value = emptyFilters();
+}
+function startEdit(listing: ListingRow): void {
+    editing.value = listing;
+    editOpen.value = true;
+}
+function startInquiry(listing: ListingRow): void {
+    inquiryFor.value = listing;
+    inquiryForm.reset();
+    inquiryForm.clearErrors();
+    inquiryOpen.value = true;
+}
 function recordInquiry(): void {
-    if (!selectedListing.value) return;
-    inquiryForm.listing_id = String(selectedListing.value.id);
+    if (!inquiryFor.value) {
+        return;
+    }
+    inquiryForm.listing_id = String(inquiryFor.value.id);
     inquiryForm.post('/real-estate/listings/inquiries', {
         preserveScroll: true,
         onSuccess: () => {
-            inquiryForm.reset();
-            selectedListingId.value = null;
+            inquiryOpen.value = false;
+            notice.value = t('Inquiry saved.');
         },
     });
 }
+function legacyPut(
+    listing: ListingRow,
+    path: 'status' | 'market-segment',
+    data: Record<string, string>,
+): void {
+    router.put(
+        `/real-estate/listings/${listing.id}/${path}`,
+        { ...data, expected_version: listing.version },
+        {
+            preserveScroll: true,
+            onSuccess: () => void load(listings.value.current_page),
+            onError: (errors) => {
+                loadError.value = Object.values(errors)[0] ?? '';
+            },
+        },
+    );
+}
+const valueOf = (event: Event): string =>
+    (event.target as HTMLSelectElement).value;
+const toneOf = (status: string): string =>
+    ({
+        active: 'bg-emerald-100 text-emerald-900',
+        paused: 'bg-amber-100 text-amber-900',
+        closed: 'bg-muted text-muted-foreground',
+        draft: 'bg-muted text-muted-foreground',
+    })[status] ?? 'bg-muted text-muted-foreground';
 </script>
+
 <template>
-    <Head :title="secondaryPage ? 'Secondary Market' : 'Listings'" />
+    <Head :title="secondaryPage ? t('Secondary Market') : t('Listings')" />
     <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
         <PageHeader
             :title="secondaryPage ? 'Secondary Market' : 'Listings'"
@@ -161,279 +265,411 @@ function recordInquiry(): void {
                     ? 'Resale and rental listings linked to the existing property inventory and CRM.'
                     : 'Market available units for rent or sale.'
             "
-        />
-        <nav aria-label="Listing views" class="flex flex-wrap gap-2">
+        >
+            <template #actions>
+                <Button
+                    v-if="canManage"
+                    type="button"
+                    variant="outline"
+                    @click="statusesOpen = true"
+                    >{{ t('Workflow statuses') }}</Button
+                >
+                <Button
+                    v-if="canCreate"
+                    type="button"
+                    @click="createOpen = true"
+                    >{{ t('New listing') }}</Button
+                >
+            </template>
+        </PageHeader>
+
+        <nav :aria-label="t('Listing views')" class="flex flex-wrap gap-2">
             <Link
                 href="/real-estate/listings"
                 class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >All listings</Link
+                :class="marketSegment === null && 'bg-muted font-medium'"
+                >{{ t('All listings') }}</Link
             >
             <Link
                 href="/real-estate/secondary-market"
                 class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Secondary market</Link
+                :class="secondaryPage && 'bg-muted font-medium'"
+                >{{ t('Secondary market') }}</Link
             >
             <Link
                 href="/real-estate/listings?market_segment=primary"
                 class="hover:bg-muted rounded-md border px-3 py-2 text-sm"
-                >Primary sales</Link
+                :class="marketSegment === 'primary' && 'bg-muted font-medium'"
+                >{{ t('Primary sales') }}</Link
             >
         </nav>
+
         <Card v-if="canManage && !canManageInventory && !units.length"
             ><CardHeader
-                ><CardTitle>No available units to list</CardTitle></CardHeader
-            ><CardContent class="space-y-3 text-sm"
+                ><CardTitle>{{
+                    t('No available units to list')
+                }}</CardTitle></CardHeader
+            ><CardContent class="space-y-2 text-sm"
                 ><p>
-                    Create a property and an available unit in Property
-                    inventory first. Then return here to create a resale or
-                    rental listing.
+                    {{
+                        t(
+                            'Create a property and an available unit in Property inventory first. Then return here to create a resale or rental listing.',
+                        )
+                    }}
                 </p>
-                <p>Ask an inventory manager to add an available unit.</p>
+                <p>
+                    {{
+                        t('Ask an inventory manager to add an available unit.')
+                    }}
+                </p>
             </CardContent></Card
         >
-        <Card v-if="canManage && (canManageInventory || units.length)"
-            ><CardHeader><CardTitle>Create listing</CardTitle></CardHeader
-            ><CardContent
-                ><form
-                    class="grid gap-4 sm:grid-cols-2"
-                    @submit.prevent="create"
+
+        <nav :aria-label="t('Listing workflow')" class="space-y-1">
+            <ol class="flex flex-wrap gap-1.5">
+                <li>
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1 text-xs font-medium"
+                        :class="
+                            filters.workflow_status === ''
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background text-muted-foreground hover:bg-muted'
+                        "
+                        @click="pickStatus('')"
+                    >
+                        {{ t('All') }}
+                    </button>
+                </li>
+                <li v-for="status in strip" :key="status.code">
+                    <button
+                        type="button"
+                        class="rounded-full border px-3 py-1 text-xs font-medium"
+                        :class="
+                            filters.workflow_status === status.code
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background text-muted-foreground hover:bg-muted'
+                        "
+                        @click="pickStatus(status.code)"
+                    >
+                        {{ status.name
+                        }}<template
+                            v-if="countFor(summary, status.code) !== null"
+                        >
+                            ({{ countFor(summary, status.code) }})</template
+                        >
+                    </button>
+                </li>
+            </ol>
+        </nav>
+
+        <Card>
+            <CardContent class="space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <Input
+                        v-model="filters.q"
+                        type="search"
+                        class="w-full sm:w-64"
+                        :placeholder="t('Reference or community')"
+                        :aria-label="t('Search listings')"
+                    />
+                    <select
+                        v-model="filters.status"
+                        :class="selectClass"
+                        :aria-label="t('Filter by listing status')"
+                    >
+                        <option value="">{{ t('Any status') }}</option>
+                        <option value="draft">{{ t('Draft') }}</option>
+                        <option value="active">{{ t('Active') }}</option>
+                        <option value="paused">{{ t('Paused') }}</option>
+                        <option value="closed">{{ t('Closed') }}</option>
+                    </select>
+                    <select
+                        v-model="filters.broker_id"
+                        :class="selectClass"
+                        :aria-label="t('Broker')"
+                    >
+                        <option value="">{{ t('Any broker') }}</option>
+                        <option
+                            v-for="broker in brokers"
+                            :key="broker.id"
+                            :value="String(broker.id)"
+                        >
+                            {{ broker.name }}
+                        </option>
+                    </select>
+                    <select
+                        v-if="costCentres?.length"
+                        v-model="filters.cost_centre_id"
+                        :class="selectClass"
+                        :aria-label="t('Cost centre')"
+                    >
+                        <option value="">{{ t('Any cost centre') }}</option>
+                        <option
+                            v-for="centre in costCentres"
+                            :key="centre.id"
+                            :value="String(centre.id)"
+                        >
+                            {{ centre.name }}
+                        </option>
+                    </select>
+                    <Input
+                        v-model="filters.listing_category"
+                        class="w-40"
+                        :placeholder="t('Category')"
+                        :aria-label="t('Listing category')"
+                    />
+                    <Input
+                        v-model="filters.community"
+                        class="w-40"
+                        :placeholder="t('Community')"
+                        :aria-label="t('Community')"
+                    />
+                    <select
+                        v-model="filters.sort"
+                        :class="selectClass"
+                        :aria-label="t('Sort')"
+                    >
+                        <option value="latest">{{ t('Latest') }}</option>
+                        <option value="price_asc">
+                            {{ t('Price: low to high') }}
+                        </option>
+                        <option value="price_desc">
+                            {{ t('Price: high to low') }}
+                        </option>
+                    </select>
+                    <Button
+                        v-if="filterCount"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        @click="clearFilters"
+                        >{{ t('Clear filters') }}</Button
+                    >
+                </div>
+                <div
+                    v-if="emirates.some((item) => item.emirate)"
+                    class="flex flex-wrap items-center gap-1.5 text-xs"
                 >
-                    <label class="space-y-1 text-sm sm:col-span-2"
-                        >Inventory
-                        <select
-                            v-model="form.inventory_mode"
-                            class="border-input h-9 w-full rounded-md border px-3"
-                        >
-                            <option v-if="units.length" value="existing_unit">
-                                Use an existing available unit
-                            </option>
-                            <option v-if="canManageInventory" value="new_unit">
-                                Add a property/unit with this listing
-                            </option>
-                        </select>
-                    </label>
-                    <template v-if="form.inventory_mode === 'new_unit'">
-                        <label class="space-y-1 text-sm"
-                            >Property
-                            <select
-                                v-model="form.property_id"
-                                class="border-input h-9 w-full rounded-md border px-3"
-                            >
-                                <option value="">Add new property</option>
-                                <option
-                                    v-for="property in properties"
-                                    :key="property.id"
-                                    :value="String(property.id)"
-                                >
-                                    {{ property.name }}
-                                </option>
-                            </select>
-                        </label>
-                        <template v-if="!form.property_id">
-                            <label class="space-y-1 text-sm"
-                                >Property name<Input
-                                    v-model="form.property_name"
-                                    required
-                            /></label>
-                            <label class="space-y-1 text-sm"
-                                >Property type
-                                <select
-                                    v-model="form.property_type"
-                                    class="border-input h-9 w-full rounded-md border px-3"
-                                >
-                                    <option value="residential">
-                                        Residential
-                                    </option>
-                                    <option value="commercial">
-                                        Commercial
-                                    </option>
-                                    <option value="mixed_use">Mixed use</option>
-                                    <option value="land">Land</option>
-                                </select>
-                            </label>
-                            <label class="space-y-1 text-sm"
-                                >City<Input v-model="form.property_city"
-                            /></label>
-                        </template>
-                        <label class="space-y-1 text-sm"
-                            >Building
-                            <select
-                                v-model="buildingMode"
-                                class="border-input h-9 w-full rounded-md border px-3"
-                            >
-                                <option value="none">No building</option>
-                                <option
-                                    v-if="availableBuildings.length"
-                                    value="existing"
-                                >
-                                    Use existing building
-                                </option>
-                                <option value="new">Add new building</option>
-                            </select>
-                        </label>
-                        <label
-                            v-if="buildingMode === 'existing'"
-                            class="space-y-1 text-sm"
-                            >Existing building
-                            <select
-                                v-model="form.building_id"
-                                class="border-input h-9 w-full rounded-md border px-3"
-                                required
-                            >
-                                <option disabled value="">
-                                    Choose building
-                                </option>
-                                <option
-                                    v-for="building in availableBuildings"
-                                    :key="building.id"
-                                    :value="String(building.id)"
-                                >
-                                    {{ building.name }}
-                                </option>
-                            </select>
-                        </label>
-                        <template v-if="buildingMode === 'new'">
-                            <label class="space-y-1 text-sm"
-                                >Building name<Input
-                                    v-model="form.building_name"
-                                    required
-                            /></label>
-                            <label class="space-y-1 text-sm"
-                                >Number of floors (optional)<Input
-                                    v-model="form.building_floors"
-                                    type="number"
-                                    min="1"
-                                    max="999"
-                            /></label>
-                        </template>
-                        <label
-                            v-if="buildingMode !== 'none'"
-                            class="space-y-1 text-sm"
-                            >Unit floor (optional)<Input
-                                v-model="form.floor"
-                                placeholder="G or 1"
-                        /></label>
-                        <label class="space-y-1 text-sm"
-                            >Unit number<Input
-                                v-model="form.unit_number"
-                                required
-                        /></label>
-                        <label class="space-y-1 text-sm"
-                            >Unit type
-                            <select
-                                v-model="form.unit_type"
-                                class="border-input h-9 w-full rounded-md border px-3"
-                            >
-                                <option value="apartment">Apartment</option>
-                                <option value="office">Office</option>
-                                <option value="retail">Retail</option>
-                                <option value="warehouse">Warehouse</option>
-                                <option value="plot">Plot</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </label>
+                    <span class="text-muted-foreground"
+                        >{{ t('Emirate') }}:</span
+                    >
+                    <button
+                        v-for="item in emirates.filter((row) => row.emirate)"
+                        :key="item.emirate ?? ''"
+                        type="button"
+                        class="rounded-full border px-2.5 py-0.5"
+                        :class="
+                            filters.emirate === item.emirate
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'hover:bg-muted'
+                        "
+                        @click="
+                            filters.emirate =
+                                filters.emirate === item.emirate
+                                    ? ''
+                                    : (item.emirate ?? '')
+                        "
+                    >
+                        {{ item.emirate }} ({{ item.total }})
+                    </button>
+                </div>
+                <p v-if="notice" role="status" class="text-sm">{{ notice }}</p>
+                <DataTable
+                    :columns="columns"
+                    :rows="rows"
+                    :row-key="(row) => row.id"
+                    :row-label="(row) => row.reference"
+                    :loading="loading"
+                    :error="loadError || null"
+                    :empty-title="t('No listings yet.')"
+                    max-height=""
+                    @retry="load(listings.current_page)"
+                >
+                    <template #cell-reference="{ row }">
+                        <span class="font-medium">{{ row.reference }}</span>
                     </template>
-                    <label v-else class="space-y-1 text-sm"
-                        >Available unit
+                    <template #cell-segment="{ row }">
                         <select
-                            v-model="form.unit_id"
-                            class="border-input h-9 w-full rounded-md border px-3"
-                            required
+                            v-if="
+                                canManage &&
+                                row.purpose === 'sale' &&
+                                !row.market_segment
+                            "
+                            class="border-input h-8 rounded-md border px-2 text-sm"
+                            :aria-label="t('Sale market segment')"
+                            @change="
+                                legacyPut(row, 'market-segment', {
+                                    market_segment: valueOf($event),
+                                })
+                            "
                         >
-                            <option disabled value="">{{ t('Unit') }}</option>
-                            <option
-                                v-for="unit in units"
-                                :key="unit.id"
-                                :value="String(unit.id)"
-                            >
-                                {{ unit.number }}
+                            <option selected disabled value="">
+                                {{ t('Classify sale') }}
                             </option>
-                        </select></label
-                    >
-                    <label class="space-y-1 text-sm"
-                        >Broker (optional)<select
-                            v-model="form.broker_id"
-                            class="border-input h-9 w-full rounded-md border px-3"
+                            <option value="primary">{{ t('Primary') }}</option>
+                            <option value="secondary">{{ t('Resale') }}</option>
+                        </select>
+                        <template v-else>{{ row.segment }}</template>
+                    </template>
+                    <template #cell-workflow_status="{ row }">
+                        <Badge variant="secondary">{{
+                            statusName(statuses, row.workflow_status)
+                        }}</Badge>
+                    </template>
+                    <template #cell-status="{ row }">
+                        <select
+                            v-if="canManage"
+                            :value="row.status"
+                            class="border-input h-8 rounded-md border px-2 text-sm"
+                            :aria-label="t('Listing status')"
+                            @change="
+                                legacyPut(row, 'status', {
+                                    status: valueOf($event),
+                                })
+                            "
                         >
-                            <option value="">No broker</option>
-                            <option
-                                v-for="broker in brokers"
-                                :key="broker.id"
-                                :value="String(broker.id)"
+                            <option value="draft">{{ t('Draft') }}</option>
+                            <option value="active">{{ t('Active') }}</option>
+                            <option value="paused">{{ t('Paused') }}</option>
+                            <option value="closed">{{ t('Closed') }}</option>
+                        </select>
+                        <span
+                            v-else
+                            class="rounded-full px-2 py-0.5 text-xs"
+                            :class="toneOf(row.status)"
+                            >{{ t(row.status) }}</span
+                        >
+                    </template>
+                    <template #cell-valuation_price="{ row }">{{
+                        moneyText(row.valuation_price, row.currency)
+                    }}</template>
+                    <template #cell-actions="{ row }">
+                        <div class="flex flex-wrap justify-end gap-1.5">
+                            <Button
+                                v-if="row.permissions.edit"
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="startEdit(row)"
+                                >{{ t('Edit') }}</Button
                             >
-                                {{ broker.name }}
-                            </option>
-                        </select></label
+                            <Button
+                                v-if="canManage"
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="startInquiry(row)"
+                                >{{ t('Record inquiry') }}</Button
+                            >
+                            <Button
+                                v-if="
+                                    canManageTransactions &&
+                                    row.status === 'active' &&
+                                    (row.purpose === 'rent' ||
+                                        row.market_segment === 'secondary')
+                                "
+                                as-child
+                                size="sm"
+                                variant="outline"
+                                ><Link
+                                    :href="`/reservations?listing_id=${row.id}`"
+                                    >{{ t('Reserve') }}</Link
+                                ></Button
+                            >
+                            <Button
+                                v-if="row.status === 'active' && row.public_url"
+                                as-child
+                                size="sm"
+                                variant="outline"
+                                ><a
+                                    :href="row.public_url"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >{{ t('Public page') }}</a
+                                ></Button
+                            >
+                        </div>
+                    </template>
+                </DataTable>
+                <div
+                    v-if="listings.last_page > 1"
+                    class="flex items-center justify-center gap-3 text-sm"
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        :disabled="listings.current_page <= 1"
+                        @click="load(listings.current_page - 1)"
+                        >{{ t('Previous') }}</Button
                     >
-                    <label class="space-y-1 text-sm"
-                        >Listing purpose<select
-                            v-model="form.purpose"
-                            class="border-input h-9 w-full rounded-md border px-3"
-                        >
-                            <option value="rent">{{ t('Rent') }}</option>
-                            <option value="sale">Sale</option>
-                        </select></label
+                    <span
+                        >{{ listings.current_page }} /
+                        {{ listings.last_page }}</span
                     >
-                    <label
-                        v-if="form.purpose === 'sale'"
-                        class="space-y-1 text-sm"
-                        >Sale market<select
-                            v-if="form.purpose === 'sale'"
-                            v-model="form.market_segment"
-                            aria-label="Sale market segment"
-                            class="border-input h-9 w-full rounded-md border px-3"
-                            required
-                        >
-                            <option value="primary">Primary sale</option>
-                            <option value="secondary">Resale</option>
-                        </select></label
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        :disabled="listings.current_page >= listings.last_page"
+                        @click="load(listings.current_page + 1)"
+                        >{{ t('Next') }}</Button
                     >
-                    <label class="space-y-1 text-sm"
-                        >Asking price (AED)<Input
-                            v-model="form.price"
-                            type="number"
-                            min="0"
-                            placeholder="AED price"
-                            required
-                    /></label>
-                    <div class="flex items-end">
-                        <Button :disabled="form.processing" type="submit"
-                            >Create listing</Button
-                        >
-                    </div>
-                    <p class="text-muted-foreground w-full text-sm">
-                        New listings start as drafts. Set the listing status to
-                        Active before reserving it.
-                    </p>
-                    <p
-                        v-if="Object.keys(form.errors).length"
-                        role="alert"
-                        class="text-destructive w-full text-sm"
+                </div>
+            </CardContent>
+        </Card>
+
+        <ListingCreateSheet
+            v-model:open="createOpen"
+            :secondary-page="secondaryPage"
+            :can-manage-inventory="canManageInventory"
+            :units="units"
+            :properties="properties"
+            :buildings="buildings"
+            :brokers="brokers"
+            :owners="owners ?? []"
+            :cost-centres="costCentres ?? []"
+            :buyer-contacts="buyerContacts ?? []"
+            :workflow-statuses="statuses"
+            @created="refreshAll"
+        />
+        <ListingEditSheet
+            v-model:open="editOpen"
+            :listing="editing"
+            :secondary="secondaryPage"
+            :workflow-statuses="statuses"
+            :owners="owners ?? []"
+            :brokers="brokers"
+            :cost-centres="costCentres ?? []"
+            :buyer-contacts="buyerContacts ?? []"
+            @saved="refreshAll"
+        />
+        <ListingStatusesSheet
+            v-model:open="statusesOpen"
+            :statuses="statuses"
+            @changed="load(listings.current_page)"
+        />
+
+        <Dialog v-model:open="inquiryOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle
+                        >{{ t('Record inquiry for') }}
+                        {{ inquiryFor?.reference }}</DialogTitle
                     >
-                        {{ Object.values(form.errors).join(' ') }}
-                    </p>
-                </form></CardContent
-            ></Card
-        ><Card v-if="canManage && selectedListing"
-            ><CardHeader
-                ><CardTitle
-                    >Record inquiry for
-                    {{ selectedListing.reference }}</CardTitle
-                ></CardHeader
-            ><CardContent>
+                </DialogHeader>
                 <form
                     class="grid gap-3 sm:grid-cols-2"
                     @submit.prevent="recordInquiry"
                 >
                     <label class="space-y-1 text-sm"
-                        >First name<Input
-                            v-model="inquiryForm.first_name"
-                            required
+                        >{{ t('First name')
+                        }}<Input v-model="inquiryForm.first_name" required
                     /></label>
                     <label class="space-y-1 text-sm"
-                        >Last name<Input
-                            v-model="inquiryForm.last_name"
-                            required
+                        >{{ t('Last name')
+                        }}<Input v-model="inquiryForm.last_name" required
                     /></label>
                     <label class="space-y-1 text-sm"
                         >{{ t('Email')
@@ -445,127 +681,25 @@ function recordInquiry(): void {
                     <label class="space-y-1 text-sm sm:col-span-2"
                         >{{ t('Notes') }}<Input v-model="inquiryForm.notes"
                     /></label>
-                    <p
-                        v-if="Object.keys(inquiryForm.errors).length"
-                        class="text-destructive text-sm sm:col-span-2"
-                        role="alert"
-                    >
-                        {{ Object.values(inquiryForm.errors).join(' ') }}
-                    </p>
-                    <div class="flex gap-2 sm:col-span-2">
-                        <Button :disabled="inquiryForm.processing"
-                            >Save inquiry</Button
-                        >
+                    <InputError
+                        class="sm:col-span-2"
+                        :message="Object.values(inquiryForm.errors).join(' ')"
+                    />
+                    <DialogFooter class="sm:col-span-2">
                         <Button
                             type="button"
                             variant="outline"
-                            @click="selectedListingId = null"
+                            @click="inquiryOpen = false"
                             >{{ t('Cancel') }}</Button
                         >
-                    </div>
+                        <Button
+                            type="submit"
+                            :disabled="inquiryForm.processing"
+                            >{{ t('Save inquiry') }}</Button
+                        >
+                    </DialogFooter>
                 </form>
-            </CardContent></Card
-        ><Card
-            ><CardHeader
-                ><CardTitle>{{ t('Listings') }}</CardTitle></CardHeader
-            ><CardContent class="space-y-3"
-                ><p
-                    v-if="!listings.length"
-                    class="text-muted-foreground text-sm"
-                >
-                    No listings yet.
-                </p>
-                <div
-                    v-for="listing in listings"
-                    :key="listing.id"
-                    class="grid gap-3 border-b pb-3 last:border-0 md:grid-cols-[1fr_auto_auto] md:items-center"
-                >
-                    <span
-                        >{{ listing.reference }} · {{ listing.purpose }} ·
-                        {{
-                            listing.purpose === 'rent'
-                                ? 'Rental'
-                                : listing.market_segment === 'secondary'
-                                  ? 'Resale'
-                                  : listing.market_segment === 'primary'
-                                    ? 'Primary sale'
-                                    : 'Unclassified sale'
-                        }}</span
-                    ><span>AED {{ listing.price }} · {{ listing.status }}</span>
-                    <div v-if="canManage" class="flex flex-wrap gap-2">
-                        <select
-                            v-if="listing.purpose === 'sale'"
-                            :value="listing.market_segment ?? ''"
-                            class="border-input h-8 rounded-md border px-2 text-sm"
-                            aria-label="Sale market segment"
-                            @change="
-                                updateMarketSegment(
-                                    listing,
-                                    ($event.target as HTMLSelectElement).value,
-                                )
-                            "
-                        >
-                            <option disabled value="">Classify sale</option>
-                            <option value="primary">Primary</option>
-                            <option value="secondary">Resale</option>
-                        </select>
-                        <select
-                            :value="listing.status"
-                            class="border-input h-8 rounded-md border px-2 text-sm"
-                            aria-label="Listing status"
-                            @change="
-                                updateStatus(
-                                    listing,
-                                    ($event.target as HTMLSelectElement).value,
-                                )
-                            "
-                        >
-                            <option value="draft">{{ t('Draft') }}</option>
-                            <option value="active">{{ t('Active') }}</option>
-                            <option value="paused">Paused</option>
-                            <option value="closed">Closed</option>
-                        </select>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            @click="selectedListingId = listing.id"
-                            >Record inquiry</Button
-                        >
-                        <Button
-                            v-if="
-                                canManageTransactions &&
-                                listing.status === 'active' &&
-                                (listing.purpose === 'rent' ||
-                                    listing.market_segment === 'secondary')
-                            "
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            ><Link
-                                :href="`/reservations?listing_id=${listing.id}`"
-                                >Reserve</Link
-                            ></Button
-                        >
-                        <Button
-                            v-if="
-                                listing.status === 'active' &&
-                                listing.public_url
-                            "
-                            as-child
-                            size="sm"
-                            variant="outline"
-                        >
-                            <a
-                                :href="listing.public_url"
-                                target="_blank"
-                                rel="noopener"
-                                >Public page</a
-                            >
-                        </Button>
-                    </div>
-                </div></CardContent
-            ></Card
-        >
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

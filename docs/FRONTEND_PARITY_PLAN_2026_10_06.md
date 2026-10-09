@@ -85,8 +85,8 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 
 Each item = FE screen change plus BE fields. Do one section completely, then the next.
 
-- [~] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE screen and browser acceptance remain. Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
-- [~] 2B Secondary Market: BE valuation price, mortgage and NOC status, transfer status, seller/buyer, and status-tab counts ready; FE screen and browser acceptance remain. Backend contract: `docs/CRM_FRONTEND_BACKEND_SECONDARY_MARKET_2026_10_09.md`.
+- [x] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE done 2026-10-09 (listings page rebuilt: workflow strip, filters, emirate chips, table, create and edit sheets, workflow status manager; browser-checked). Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
+- [x] 2B Secondary Market: BE valuation price, mortgage and NOC status, transfer status, seller/buyer, and status-tab counts ready. FE done 2026-10-09 on the same page (secondary columns, valuation, mortgage, NOC, transfer, seller, buyer, status-tab counts; browser-checked). Backend contract: `docs/CRM_FRONTEND_BACKEND_SECONDARY_MARKET_2026_10_09.md`.
 - [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
 - [ ] 2E Owners & Developers: payment terms, commission notes, linked listings, edit.
@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-FE: finish Phase 1C strip click and create-form browser checks, then Phase 2A Property & Listings screen using the new backend contract. BE: Phase 2A ready for FE; do not begin 2B until 2A screen and browser acceptance are complete. Push only when the owner asks.
+FE: Phase 2C Leasing & Rental screen once Codex publishes the backend contract; meanwhile the optional lead Follow-Up Timeline tab. Phase 1C strip click and create form are browser-checked. Push only when the owner asks.
