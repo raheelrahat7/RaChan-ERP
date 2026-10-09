@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\RealEstate\Actions\ManageOffPlan;
+use App\Domain\RealEstate\Actions\ManageOffPlanProjectDetails;
+use App\Domain\RealEstate\Queries\OffPlanOverview;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,31 +14,34 @@ use Inertia\Response;
 
 class OffPlanController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, OffPlanOverview $overview, ManageOffPlanProjectDetails $details): Response
     {
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
         $this->authorize('viewCrm', $org);
-        $projects = DB::table('offplan_projects as project')->join('offplan_developers as developer', 'developer.id', '=', 'project.developer_id')
-            ->where('project.organization_id', $org->id)->select('project.*', 'developer.name as developer_name')->orderBy('project.name')->paginate(30);
+        $projects = $overview->query($org, [])->paginate(30);
+        $projects->through(fn ($row) => $overview->serialize($row, $request->user()->can('manageCrm', $org)));
 
         return Inertia::render('real-estate/OffPlan', [
             'projects' => $projects,
+            'workflowStatuses' => $details->statuses($org),
+            'statusCounts' => $overview->statusCounts($org, []),
             'developers' => DB::table('offplan_developers')->where('organization_id', $org->id)->orderBy('name')->get(['id', 'name']),
             'canManage' => $request->user()->can('manageCrm', $org),
         ]);
     }
 
-    public function show(Request $request, int $project): Response
+    public function show(Request $request, int $project, OffPlanOverview $overview, ManageOffPlanProjectDetails $details): Response
     {
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
         $this->authorize('viewCrm', $org);
-        $record = DB::table('offplan_projects')->where('organization_id', $org->id)->where('id', $project)->first();
+        $record = $overview->query($org, [])->where('project.id', $project)->first();
         abort_unless($record !== null, 404);
 
         return Inertia::render('real-estate/OffPlanProject', [
-            'project' => $record,
+            'project' => $overview->serialize($record, $request->user()->can('manageCrm', $org)),
+            'workflowStatuses' => $details->statuses($org),
             'units' => DB::table('offplan_units')->where('organization_id', $org->id)->where('project_id', $project)->orderBy('number')->paginate(50),
             'milestones' => DB::table('offplan_payment_milestones')->where('organization_id', $org->id)->where('project_id', $project)->orderBy('sequence')->get(),
             'deals' => DB::table('offplan_deals')->where('organization_id', $org->id)->where('project_id', $project)
@@ -45,7 +51,7 @@ class OffPlanController extends Controller
         ]);
     }
 
-    public function storeProject(Request $request, ManageOffPlan $offplan): RedirectResponse
+    public function storeProject(Request $request, ManageOffPlan $offplan, ManageOffPlanProjectDetails $details, OffPlanOverview $overview): RedirectResponse|JsonResponse
     {
         $org = $request->user()->currentOrganization;
         abort_unless($org !== null, 404);
@@ -54,8 +60,18 @@ class OffPlanController extends Controller
             'code' => ['required', 'string', 'max:50'], 'name' => ['required', 'string', 'max:255'],
             'emirate' => ['required', 'string', 'max:30'], 'location' => ['nullable', 'string', 'max:255'],
             'completion_on' => ['nullable', 'date_format:Y-m-d'], 'commission_rate' => ['nullable', 'numeric', 'between:0,100', 'decimal:0,2'],
+            'workflow_status' => ['sometimes', 'string', 'max:40'], 'launch_on' => ['nullable', 'date_format:Y-m-d'],
+            'handover_on' => ['nullable', 'date_format:Y-m-d'], 'assigned_broker_id' => ['nullable', 'integer'],
         ]);
-        $offplan->project($org, $request->user(), $input);
+        $details->validateDetails($org, $input);
+        $id = $offplan->project($org, $request->user(), $input);
+
+        if ($request->expectsJson()) {
+            $row = $overview->query($org, [])->where('project.id', $id)->first();
+            abort_unless($row !== null, 404);
+
+            return response()->json(['project' => $overview->serialize($row, true)], 201);
+        }
 
         return back();
     }

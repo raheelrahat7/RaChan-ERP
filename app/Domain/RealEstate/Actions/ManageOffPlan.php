@@ -33,6 +33,8 @@ class ManageOffPlan
                 'code' => $input['code'], 'name' => $input['name'], 'emirate' => $input['emirate'],
                 'location' => $input['location'] ?? null, 'completion_on' => $input['completion_on'] ?? null,
                 'commission_rate' => $input['commission_rate'] ?? 0, 'status' => 'active',
+                'workflow_status' => $input['workflow_status'] ?? 'planning', 'launch_on' => $input['launch_on'] ?? null,
+                'handover_on' => $input['handover_on'] ?? null, 'assigned_broker_id' => $input['assigned_broker_id'] ?? null,
                 'created_at' => now(), 'updated_at' => now(),
             ]);
             $this->audit->handle($org, $actor, 'offplan.project.created', $org, ['project_id' => $id]);
