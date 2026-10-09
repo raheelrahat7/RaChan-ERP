@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import BrokerageReporting from '@/components/BrokerageReporting.vue';
 import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -42,7 +43,7 @@ const props = defineProps<{
     canManage: boolean;
 }>();
 const { t } = useLocale();
-const tab = ref<'plans' | 'transactions'>('plans');
+const tab = ref<'plans' | 'transactions' | 'reporting' | 'teams'>('plans');
 const open = ref(false);
 const form = useForm({ name: '', basis: 'percentage', rate: '' });
 
@@ -96,6 +97,11 @@ function createPlan(): void {
                 v-for="item in [
                     { key: 'plans', label: 'Commission plans' },
                     { key: 'transactions', label: 'Commission transactions' },
+                    {
+                        key: 'reporting',
+                        label: 'Clawbacks and net contribution',
+                    },
+                    { key: 'teams', label: 'Team view' },
                 ] as const"
                 :key="item.key"
                 type="button"
@@ -126,6 +132,11 @@ function createPlan(): void {
             :can-edit="canManage"
             @add="open = true"
         />
+        <BrokerageReporting
+            v-else-if="tab === 'reporting'"
+            view="transactions"
+        />
+        <BrokerageReporting v-else-if="tab === 'teams'" view="teams" />
         <CrmSettingsTable
             v-else
             :show-title="false"
