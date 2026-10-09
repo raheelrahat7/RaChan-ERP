@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string $name
  * @property string|null $reference
  */
-#[Fillable(['organization_id', 'name', 'email', 'phone', 'reference'])]
+#[Fillable(['organization_id', 'name', 'email', 'phone', 'reference', 'payment_terms', 'commission_notes'])]
 class Owner extends Model
 {
     /** @return BelongsToMany<Property, $this> */

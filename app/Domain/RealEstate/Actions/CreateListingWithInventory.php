@@ -34,7 +34,7 @@ class CreateListingWithInventory
                 'market_segment' => $this->market->forNewListing($input['purpose'], $input['market_segment'] ?? null),
                 'price' => $input['price'],
                 'workflow_status' => $input['workflow_status'] ?? 'draft',
-                ...array_intersect_key($input, array_flip(['currency', 'workflow_status', 'cost_centre_id', 'owner_id', 'buyer_contact_id', 'valuation_price', 'mortgage_status', 'noc_status', 'transfer_status', 'listing_category', 'unit_category', 'emirate', 'community', 'sub_community', 'trakheesi_permit', 'dld_permit', 'bedroom_type', 'bedrooms', 'bathrooms', 'balconies', 'parking_spaces', 'size_sqft', 'plot_size_sqft', 'furnishing', 'completion_status', 'handover_date', 'grade', 'loading_bay', 'fit_out', 'price_type', 'price_min', 'price_max', 'price_label', 'developer_name', 'portals'])),
+                ...array_intersect_key($input, array_flip(['currency', 'workflow_status', 'cost_centre_id', 'owner_id', 'developer_id', 'buyer_contact_id', 'valuation_price', 'mortgage_status', 'noc_status', 'transfer_status', 'listing_category', 'unit_category', 'emirate', 'community', 'sub_community', 'trakheesi_permit', 'dld_permit', 'bedroom_type', 'bedrooms', 'bathrooms', 'balconies', 'parking_spaces', 'size_sqft', 'plot_size_sqft', 'furnishing', 'completion_status', 'handover_date', 'grade', 'loading_bay', 'fit_out', 'price_type', 'price_min', 'price_max', 'price_label', 'developer_name', 'portals'])),
             ])->refresh();
         });
     }

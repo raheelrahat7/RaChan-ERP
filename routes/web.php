@@ -85,6 +85,7 @@ use App\Http\Controllers\PublicListingController;
 use App\Http\Controllers\QualifiedLeadController;
 use App\Http\Controllers\ReadTokenController;
 use App\Http\Controllers\RealEstatePartyController;
+use App\Http\Controllers\RealEstatePartyDataController;
 use App\Http\Controllers\RecordSearchController;
 use App\Http\Controllers\ReferenceConfigurationController;
 use App\Http\Controllers\ReferenceWorkflowController;
@@ -608,6 +609,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('crm/activities/{activity}', [CrmActivityController::class, 'update'])->name('crm.activities.update');
     Route::post('crm/activities/{activity}/complete', [CrmActivityController::class, 'complete'])->name('crm.activities.complete');
     Route::get('real-estate/people', [RealEstatePartyController::class, 'index'])->name('real-estate.people.index');
+    Route::get('real-estate/people/{type}/data', [RealEstatePartyDataController::class, 'index'])->name('real-estate.people.data');
+    Route::get('real-estate/people/{type}/{record}', [RealEstatePartyDataController::class, 'show'])->name('real-estate.people.show');
+    Route::put('real-estate/people/{type}/{record}', [RealEstatePartyDataController::class, 'update'])->name('real-estate.people.update');
     Route::post('real-estate/people/{type}', [RealEstatePartyController::class, 'store'])->name('real-estate.people.store');
     Route::put('real-estate/people/brokers/{broker}/user', [RealEstatePartyController::class, 'mapBrokerUser'])->name('real-estate.people.brokers.user');
     Route::get('real-estate/listings', [ListingController::class, 'index'])->name('real-estate.listings.index');

@@ -79,7 +79,7 @@ class ManageListingDetails
     {
         $data = Validator::make($input, [
             'workflow_status' => ['sometimes', 'string', 'max:40'],
-            'cost_centre_id' => ['sometimes', 'nullable', 'integer'], 'owner_id' => ['sometimes', 'nullable', 'integer'],
+            'cost_centre_id' => ['sometimes', 'nullable', 'integer'], 'owner_id' => ['sometimes', 'nullable', 'integer'], 'developer_id' => ['sometimes', 'nullable', 'integer'],
             'broker_id' => ['sometimes', 'nullable', 'integer'], 'price' => ['sometimes', 'numeric', 'between:0,99999999999999.99'], 'currency' => ['sometimes', 'string', 'regex:/^[A-Z]{3}$/'],
             'listing_category' => ['sometimes', 'nullable', 'string', 'max:80'], 'unit_category' => ['sometimes', 'nullable', 'string', 'max:80'],
             'emirate' => ['sometimes', 'nullable', 'string', 'max:100'], 'community' => ['sometimes', 'nullable', 'string', 'max:160'], 'sub_community' => ['sometimes', 'nullable', 'string', 'max:160'],
@@ -99,7 +99,7 @@ class ManageListingDetails
         if (isset($data['workflow_status']) && ! in_array($data['workflow_status'], array_column(array_filter($this->statuses($org), fn ($status) => $status['active']), 'code'), true)) {
             throw ValidationException::withMessages(['workflow_status' => 'Select an active organization listing status.']);
         }
-        foreach (['cost_centre_id' => 'accounting_cost_centres', 'owner_id' => 'owners', 'broker_id' => 'brokers', 'buyer_contact_id' => 'crm_contacts'] as $field => $table) {
+        foreach (['cost_centre_id' => 'accounting_cost_centres', 'owner_id' => 'owners', 'developer_id' => 'offplan_developers', 'broker_id' => 'brokers', 'buyer_contact_id' => 'crm_contacts'] as $field => $table) {
             if (isset($data[$field]) && ! DB::table($table)->where('organization_id', $org->id)->where('id', $data[$field])->exists()) {
                 throw ValidationException::withMessages([$field => 'Select a record in this organization.']);
             }

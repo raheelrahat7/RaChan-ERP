@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Identity\Enums\OrganizationRole;
+use App\Domain\RealEstate\Actions\ManagePropertyParties;
 use App\Domain\RealEstate\Actions\MapBrokerUser;
 use App\Domain\RealEstate\Models\Developer;
 use App\Models\Broker;
 use App\Models\Owner;
 use App\Models\Tenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,23 +26,30 @@ class RealEstatePartyController extends Controller
             || $request->user()->hasOrganizationRole($organization, OrganizationRole::Administrator);
 
         return Inertia::render('real-estate/People', [
-            'owners' => Owner::where('organization_id', $organization->id)->latest()->get(['id', 'name', 'email', 'phone']),
+            'owners' => Owner::where('organization_id', $organization->id)->latest()->get(['id', 'name', 'email', 'phone', 'reference', 'payment_terms', 'commission_notes', 'version']),
             'tenants' => Tenant::where('organization_id', $organization->id)->latest()->get(['id', 'name', 'email', 'phone']),
             'brokers' => Broker::where('organization_id', $organization->id)->latest()->get(['id', 'user_id', 'name', 'email', 'phone']),
             'brokerMembers' => $canMapBrokers ? $organization->users()->orderBy('name')->get(['users.id', 'users.name']) : [],
             'canMapBrokers' => $canMapBrokers,
-            'developers' => Developer::where('organization_id', $organization->id)->latest()->get(['id', 'name', 'email', 'phone', 'reference']),
+            'developers' => Developer::where('organization_id', $organization->id)->latest()->get(['id', 'name', 'email', 'phone', 'reference', 'payment_terms', 'commission_notes', 'version']),
             'canManage' => $request->user()->can('manageCrm', $organization),
         ]);
     }
 
-    public function store(Request $request, string $type): RedirectResponse
+    public function store(Request $request, string $type, ManagePropertyParties $parties): RedirectResponse|JsonResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageCrm', $organization);
+        if (in_array($type, ['owners', 'developers'], true)) {
+            $record = $parties->create($organization, $request->user(), $type, $request->all());
+
+            return $request->expectsJson()
+                ? response()->json(['record' => $parties->serialize($organization, $request->user(), $type, $record, true)], 201)
+                : back();
+        }
         $model = match ($type) {
-            'owners' => Owner::class, 'tenants' => Tenant::class, 'brokers' => Broker::class, 'developers' => Developer::class, default => abort(404)
+            'tenants' => Tenant::class, 'brokers' => Broker::class, default => abort(404)
         };
         $input = $request->validate(['name' => ['required', 'string', 'max:255'], 'email' => ['nullable', 'email'], 'phone' => ['nullable', 'string', 'max:50'], 'reference' => ['nullable', 'string', 'max:100']]);
         $model::create(['organization_id' => $organization->id, ...$input]);

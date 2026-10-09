@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['organization_id', 'unit_id', 'broker_id', 'owner_id', 'buyer_contact_id', 'cost_centre_id', 'reference', 'public_token', 'purpose', 'market_segment', 'status', 'price', 'valuation_price', 'mortgage_status', 'noc_status', 'transfer_status', 'currency', 'version', 'workflow_status', 'listing_category', 'unit_category', 'emirate', 'community', 'sub_community', 'trakheesi_permit', 'dld_permit', 'bedroom_type', 'bedrooms', 'bathrooms', 'balconies', 'parking_spaces', 'size_sqft', 'plot_size_sqft', 'furnishing', 'completion_status', 'handover_date', 'grade', 'loading_bay', 'fit_out', 'price_type', 'price_min', 'price_max', 'price_label', 'developer_name', 'portals'])]
+#[Fillable(['organization_id', 'unit_id', 'broker_id', 'owner_id', 'developer_id', 'buyer_contact_id', 'cost_centre_id', 'reference', 'public_token', 'purpose', 'market_segment', 'status', 'price', 'valuation_price', 'mortgage_status', 'noc_status', 'transfer_status', 'currency', 'version', 'workflow_status', 'listing_category', 'unit_category', 'emirate', 'community', 'sub_community', 'trakheesi_permit', 'dld_permit', 'bedroom_type', 'bedrooms', 'bathrooms', 'balconies', 'parking_spaces', 'size_sqft', 'plot_size_sqft', 'furnishing', 'completion_status', 'handover_date', 'grade', 'loading_bay', 'fit_out', 'price_type', 'price_min', 'price_max', 'price_label', 'developer_name', 'portals'])]
 class Listing extends Model
 {
     protected function casts(): array
