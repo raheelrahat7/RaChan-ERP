@@ -4,8 +4,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import ListingCreateSheet from '@/components/ListingCreateSheet.vue';
 import ListingEditSheet from '@/components/ListingEditSheet.vue';
-import ListingStatusesSheet from '@/components/ListingStatusesSheet.vue';
 import InputError from '@/components/InputError.vue';
+import WorkflowStatusesSheet from '@/components/WorkflowStatusesSheet.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -645,7 +645,7 @@ const toneOf = (status: string): string =>
             :buyer-contacts="buyerContacts ?? []"
             @saved="refreshAll"
         />
-        <ListingStatusesSheet
+        <WorkflowStatusesSheet
             v-model:open="statusesOpen"
             :statuses="statuses"
             @changed="load(listings.current_page)"

@@ -16,7 +16,24 @@ import { ApiError, apiJson } from '@/lib/crm-api';
 import { codeFromName } from '@/lib/listings';
 import type { WorkflowStatus } from '@/lib/listings';
 
-const props = defineProps<{ statuses: WorkflowStatus[] }>();
+const props = withDefaults(
+    defineProps<{
+        statuses: WorkflowStatus[];
+        /** Collection URL; a status is posted here to create it, put to `${baseUrl}/{id}` to update. */
+        baseUrl?: string;
+        title?: string;
+        description?: string;
+        /** Built-in statuses can be customised in place (listings) or only after a custom one exists. */
+        editDefaults?: boolean;
+    }>(),
+    {
+        baseUrl: '/real-estate/listings/workflow-statuses',
+        title: 'Listing workflow statuses',
+        description:
+            'Display labels for the status strip. They never publish a listing or change finance records. Archive a status to stop new use.',
+        editDefaults: true,
+    },
+);
 const open = defineModel<boolean>('open', { required: true });
 const emit = defineEmits<{ changed: [] }>();
 const { t } = useLocale();
@@ -94,7 +111,7 @@ async function add(): Promise<void> {
     errors.value = {};
     message.value = '';
     try {
-        await apiJson('/real-estate/listings/workflow-statuses', 'POST', {
+        await apiJson(props.baseUrl, 'POST', {
             code,
             name: added.value.name.trim(),
             position: props.statuses.length,
@@ -116,13 +133,9 @@ async function add(): Promise<void> {
         <SheetContent class="w-full gap-0 sm:max-w-xl" side="right">
             <SheetHeader class="border-b">
                 <SheetTitle class="font-display text-2xl font-medium">{{
-                    t('Listing workflow statuses')
+                    t(title)
                 }}</SheetTitle>
-                <SheetDescription>{{
-                    t(
-                        'Display labels for the status strip. They never publish a listing or change finance records. Archive a status to stop new use.',
-                    )
-                }}</SheetDescription>
+                <SheetDescription>{{ t(description) }}</SheetDescription>
             </SheetHeader>
             <div class="flex-1 space-y-3 overflow-y-auto p-4">
                 <p v-if="message" role="status" class="text-sm">
@@ -166,11 +179,24 @@ async function add(): Promise<void> {
                             type="button"
                             size="sm"
                             variant="outline"
-                            :disabled="busy !== ''"
+                            :disabled="
+                                busy !== '' ||
+                                (!editDefaults && status.id === null)
+                            "
                             @click="save(status)"
                             >{{ t('Save') }}</Button
                         >
                     </div>
+                    <p
+                        v-if="!editDefaults && status.id === null"
+                        class="text-muted-foreground text-xs"
+                    >
+                        {{
+                            t(
+                                'Built-in status. Add a custom status first to make the built-in ones editable.',
+                            )
+                        }}
+                    </p>
                     <InputError :message="errors[status.code]" />
                 </div>
                 <div class="space-y-2 rounded-md border border-dashed p-3">

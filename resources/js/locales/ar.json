@@ -2123,5 +2123,20 @@
     "New end date": "تاريخ الانتهاء الجديد",
     "Next renewal due on": "تاريخ استحقاق التجديد القادم",
     "The new end date must be after the current end date.": "يجب أن يكون تاريخ الانتهاء الجديد بعد تاريخ الانتهاء الحالي.",
-    "Could not activate this lease.": "تعذر تفعيل هذا العقد."
+    "Could not activate this lease.": "تعذر تفعيل هذا العقد.",
+    "Project statuses": "حالات المشاريع",
+    "Name, code or location": "الاسم أو الرمز أو الموقع",
+    "Search projects": "بحث في المشاريع",
+    "Available / total": "المتاح / الإجمالي",
+    "Starting price": "السعر الابتدائي",
+    "Launch": "الإطلاق",
+    "Handover": "التسليم",
+    "Could not load projects.": "تعذر تحميل المشاريع.",
+    "Launch date": "تاريخ الإطلاق",
+    "Assigned broker": "الوسيط المعيّن",
+    "Edit project": "تعديل المشروع",
+    "Handover cannot be before the launch date.": "لا يمكن أن يسبق التسليم تاريخ الإطلاق.",
+    "Project workflow statuses": "حالات مراحل المشروع",
+    "Labels for the project status tabs. Archive a status to stop new use.": "تسميات تبويبات حالة المشروع. أرشف الحالة لإيقاف استخدامها الجديد.",
+    "Built-in status. Add a custom status first to make the built-in ones editable.": "حالة مدمجة. أضف حالة مخصصة أولًا لتصبح الحالات المدمجة قابلة للتعديل."
 }

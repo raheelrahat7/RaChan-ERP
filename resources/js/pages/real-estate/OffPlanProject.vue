@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import Pagination from '@/components/Pagination.vue';
+import OffPlanProjectSheet from '@/components/OffPlanProjectSheet.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import RecordPicker from '@/components/RecordPicker.vue';
 import StatusDot from '@/components/StatusDot.vue';
@@ -32,18 +33,11 @@ import {
     milestonePercentageValid,
 } from '@/lib/offplan';
 import type { DealStatus } from '@/lib/offplan';
+import { moneyText, soldPercent, statusLabel } from '@/lib/offplan-projects';
+import type { ProjectRow, ProjectStatus } from '@/lib/offplan-projects';
 import type { DataTableColumn } from '@/lib/data-table';
 
-type OffPlanProject = {
-    id: number;
-    developer_id: number;
-    developer_name?: string;
-    code: string;
-    name: string;
-    emirate: string;
-    status: string;
-    commission_rate: string;
-};
+type OffPlanProject = ProjectRow & { developer_id: number };
 type OffPlanUnit = {
     id: number;
     number: string;
@@ -72,6 +66,8 @@ type OffPlanDeal = {
 
 const props = defineProps<{
     project: OffPlanProject;
+    workflowStatuses?: ProjectStatus[];
+    brokers?: { id: number; name: string }[];
     units: {
         data: OffPlanUnit[];
         links: { label: string; url: string | null; active: boolean }[];
@@ -90,6 +86,7 @@ defineOptions({
 });
 
 const { t } = useLocale();
+const editOpen = ref(false);
 
 const unitColumns: DataTableColumn<OffPlanUnit>[] = [
     { key: 'number', label: 'Unit' },
@@ -250,12 +247,83 @@ function submitContract(): void {
         <PageHeader eyebrow="Off-Plan" :title="project.name" :translate="false">
             <template #actions>
                 <StatusDot :status="project.status" />
+                <Button
+                    v-if="project.permissions?.edit"
+                    variant="outline"
+                    @click="editOpen = true"
+                    >{{ t('Edit') }}</Button
+                >
             </template>
         </PageHeader>
         <p class="text-muted-foreground -mt-2 text-sm">
-            {{ project.code }} · {{ project.emirate }} · {{ t('Commission') }}
-            {{ project.commission_rate }}%
+            {{ project.code }} · {{ project.emirate }} ·
+            {{ statusLabel(workflowStatuses ?? [], project.workflow_status) }}
         </p>
+        <dl class="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">{{ t('Units') }}</dt>
+                <dd class="text-lg font-semibold">
+                    {{ project.units_available }} / {{ project.units_total }}
+                    <span class="text-muted-foreground text-xs font-normal">{{
+                        t('available')
+                    }}</span>
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">{{ t('Sold') }}</dt>
+                <dd class="text-lg font-semibold">
+                    {{ project.units_sold }} ({{ soldPercent(project) }}%)
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">
+                    {{ t('Starting price') }}
+                </dt>
+                <dd class="text-lg font-semibold">
+                    {{ moneyText(project.starting_price_aed) }}
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">
+                    {{ t('Commission') }}
+                </dt>
+                <dd class="text-lg font-semibold">
+                    {{
+                        project.commission_rate
+                            ? `${project.commission_rate}%`
+                            : '—'
+                    }}
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">{{ t('Launch') }}</dt>
+                <dd class="text-sm font-medium">
+                    {{ project.launch_on ?? '—' }}
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">
+                    {{ t('Handover') }}
+                </dt>
+                <dd class="text-sm font-medium">
+                    {{ project.handover_on ?? '—' }}
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">
+                    {{ t('Completion') }}
+                </dt>
+                <dd class="text-sm font-medium">
+                    {{ project.completion_on ?? '—' }}
+                </dd>
+            </div>
+            <div class="rounded-md border p-3">
+                <dt class="text-muted-foreground text-xs">{{ t('Broker') }}</dt>
+                <dd class="text-sm font-medium">
+                    {{ project.assigned_broker_name ?? '—' }}
+                </dd>
+            </div>
+        </dl>
 
         <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
@@ -681,5 +749,12 @@ function submitContract(): void {
                 </form>
             </DialogContent>
         </Dialog>
+        <OffPlanProjectSheet
+            v-model:open="editOpen"
+            :project="project"
+            :statuses="workflowStatuses ?? []"
+            :brokers="brokers ?? []"
+            @saved="router.reload()"
+        />
     </div>
 </template>
