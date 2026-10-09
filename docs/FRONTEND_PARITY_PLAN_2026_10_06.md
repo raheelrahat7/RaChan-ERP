@@ -52,7 +52,7 @@ Ours today: General, Activities, Products, History. Reference: Overview, Require
 - [x] FE: Requirement tab (5 sections, partial saves with version, inline errors) and Settings > Requirement options editor. Browser-checked 2026-10-06.
 - [~] BE: matched properties API ready — tenant-scoped saved matches, ranked suggestions, dynamic match %, manual overrides, internal shared flag, viewing progress, versioned edits/removal and organization-editable viewing statuses. Community is `null` until Phase 2 listing data exists. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_MATCHES_2026_10_07.md`. Local migration applied; PHP 8.4 isolated MySQL suite 489 tests / 7,294 assertions, PHPStan, Pint, route generation and TypeScript passed. Browser acceptance and push pending.
 - [x] FE: Matched Properties tab (saved matches with score and viewing status, ranked suggestions with search, add/edit/remove with versions) and Settings > Viewing statuses. Browser-checked 2026-10-07.
-- [ ] FE: Follow-Up Timeline tab (re-use follow-ups already built).
+- [x] FE: Follow-Up Timeline tab (overdue / upcoming / no date / done, built from the lead's activities, tasks and meetings; click opens the matching tab). Browser-checked 2026-10-10. Backend request: a due date beyond 2038 (e.g. 2099) returns 500 on lead tasks because `work_tasks.due_at` is a TIMESTAMP; please validate the range or widen the column.
 - [x] BE: lead-linked tasks JSON API on existing `/tasks` records, with scoped list/create/edit/complete, record permissions, version locking and audit. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_SCHEDULE_2026_10_07.md`. FE: Tasks tab done (add/edit/complete with versions, priority, assignee, due), browser-checked 2026-10-07.
 - [x] BE: lead-linked meetings/viewings JSON API on existing appointments, with scoped list/create/edit/complete/cancel, record permissions, version locking and audit. FE: Meetings tab done (schedule, edit, complete with optional lead stage move, cancel; end time required), browser-checked 2026-10-07. Same contract. Local migration applied; full PHP 8.5 MySQL suite passed (492 tests / 7,351 assertions), PHPStan and Pint passed.
 - [x] BE: lead Offers/Contracts/Deal API — versioned CRM offer and contract tracking, organization-editable statuses, linked-deal validation and record permissions. Contract: `docs/CRM_FRONTEND_BACKEND_LEAD_COMMERCIAL_2026_10_08.md`. FE tab integration remains.
@@ -87,7 +87,7 @@ Each item = FE screen change plus BE fields. Do one section completely, then the
 
 - [x] 2A Property & Listings: BE fields, 13 configurable workflow statuses, filters, price per sq ft and emirate summary ready; FE done 2026-10-09 (listings page rebuilt: workflow strip, filters, emirate chips, table, create and edit sheets, workflow status manager; browser-checked). Backend contract: `CRM_FRONTEND_BACKEND_LISTINGS_2026_10_09.md`. Operational `draft/active/paused/closed` remains separate from the new workflow strip. Local migration applied; PHP 8.5/MySQL full suite 497 tests / 7,467 assertions, final focused suite 5 tests / 84 assertions, PHPStan and Pint passed.
 - [x] 2B Secondary Market: BE valuation price, mortgage and NOC status, transfer status, seller/buyer, and status-tab counts ready. FE done 2026-10-09 on the same page (secondary columns, valuation, mortgage, NOC, transfer, seller, buyer, status-tab counts; browser-checked). Backend contract: `docs/CRM_FRONTEND_BACKEND_SECONDARY_MARKET_2026_10_09.md`.
-- [ ] 2C Leasing & Rental: tenancy number, renewal date, Ejari, security deposit, advance, renewed/move-out/renewal-due actions, cheque linking.
+- [~] 2C Leasing & Rental: BE tenancy number, renewal date, advance, versioned details and renewal, linked Ejari/deposit/cheques, and renewal/move-out tabs ready; FE screen and browser acceptance remain. Backend contract: `docs/CRM_FRONTEND_BACKEND_LEASING_2026_10_10.md`.
 - [ ] 2D Off-Plan: units total/available/sold, starting price, commission %, launch/handover dates, assigned agent, status tabs.
 - [ ] 2E Owners & Developers: payment terms, commission notes, linked listings, edit.
 - [ ] 2F Agents & Commission: clawback, net contribution, team view.
@@ -134,4 +134,4 @@ CRM leads/board/import/activities/automation; pipeline editor; deals (board, lis
 
 ## Next up
 
-FE: Phase 2C Leasing & Rental screen once Codex publishes the backend contract; meanwhile the optional lead Follow-Up Timeline tab. Phase 1C strip click and create form are browser-checked. Push only when the owner asks.
+FE: Phase 2C Leasing & Rental screen once Codex publishes the backend contract; Phase 1C strip click and create form are browser-checked. Push only when the owner asks.

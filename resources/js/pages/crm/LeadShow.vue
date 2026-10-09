@@ -15,6 +15,7 @@ import CrmLeadMeetings from '@/components/CrmLeadMeetings.vue';
 import CrmLeadTasks from '@/components/CrmLeadTasks.vue';
 import CrmLeadAccounting from '@/components/CrmLeadAccounting.vue';
 import CrmLeadCommercial from '@/components/CrmLeadCommercial.vue';
+import CrmLeadFollowUps from '@/components/CrmLeadFollowUps.vue';
 import CrmLeadMatches from '@/components/CrmLeadMatches.vue';
 import CrmLeadProducts from '@/components/CrmLeadProducts.vue';
 import CrmLeadRequirement from '@/components/CrmLeadRequirement.vue';
@@ -51,6 +52,7 @@ type Tab =
     | 'general'
     | 'requirements'
     | 'matches'
+    | 'followups'
     | 'tasks'
     | 'meetings'
     | 'activities'
@@ -122,6 +124,7 @@ const lostStage = computed(() =>
 const whatsappLink = computed(() => whatsappUrl(props.lead.phone));
 const tabLabels: Partial<Record<Tab, string>> = {
     matches: 'Matched properties',
+    followups: 'Follow-up timeline',
     meetings: 'Meetings and viewings',
     commercial: 'Offers, contracts and deal',
     accounting: 'Accounting link',
@@ -130,6 +133,7 @@ const tabs: Tab[] = [
     'general',
     'requirements',
     'matches',
+    'followups',
     'tasks',
     'meetings',
     'activities',
@@ -576,6 +580,14 @@ watch(tab, (value) => window.history.replaceState(null, '', `#${value}`));
 
             <TabsContent value="matches">
                 <CrmLeadMatches :lead-id="lead.id" />
+            </TabsContent>
+
+            <TabsContent value="followups">
+                <CrmLeadFollowUps
+                    :lead-id="lead.id"
+                    :activities="activities"
+                    @open="tab = $event"
+                />
             </TabsContent>
 
             <TabsContent value="tasks">

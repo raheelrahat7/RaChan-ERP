@@ -2076,5 +2076,12 @@
     "Display labels for the status strip. They never publish a listing or change finance records. Archive a status to stop new use.": "تسميات عرض لشريط الحالات. لا تنشر إعلانًا ولا تغيّر السجلات المالية. أرشف الحالة لإيقاف استخدامها الجديد.",
     "Create a property and an available unit in Property inventory first. Then return here to create a resale or rental listing.": "أنشئ عقارًا ووحدة متاحة في مخزون العقارات أولًا، ثم عد هنا لإنشاء إعلان إعادة بيع أو إيجار.",
     "Any": "أي",
-    "Filter by listing status": "تصفية حسب حالة الإعلان"
+    "Filter by listing status": "تصفية حسب حالة الإعلان",
+    "Follow-up timeline": "الجدول الزمني للمتابعة",
+    "Upcoming": "قادم",
+    "No date": "بدون تاريخ",
+    "Done": "منجز",
+    "Task": "مهمة",
+    "Could not load the follow-up timeline.": "تعذر تحميل الجدول الزمني للمتابعة.",
+    "Nothing to follow up. Tasks, meetings and dated activities appear here.": "لا شيء للمتابعة. تظهر هنا المهام والاجتماعات والأنشطة المؤرخة."
 }
