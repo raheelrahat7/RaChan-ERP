@@ -90,7 +90,7 @@ class HandoverController extends Controller
         $handover->update(['status' => 'completed', 'completed_at' => now()]);
         $lease = $handover->lease;
         if ($handover->type === 'move_out' && $lease?->status === 'active') {
-            $lease->update(['status' => 'completed']);
+            $lease->update(['status' => 'completed', 'version' => $lease->version + 1]);
             Unit::where('organization_id', $organization->id)->whereKey($lease->unit_id)->update(['status' => 'available']);
             $vacancies->open($organization, $request->user(), $lease, $handover);
         }

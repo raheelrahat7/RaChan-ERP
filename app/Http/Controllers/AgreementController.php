@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Domain\Brokerage\Actions\CalculateCommission;
 use App\Domain\Identity\Actions\RecordOrganizationAuditLog;
+use App\Domain\Leasing\Actions\ManageLeaseDetails;
 use App\Domain\Leasing\Actions\ManageVacancy;
+use App\Domain\Leasing\Queries\LeaseOverview;
 use App\Domain\RealEstate\Services\SecondaryDealLink;
 use App\Models\Broker;
 use App\Models\CommissionPlan;
@@ -13,10 +15,13 @@ use App\Models\Reservation;
 use App\Models\SalesContract;
 use App\Models\Tenant;
 use App\Models\Unit;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,12 +48,13 @@ class AgreementController extends Controller
         ]);
     }
 
-    public function storeLease(Request $request, RecordOrganizationAuditLog $audit, SecondaryDealLink $dealLink): RedirectResponse
+    public function storeLease(Request $request, RecordOrganizationAuditLog $audit, SecondaryDealLink $dealLink, ManageLeaseDetails $details, LeaseOverview $overview): RedirectResponse|JsonResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization !== null, 404);
         $this->authorize('manageTransactions', $organization);
         $input = $request->validate(['reservation_id' => ['required', 'integer'], 'tenant_id' => ['nullable', 'integer'], 'broker_id' => ['nullable', 'integer'], 'starts_on' => ['required', 'date'], 'ends_on' => ['required', 'date', 'after:starts_on'], 'rent_amount' => ['nullable', 'numeric', 'min:0']]);
+        $input = [...$input, ...$details->validateDetails($organization, $request->all())];
         $reservation = Reservation::where('organization_id', $organization->id)->where('status', 'active')->findOrFail((int) $input['reservation_id']);
         $dealLink->assertAgreementPurpose($reservation, 'rent');
         if ($input['broker_id'] ?? null) {
@@ -61,6 +67,10 @@ class AgreementController extends Controller
         $lease = Lease::create(['organization_id' => $organization->id, 'unit_id' => $reservation->unit_id, 'contact_id' => $reservation->contact_id, 'reservation_id' => $reservation->id, 'reference' => 'LSE-'.Str::upper(Str::random(8)), ...Arr::except($input, 'reservation_id')]);
         $audit->handle($organization, $request->user(), 'transactions.lease.created', $lease);
 
+        if ($request->expectsJson()) {
+            return response()->json(['lease' => $overview->serialize($lease->refresh(), true)], 201);
+        }
+
         return back();
     }
 
@@ -71,7 +81,7 @@ class AgreementController extends Controller
         $this->authorize('manageTransactions', $organization);
         abort_unless($lease->status === 'draft', 422);
         $this->ensureNoActiveAgreement($organization->id, $lease->unit_id, $lease->id);
-        $lease->update(['status' => 'active']);
+        $lease->update(['status' => 'active', 'version' => $lease->version + 1]);
         Unit::find($lease->unit_id)?->update(['status' => 'leased']);
         $vacancies->resolveForLease($organization, $request->user(), $lease);
         if ($lease->broker_id && $request->integer('commission_plan_id')) {
@@ -83,18 +93,38 @@ class AgreementController extends Controller
         return back();
     }
 
-    public function renewLease(Request $request, Lease $lease, RecordOrganizationAuditLog $audit): RedirectResponse
+    public function renewLease(Request $request, Lease $lease, RecordOrganizationAuditLog $audit, LeaseOverview $overview): RedirectResponse|JsonResponse
     {
         $organization = $request->user()->currentOrganization;
         abort_unless($organization && $lease->organization_id === $organization->id, 404);
         $this->authorize('manageTransactions', $organization);
-        abort_unless($lease->status === 'active', 422, 'Only active leases can be renewed.');
         $input = $request->validate([
             'ends_on' => ['required', 'date', 'after:'.$lease->ends_on->toDateString()],
             'rent_amount' => ['nullable', 'numeric', 'min:0'],
+            'renewal_due_on' => ['nullable', 'date_format:Y-m-d'],
+            'expected_version' => [$request->expectsJson() ? 'required' : 'sometimes', 'integer', 'min:1'],
         ]);
-        $lease->update($input);
-        $audit->handle($organization, $request->user(), 'transactions.lease.renewed', $lease, $input);
+        $lease = DB::transaction(function () use ($organization, $request, $lease, $input, $audit): Lease {
+            $locked = Lease::where('organization_id', $organization->id)->lockForUpdate()->findOrFail($lease->id);
+            if ($locked->status !== 'active') {
+                throw ValidationException::withMessages(['status' => 'Only active leases can be renewed.']);
+            }
+            if (isset($input['expected_version']) && $locked->version !== (int) $input['expected_version']) {
+                throw ValidationException::withMessages(['expected_version' => 'This lease changed. Refresh before saving.']);
+            }
+            if ($input['ends_on'] <= $locked->ends_on->toDateString()) {
+                throw ValidationException::withMessages(['ends_on' => 'The new end date must be later than the current end date.']);
+            }
+            unset($input['expected_version']);
+            $locked->update([...$input, 'last_renewed_on' => today(), 'version' => $locked->version + 1]);
+            $audit->handle($organization, $request->user(), 'transactions.lease.renewed', $locked, $input);
+
+            return $locked->refresh();
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json(['lease' => $overview->serialize($lease, true)]);
+        }
 
         return back();
     }

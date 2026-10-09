@@ -54,6 +54,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JobSlaController;
 use App\Http\Controllers\JournalRegisterController;
 use App\Http\Controllers\LeaseComplianceController;
+use App\Http\Controllers\LeaseDataController;
 use App\Http\Controllers\LegacyJournalMappingController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\ListingDataController;
@@ -225,7 +226,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('lease-compliance/deposit-deductions/{deduction}/post-forfeiture', [LeaseComplianceController::class, 'postForfeiture'])->name('lease-compliance.deposit-deductions.post-forfeiture');
     Route::post('lease-compliance/cheques/{cheque}/{action}', [LeaseComplianceController::class, 'updateCheque'])->name('lease-compliance.cheques.update');
     Route::get('agreements', [AgreementController::class, 'index'])->name('agreements.index');
+    Route::get('agreements/leases/data', [LeaseDataController::class, 'index'])->name('agreements.leases.data');
     Route::post('agreements/leases', [AgreementController::class, 'storeLease'])->name('agreements.leases.store');
+    Route::get('agreements/leases/{lease}', [LeaseDataController::class, 'show'])->name('agreements.leases.show');
+    Route::put('agreements/leases/{lease}', [LeaseDataController::class, 'update'])->name('agreements.leases.update');
     Route::post('agreements/leases/{lease}/activate', [AgreementController::class, 'activateLease'])->name('agreements.leases.activate');
     Route::post('agreements/leases/{lease}/renew', [AgreementController::class, 'renewLease'])->name('agreements.leases.renew');
     Route::post('agreements/sales-contracts', [AgreementController::class, 'storeSalesContract'])->name('agreements.sales-contracts.store');
