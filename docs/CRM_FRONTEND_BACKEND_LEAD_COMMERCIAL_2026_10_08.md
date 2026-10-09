@@ -4,11 +4,11 @@ Backend ready for frontend integration. These routes are organization- and lead-
 
 ## Offers, contracts and linked deal
 
-| Method and URI | Exact request body | Response |
-|---|---|---|
-| `GET /crm/leads/{lead}/commercial?page=1` | none | `{ "records": Paginated<CommercialRecord>, "linked_deal": {"id":5,"title":"Sale","pipeline_id":1,"current_stage_id":2} | null, "permissions":{"view":true,"create":true}, "configuration": CommercialSettings }` |
-| `POST /crm/leads/{lead}/commercial` | `{"kind":"offer","title":"Unit 12 offer","status":"submitted","reference":"OFF-12","party_name":"Buyer","amount":"1500000.00","currency":"AED","submitted_on":"2026-10-08","signed_on":null,"notes":null,"deal_id":5}` | 201 `{ "record": CommercialRecord }` |
-| `PUT /crm/leads/{lead}/commercial/{record}` | `{"expected_version":1,"status":"accepted"}`; send only fields to change | 200 `{ "record": CommercialRecord }` |
+| Method and URI                              | Exact request body                                                                                                                                                                                                     | Response                                                                                                               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GET /crm/leads/{lead}/commercial?page=1`   | none                                                                                                                                                                                                                   | `{ "records": Paginated<CommercialRecord>, "linked_deal": {"id":5,"title":"Sale","pipeline_id":1,"current_stage_id":2} | null, "permissions":{"view":true,"create":true}, "configuration": CommercialSettings }` |
+| `POST /crm/leads/{lead}/commercial`         | `{"kind":"offer","title":"Unit 12 offer","status":"submitted","reference":"OFF-12","party_name":"Buyer","amount":"1500000.00","currency":"AED","submitted_on":"2026-10-08","signed_on":null,"notes":null,"deal_id":5}` | 201 `{ "record": CommercialRecord }`                                                                                   |
+| `PUT /crm/leads/{lead}/commercial/{record}` | `{"expected_version":1,"status":"accepted"}`; send only fields to change                                                                                                                                               | 200 `{ "record": CommercialRecord }`                                                                                   |
 
 `CommercialRecord` example: `{"id":7,"lead_id":2,"kind":"offer","reference":"OFF-12","title":"Unit 12 offer","party_name":"Buyer","status":"submitted","amount":"1500000.00","currency":"AED","submitted_on":"2026-10-08","signed_on":null,"notes":null,"deal_id":5,"created_at":"2026-10-08T10:00:00Z","updated_at":"2026-10-08T10:00:00Z","version":1,"permissions":{"view":true,"edit":true}}`. `deal_id` is returned only if the linked deal is visible to the caller. The deal must belong to this lead; the lead link and `kind` cannot change after create. Amount and three-letter uppercase currency must be present together. Dates use `YYYY-MM-DD`. `version` starts at 1; updates require `expected_version` and increment it.
 
@@ -18,9 +18,9 @@ Lead viewers may list records. A user with `manageCrm` who can see the lead may 
 
 ## Organization status configuration
 
-| Method and URI | Exact request body | Response |
-|---|---|---|
-| `GET /crm/settings/lead-commercial` | none | `{ "configuration": CommercialSettings }` |
+| Method and URI                      | Exact request body                                                                                                                                             | Response                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `GET /crm/settings/lead-commercial` | none                                                                                                                                                           | `{ "configuration": CommercialSettings }` |
 | `PUT /crm/settings/lead-commercial` | `{"expected_version":0,"statuses":{"offer":[{"value":"draft","label":"Draft","active":true}],"contract":[{"value":"signed","label":"Signed","active":true}]}}` | `{ "configuration": CommercialSettings }` |
 
 `CommercialSettings` is `{ "statuses": { "offer": Choice[], "contract": Choice[] }, "version": 0, "permissions": { "read": true, "edit": true } }`. A `Choice` has stable `value`, editable `label`, and `active`. Version 0 represents defaults before the first save; subsequent saves increment it. Only organization administrators may edit. Errors are the standard 422 shape under `expected_version`, `statuses.offer`, `statuses.contract`, or a nested choice key. At least one active status per kind is required.
@@ -31,11 +31,35 @@ Lead viewers may list records. A user with `manageCrm` who can see the lead may 
 
 ```json
 {
-  "documents": [
-    {"kind":"estimate","id":11,"reference":"EST-11","title":"Quote","status":"Accepted","amount":"100.00","vat":null,"total":"100.00","currency":"AED","version":2,"permissions":{"view":true,"edit":true}},
-    {"kind":"invoice","id":21,"reference":"INV-21","title":null,"status":"draft","amount":"100.00","vat":"5.00","total":"105.00","currency":"AED","version":null,"permissions":{"view":true,"edit":false}}
-  ],
-  "permissions": {"view":true}
+    "documents": [
+        {
+            "kind": "estimate",
+            "id": 11,
+            "reference": "EST-11",
+            "title": "Quote",
+            "status": "Accepted",
+            "amount": "100.00",
+            "vat": null,
+            "total": "100.00",
+            "currency": "AED",
+            "version": 2,
+            "permissions": { "view": true, "edit": true }
+        },
+        {
+            "kind": "invoice",
+            "id": 21,
+            "reference": "INV-21",
+            "title": null,
+            "status": "draft",
+            "amount": "100.00",
+            "vat": "5.00",
+            "total": "105.00",
+            "currency": "AED",
+            "version": null,
+            "permissions": { "view": true, "edit": false }
+        }
+    ],
+    "permissions": { "view": true }
 }
 ```
 
