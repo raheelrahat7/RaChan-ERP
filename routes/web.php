@@ -10,6 +10,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ApprovalsInboxController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BrokerageController;
+use App\Http\Controllers\CommissionDataController;
 use App\Http\Controllers\ComplianceDocumentController;
 use App\Http\Controllers\ConstructionController;
 use App\Http\Controllers\CorporateTaxReturnController;
@@ -625,6 +626,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('real-estate/listings/{listing}', [ListingDataController::class, 'show'])->name('real-estate.listings.show');
     Route::put('real-estate/listings/{listing}', [ListingDataController::class, 'update'])->name('real-estate.listings.update');
     Route::get('real-estate/brokerage', [BrokerageController::class, 'index'])->name('real-estate.brokerage.index');
+    Route::get('real-estate/brokerage/data', [CommissionDataController::class, 'index'])->name('real-estate.brokerage.data');
+    Route::get('real-estate/brokerage/commissions/{commission}', [CommissionDataController::class, 'show'])->name('real-estate.brokerage.commissions.show');
+    Route::post('real-estate/brokerage/commissions/{commission}/clawbacks', [CommissionDataController::class, 'storeClawback'])->name('real-estate.brokerage.clawbacks.store');
     Route::post('real-estate/brokerage/commission-plans', [BrokerageController::class, 'storePlan'])->name('real-estate.brokerage.plans.store');
     Route::post('real-estate/brokerage/commissions/{commission}/allocation', [BrokerageController::class, 'submitAllocation'])->name('real-estate.brokerage.allocations.submit');
     Route::post('real-estate/brokerage/allocations/{allocation}/approve', [BrokerageController::class, 'approveAllocation'])->name('real-estate.brokerage.allocations.approve');
