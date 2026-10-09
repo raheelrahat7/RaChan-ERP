@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import CrmSettingsTable from '@/components/CrmSettingsTable.vue';
 import InputError from '@/components/InputError.vue';
+import LeasesPanel from '@/components/LeasesPanel.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,8 +45,6 @@ type CommissionPlan = { id: number; name: string; basis: string; rate: string };
 type Row = {
     id: number;
     reference: string;
-    party: string;
-    ends_on: string;
     amount: string;
     status: string;
     actions: string;
@@ -75,8 +74,7 @@ const sheetOpen = computed({
     },
 });
 const commissionPlanId = ref('');
-const renewalEndsOn = ref('');
-const renewalRentAmount = ref('');
+const panel = ref<InstanceType<typeof LeasesPanel> | null>(null);
 
 const leaseReservations = computed(() =>
     props.reservations.filter(
@@ -98,6 +96,9 @@ const leaseForm = useForm({
     rent_amount: '',
     broker_id: '',
     tenant_id: '',
+    tenancy_number: '',
+    renewal_due_on: '',
+    advance_amount: '',
 });
 const salesForm = useForm({
     reservation_id: '',
@@ -108,38 +109,19 @@ const salesForm = useForm({
 
 const columns = computed<DataTableColumn<Row>[]>(() => [
     { key: 'reference', label: t('Reference'), sortable: true },
-    ...(tab.value === 'leases'
-        ? [{ key: 'party' as const, label: t('Tenant') }]
-        : []),
-    ...(tab.value === 'leases'
-        ? [{ key: 'ends_on' as const, label: t('Ends on'), sortable: true }]
-        : []),
-    {
-        key: 'amount',
-        label: tab.value === 'leases' ? t('Rent') : t('Sale price'),
-    },
+    { key: 'amount', label: t('Sale price') },
     { key: 'status', label: t('Status') },
     { key: 'actions', label: '' },
 ]);
 const rows = computed<Row[]>(() =>
-    (tab.value === 'leases' ? props.leases : props.salesContracts).map(
-        (item) => ({
-            id: item.id,
-            reference: item.reference,
-            party: item.tenant?.name ?? '',
-            ends_on: item.ends_on ?? '',
-            amount: item.rent_amount ?? item.sale_price ?? '',
-            status: item.status,
-            actions: '',
-        }),
-    ),
+    props.salesContracts.map((item) => ({
+        id: item.id,
+        reference: item.reference,
+        amount: item.sale_price ?? '',
+        status: item.status,
+        actions: '',
+    })),
 );
-const agreementOf = (id: number): Agreement | undefined =>
-    (tab.value === 'leases' ? props.leases : props.salesContracts).find(
-        (item) => item.id === id,
-    );
-const isExpiring = (id: number): boolean =>
-    tab.value === 'leases' && agreementOf(id)?.is_expiring === true;
 
 function createLease(): void {
     leaseForm.post('/agreements/leases', {
@@ -147,6 +129,7 @@ function createLease(): void {
         onSuccess: () => {
             leaseForm.reset();
             sheet.value = null;
+            panel.value?.reload();
         },
     });
 }
@@ -160,27 +143,13 @@ function createSalesContract(): void {
     });
 }
 function activate(row: Row): void {
-    const path = tab.value === 'leases' ? 'leases' : 'sales-contracts';
     if (confirm(`${t('Activate')} ${row.reference}?`)) {
         router.post(
-            `/agreements/${path}/${row.id}/activate`,
+            `/agreements/sales-contracts/${row.id}/activate`,
             { commission_plan_id: commissionPlanId.value || null },
             { preserveScroll: true },
         );
     }
-}
-function renew(row: Row): void {
-    if (!renewalEndsOn.value) {
-        return;
-    }
-    router.post(
-        `/agreements/leases/${row.id}/renew`,
-        {
-            ends_on: renewalEndsOn.value,
-            rent_amount: renewalRentAmount.value || null,
-        },
-        { preserveScroll: true },
-    );
 }
 </script>
 
@@ -219,7 +188,7 @@ function renew(row: Row): void {
             </button>
         </nav>
 
-        <Card v-if="canManageTransactions">
+        <Card v-if="canManageTransactions && tab === 'sales'">
             <CardContent class="flex flex-wrap items-end gap-4">
                 <div class="space-y-1">
                     <Label for="ag-plan">{{
@@ -245,61 +214,62 @@ function renew(row: Row): void {
                         </option>
                     </select>
                 </div>
-                <template v-if="tab === 'leases'">
-                    <div class="space-y-1">
-                        <Label for="ag-renew-end">{{
-                            t('Renewal ends on')
-                        }}</Label>
-                        <Input
-                            id="ag-renew-end"
-                            v-model="renewalEndsOn"
-                            type="date"
-                        />
-                    </div>
-                    <div class="space-y-1">
-                        <Label for="ag-renew-rent">{{
-                            t('New rent (optional)')
-                        }}</Label>
-                        <Input
-                            id="ag-renew-rent"
-                            v-model="renewalRentAmount"
-                            type="number"
-                            min="0"
-                        />
-                    </div>
-                    <p class="text-muted-foreground pb-2 text-sm">
-                        {{
-                            t(
-                                'Set terms, then select Renew on an active lease.',
-                            )
-                        }}
-                    </p>
-                </template>
             </CardContent>
         </Card>
 
+        <div v-if="tab === 'leases'" class="space-y-3">
+            <div
+                v-if="canManageTransactions"
+                class="flex flex-wrap items-end gap-4"
+            >
+                <div class="space-y-1">
+                    <Label for="ag-plan-l">{{
+                        t('Activation commission plan')
+                    }}</Label>
+                    <select
+                        id="ag-plan-l"
+                        v-model="commissionPlanId"
+                        :class="selectClass"
+                    >
+                        <option value="">{{ t('No commission') }}</option>
+                        <option
+                            v-for="plan in commissionPlans"
+                            :key="plan.id"
+                            :value="String(plan.id)"
+                        >
+                            {{ plan.name }} ·
+                            {{
+                                plan.basis === 'fixed'
+                                    ? `AED ${plan.rate}`
+                                    : `${plan.rate}%`
+                            }}
+                        </option>
+                    </select>
+                </div>
+                <Button type="button" @click="sheet = 'lease'">{{
+                    t('Create lease')
+                }}</Button>
+            </div>
+            <LeasesPanel
+                ref="panel"
+                :commission-plan-id="commissionPlanId"
+                :can-manage="canManageTransactions"
+            />
+        </div>
         <CrmSettingsTable
+            v-else
             :show-title="false"
-            :title="tab === 'leases' ? 'Leases' : 'Sales contracts'"
+            title="Sales contracts"
             :columns="columns"
             :rows="rows"
             :row-key="(row) => row.id"
             :row-label="(row) => row.reference"
-            :add-label="tab === 'leases' ? 'Create lease' : 'Create contract'"
+            add-label="Create contract"
             :selectable="false"
             searchable
             :can-edit="canManageTransactions"
-            @add="sheet = tab === 'leases' ? 'lease' : 'sales'"
+            @add="sheet = 'sales'"
         >
-            <template #cell-reference="{ row }">
-                {{ row.reference }}
-                <Badge
-                    v-if="isExpiring(row.id)"
-                    variant="outline"
-                    class="ms-2"
-                    >{{ t('Expiring') }}</Badge
-                >
-            </template>
             <template #cell-status="{ row }">
                 <Badge variant="secondary">{{ row.status }}</Badge>
             </template>
@@ -313,14 +283,6 @@ function renew(row: Row): void {
                         size="sm"
                         @click="activate(row)"
                         >{{ t('Activate') }}</Button
-                    >
-                    <Button
-                        v-if="tab === 'leases' && row.status === 'active'"
-                        size="sm"
-                        variant="outline"
-                        :disabled="!renewalEndsOn"
-                        @click="renew(row)"
-                        >{{ t('Renew') }}</Button
                     >
                 </div>
             </template>
@@ -402,6 +364,39 @@ function renew(row: Row): void {
                             type="number"
                             min="0"
                         /><InputError :message="leaseForm.errors.rent_amount" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <Label for="lf-tn">{{ t('Tenancy number') }}</Label
+                            ><Input
+                                id="lf-tn"
+                                v-model="leaseForm.tenancy_number"
+                            /><InputError
+                                :message="leaseForm.errors.tenancy_number"
+                            />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="lf-adv">{{ t('Advance amount') }}</Label
+                            ><Input
+                                id="lf-adv"
+                                v-model="leaseForm.advance_amount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                            /><InputError
+                                :message="leaseForm.errors.advance_amount"
+                            />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="lf-due">{{ t('Renewal due on') }}</Label
+                        ><Input
+                            id="lf-due"
+                            v-model="leaseForm.renewal_due_on"
+                            type="date"
+                        /><InputError
+                            :message="leaseForm.errors.renewal_due_on"
+                        />
                     </div>
                     <div class="space-y-1">
                         <Label for="lf-tenant">{{ t('Tenant') }}</Label>
